@@ -36,6 +36,9 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
+# Temporary outputs / logs
+*.log
+
 # R Environment Variables
 .Renviron
 
@@ -47,3 +50,10 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Large or sensitive data folders
+data/
+Exemplos/
+documents/old_procedure
+tests/
+
