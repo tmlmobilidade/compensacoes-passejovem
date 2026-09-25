@@ -20,6 +20,7 @@
 
 # RStudio files
 .Rproj.user/
+PasseJovem.code-workspace
 
 # produced vignettes
 vignettes/*.html
