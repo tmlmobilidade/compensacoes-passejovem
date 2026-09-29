@@ -34,58 +34,6 @@ sum(julho_comNIF$compensacao) + sum(julho_semNIF$compensacao) #10.769.994 (TEM D
 
 
 
-# test datas --------------------------------------------------------------
-library(lubridate)
-primeiro_dia_mes <- as.Date(sprintf("%d-%02d-01", 2026, 7))
-datas_test = julho_comNIF |> select(fiscal_number, age_new, birth_date_new) |> 
-  mutate(age_other = as.integer(floor(as.numeric(primeiro_dia_mes - birth_date_new) / 365.25))) |> 
-  mutate(age_dif = age_other-age_new)
-table(datas_test$age_dif)
-
-datas_test = datas_test |> 
-dt_main[!is.na(birth_date), elegivel := {
-  ano_nasc <- as.integer(format(birth_date, "%Y"))
-  mes_nasc <- as.integer(format(birth_date, "%m"))
-  
-  # Idade calculada pelo mês de referência
-  # Se fizer 24 em julho, mes_24anos = 7. É elegível se mes <= mes_nasc no ano em que faz 24.
-  limite_data <- as.Date(sprintf("%d-%02d-01", ano_nasc + 24, mes_nasc))
-  
-  primeiro_dia_mes <= limite_data
-}]
-
-
-ano_ref <- 2026
-mes_ref <- 7
-primeiro_dia_mes <- as.Date(sprintf("%d-%02d-01", ano_ref, mes_ref))
-
-datas_test <- julho_comNIF |> 
-  select(fiscal_number, age_new, birth_date_new) |> 
-  mutate(
-    # Cálculo antigo/aproximado por 365.25 para comparar:
-    age_other = as.integer(floor(as.numeric(primeiro_dia_mes - birth_date_new) / 365.25)),
-    age_dif   = age_other - age_new,
-    
-    # ---------------------------------------------------------
-    # CRITÉRIO: Elegível até ao final do mês de aniversário dos 24 anos
-    # ---------------------------------------------------------
-    # Primeiro dia do mês em que faz 24 anos:
-    mes_24anos = floor_date(birth_date_new %m+% years(24), unit = "month"),
-    
-    # Elegível se o mês de referência for menor ou igual ao mês em que atinge 24 anos:
-    elegivel = primeiro_dia_mes <= mes_24anos
-  )
-
-# Verificar os casos de discrepância
-table(datas_test$age_dif)
-table(datas_test$elegivel)
-
-# Ver quem faz 24 anos em julho de 2026 e o respetivo estado de elegibilidade
-datas_test |> 
-  filter(year(birth_date_new) == 2002, month(birth_date_new) %in% c(6, 7, 8)) |> 
-  View()
-
-
 
 # compare -----------------------------------------------------------------
 library(readxl)
@@ -102,3 +50,32 @@ ANITA_comNIF_redux = ANITA_comNIF |> select(fiscal_number, age_new, age_calculad
 julho_comNIF_redux = julho_comNIF |> select(fiscal_number, age_new, birth_date_new) |> arrange(birth_date_new)
 
 missing = ANITA_comNIF_redux |> filter(!fiscal_number %in% c(julho_comNIF_redux$fiscal_number))
+# 0 
+
+
+# valores -----------------------------------------------------------------
+
+julho_comNIF_group = julho_comNIF |>
+  group_by(nome_imt, ticket_code_new, ticket_name_new) |> 
+  summarise(passes = n(),
+            validacoes = sum(numval),
+            compensacao = sum(compensacao)) |> 
+  ungroup()
+
+ANITA_comNIF_group = ANITA_comNIF |> 
+  group_by(nome_imt, ticket_code_new, ticket_name_new) |> 
+  summarise(passes = n(),
+            validacoes = sum(numval),
+            compensacao = sum(compensacao)) |> 
+  ungroup()
+
+comparacao_group = ANITA_comNIF_group |>
+  left_join(julho_comNIF_group, by = c("nome_imt", "ticket_code_new", "ticket_name_new")) |> 
+  rename_with(~ str_replace(.x, "\\.x$", "_original"), ends_with(".x")) %>%
+  rename_with(~ str_replace(.x, "\\.y$", "_rosa"), ends_with(".y")) |> 
+  mutate(dif_passes = passes_rosa - passes_original,
+         dif_validacoes = validacoes_rosa - validacoes_original,
+         dif_compensacao = compensacao_rosa - compensacao_original) |> 
+  filter(dif_passes != 0 | dif_validacoes != 0 | dif_compensacao != 0)
+
+
