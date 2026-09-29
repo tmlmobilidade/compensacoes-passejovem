@@ -16,16 +16,16 @@ julho_age_nok <- read_delim("data/2026_07_julho/output/2026_07_age_nok.csv",
 
 julho_comNIF_dn4 = julho_comNIF |> filter(age_new <= 4)
 julho_comNIF_dn24 = julho_comNIF |> filter(age_new >= 24)
-julho_comNIF_dn24 = julho_comNIF_dn24 |> filter(year(birth_date_new)==2001)
+# julho_comNIF_dn24 = julho_comNIF_dn24 |> filter(year(birth_date_new)==2001)
 
-table(julho_comNIF$ticket_operator_code_new)
+# table(julho_comNIF$ticket_operator_code_new)
 table(julho_comNIF$emissor)
 # AT AML AT Cascais 
-# 404092        559 
+# 404047        559 
 
 table(julho_comNIF$nome_imt)
 # Navegante Metropolitano      Navegante Metropolitano + Complemento                         Viver Cascais 
-# 403986  (403941)                                 106 (106)                                               559 (559) 
+# 403971  (403941)                                 106 (106)                                               559 (559) 
 
 
 sum(julho_comNIF$compensacao) #10.719.178 (TEM DE DAR 10.722.470)

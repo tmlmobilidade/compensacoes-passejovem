@@ -185,7 +185,20 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
     message(sprintf("  Correcoes de NIF aplicadas: %d registos", nrow(dt_nif_nif)))
   }
 
-# 6c. Correcao pontual da idade para casos limite (mes de nascimento = mes de referencia)
+  # 6c. Recalcular age a partir da birth_date corrigida
+  #     Após aplicar nif_correct e data_nascimento_correct, a birth_date pode ter
+  #     mudado (ex: 2024-10-01 -> 2004-12-26) mas a coluna age continua com o
+  #     valor original exportado pelo ITS. Recalculamos age para todos os registos
+  #     onde birth_date está preenchida, usando o critério do sistema ITS:
+  #     diferença em anos completos entre birth_date e o 1º dia do mês de referência.
+  ref_date <- as.Date(sprintf("%d-%02d-01", ano, mes))
+  dt_main[!is.na(birth_date),
+          age := as.integer(
+            floor(as.numeric(difftime(ref_date, birth_date, units = "days")) / 365.25)
+          )]
+  message("  Idade recalculada a partir da birth_date corrigida.")
+
+  # 6d. Correcao pontual da idade para casos limite (mes de nascimento = mes de referencia)
   #
   #     O sistema ITS calcula a idade ignorando o dia (usa ano e mes).
   #     Quando o mes de nascimento coincide com o mes de referencia, pode
