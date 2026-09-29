@@ -323,5 +323,5 @@ calc_nome_imt <- function(ptb_str) {
 #' Grava um data.table como CSV separado por ";" com encoding UTF-8
 write_csv_pj <- function(dt, path) {
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  fwrite(dt, path, sep = ";", dec = ".", na = "", dateTimeAs = "write.csv")
+  fwrite(dt, path, sep = ";", dec = ".", na = "", dateTimeAs = "write.csv", row.names = FALSE)
 }
