@@ -185,24 +185,21 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
     message(sprintf("  Correcoes de NIF aplicadas: %d registos", nrow(dt_nif_nif)))
   }
 
-  # 6c. Recalcular idade com base na data de nascimento corrigida
+# 6c. Correcao pontual da idade para casos limite (mes de nascimento = mes de referencia)
   #
-  #     REGRA (Portaria 7-A/2024): o passe é válido para jovens com 23 anos ou menos
-  #     no mês de referência. Um jovem que faça 24 anos A QUALQUER DIA do mês
-  #     ainda é elegível durante esse mês completo.
-  #     Por isso, a idade é calculada relativamente ao ÚLTIMO DIA do mês.
+  #     O sistema ITS calcula a idade ignorando o dia (usa ano e mes).
+  #     Quando o mes de nascimento coincide com o mes de referencia, pode
+  #     devolver a idade errada por 1 unidade. Corrigimos dois casos:
   #
-  #     Exemplo para julho 2026 (último dia = 31/07/2026):
-  #       Nascido em 01/08/2002 -> 31/07/2026 - 01/08/2002 = 23 anos e 364 dias -> age = 23 (válido)
-  #       Nascido em 31/07/2002 -> 31/07/2026 - 31/07/2002 = 24 anos exatos      -> age = 24 (inelegível)
-  ultimo_dia_mes <- as.Date(
-    sprintf("%d-%02d-%02d", ano, mes,
-            lubridate::days_in_month(as.Date(sprintf("%d-%02d-01", ano, mes))))
-  )
-  dt_main[!is.na(birth_date),
-          age := as.integer(floor(as.numeric(ultimo_dia_mes - birth_date) / 365.25))]
+  #     Regra 1 — limite superior: se age == 25 E nasceu no mes de referencia,
+  #       a pessoa ainda nao fez 25 anos completos -> corrigir para age = 24.
+  #
+  #     Regra 2 — limite inferior: se age == 3 E nasceu no mes de referencia,
+  #       a pessoa ja fez 4 anos neste mes -> corrigir para age = 4.
 
-  message(sprintf("  Idades recalculadas em relacao a %s (ultimo dia do mes)", ultimo_dia_mes))
+  dt_main[age == 25L & lubridate::month(birth_date) == mes, age := 24L]
+  dt_main[age == 3L  & lubridate::month(birth_date) == mes, age := 4L]
+
   message(sprintf("  Total de registos limpos: %d", nrow(dt_main)))
 
 
