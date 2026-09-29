@@ -152,30 +152,57 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   # ── 6. Aplicar correções manuais ─────────────────────────────────────────
 
   # 6a. Correções de data de nascimento (data/auxiliar/data_nascimento_correct.csv)
-  #     Este ficheiro é mantido manualmente à medida que erros são descobertos.
+  #     Corrige datas de nascimento erradas exportadas pelo sistema ITS.
   f_dn_corr <- file.path(paths$auxiliar, "data_nascimento_correct.csv")
   if (file.exists(f_dn_corr)) {
     dt_dn <- fread(f_dn_corr, sep = ";", colClasses = "character")
     dt_dn[, dn_corrigida := parse_date_safe(dn_corrigida)]
     dt_dn <- dt_dn[!is.na(dn_corrigida)]  # ignorar linhas sem correção
-
-    # Juntar correção pelo número de cartão
     dt_main[dt_dn, on = .(card_serial_number), birth_date := i.dn_corrigida]
     message(sprintf("  Correcoes de data de nascimento aplicadas: %d registos", nrow(dt_dn)))
   }
 
   # 6b. Correções de NIF (data/auxiliar/nif_correct.csv)
-  #     Formato: card_serial_number; birth_date; fiscal_number (NIF correto)
+  #     Formato: card_serial_number; birth_date; fiscal_number
+  #     Aplica tanto o NIF corrigido como a data de nascimento (quando presente),
+  #     pois NIFs errados estão muitas vezes associados a datas de nascimento erradas.
   f_nif_corr <- file.path(paths$auxiliar, "nif_correct.csv")
   if (file.exists(f_nif_corr)) {
     dt_nif <- fread(f_nif_corr, sep = ";", colClasses = "character")
-    dt_nif[, fiscal_number := normalizar_nif(fiscal_number)]
-    dt_nif <- dt_nif[!is.na(fiscal_number)]
+    dt_nif[, fiscal_number   := normalizar_nif(fiscal_number)]
+    dt_nif[, birth_date_corr := parse_date_safe(birth_date)]
 
-    dt_main[dt_nif, on = .(card_serial_number), fiscal_number := i.fiscal_number]
-    message(sprintf("  Correcoes de NIF aplicadas: %d registos", nrow(dt_nif)))
+    # Aplicar NIF corrigido
+    dt_nif_nif <- dt_nif[!is.na(fiscal_number)]
+    if (nrow(dt_nif_nif) > 0)
+      dt_main[dt_nif_nif, on = .(card_serial_number), fiscal_number := i.fiscal_number]
+
+    # Aplicar data de nascimento corrigida (quando presente no ficheiro nif_correct)
+    dt_nif_dn <- dt_nif[!is.na(birth_date_corr)]
+    if (nrow(dt_nif_dn) > 0)
+      dt_main[dt_nif_dn, on = .(card_serial_number), birth_date := i.birth_date_corr]
+
+    message(sprintf("  Correcoes de NIF aplicadas: %d registos", nrow(dt_nif_nif)))
   }
 
+  # 6c. Recalcular idade com base na data de nascimento corrigida
+  #
+  #     REGRA (Portaria 7-A/2024): o passe é válido para jovens com 23 anos ou menos
+  #     no mês de referência. Um jovem que faça 24 anos A QUALQUER DIA do mês
+  #     ainda é elegível durante esse mês completo.
+  #     Por isso, a idade é calculada relativamente ao ÚLTIMO DIA do mês.
+  #
+  #     Exemplo para julho 2026 (último dia = 31/07/2026):
+  #       Nascido em 01/08/2002 -> 31/07/2026 - 01/08/2002 = 23 anos e 364 dias -> age = 23 (válido)
+  #       Nascido em 31/07/2002 -> 31/07/2026 - 31/07/2002 = 24 anos exatos      -> age = 24 (inelegível)
+  ultimo_dia_mes <- as.Date(
+    sprintf("%d-%02d-%02d", ano, mes,
+            lubridate::days_in_month(as.Date(sprintf("%d-%02d-01", ano, mes))))
+  )
+  dt_main[!is.na(birth_date),
+          age := as.integer(floor(as.numeric(ultimo_dia_mes - birth_date) / 365.25))]
+
+  message(sprintf("  Idades recalculadas em relacao a %s (ultimo dia do mes)", ultimo_dia_mes))
   message(sprintf("  Total de registos limpos: %d", nrow(dt_main)))
 
 
