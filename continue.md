@@ -8,7 +8,6 @@ So, for the previous months, those fields in the output xlsx should be empty.
 
 * [ ]  update the procedure.md
 * [ ]  use more dplyr functions, such in filters and so, instead base R (more easier to read for me)
-
-see the differences
+* [ ]  see the differences
 
 ![1790711492715](image/continue/1790711492715.png)

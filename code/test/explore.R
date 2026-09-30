@@ -79,3 +79,4 @@ comparacao_group = ANITA_comNIF_group |>
   filter(dif_passes != 0 | dif_validacoes != 0 | dif_compensacao != 0)
 
 
+

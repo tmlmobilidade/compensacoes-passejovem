@@ -11,7 +11,8 @@
 #   - <ano>_<mm>_dados_limpos.csv
 #   - <ano>_<mm>_complemento_azambuja.csv  (se existir)
 #
-# Também aplica as correções manuais de:
+# Também aplica a repescagem e correções manuais de:
+#   - data/auxiliar/nif_repescagem2024.csv      (repescagem de NIFs em falta)
 #   - data/auxiliar/nif_correct.csv             (NIFs errados)
 #   - data/auxiliar/data_nascimento_correct.csv  (datas de nascimento erradas)
 #
@@ -114,6 +115,42 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
     dt_main <- rbindlist(list(dt_pj, dt_casc), use.names = TRUE)
   } else {
     dt_main <- dt_pj
+  }
+
+
+  # ── 4b. Preencher NIFs em falta via repescagem ───────────────────────────
+  # data/auxiliar/nif_repescagem2024.csv contém NIFs identificados para cartões
+  # cujo fiscal_number não consta nos dados primários.
+  # Preenche o fiscal_number apenas quando este se encontra vazio (NA),
+  # antes de realizar a manipulação dos dados.
+  f_rep <- file.path(paths$auxiliar, "nif_repescagem2024.csv")
+  if (file.exists(f_rep)) {
+    dt_rep <- fread(f_rep, colClasses = "character")
+    setnames(dt_rep, tolower(names(dt_rep)))
+    dt_rep[, fiscal_number := normalizar_nif(fiscal_number)]
+    dt_rep <- dt_rep[!is.na(fiscal_number) & nzchar(trimws(card_serial_number))]
+
+    # Garantir tipo character para matching
+    dt_rep[, card_serial_number := as.character(card_serial_number)]
+    dt_main[, card_serial_number := as.character(card_serial_number)]
+
+    # Identificar cartões que vão ser preenchidos
+    cartoes_preenchidos <- intersect(dt_main[is.na(fiscal_number), card_serial_number], dt_rep$card_serial_number)
+    n_cartoes <- length(unique(cartoes_preenchidos))
+
+    # Preencher apenas onde fiscal_number está em falta
+    n_vazios_antes <- sum(is.na(dt_main$fiscal_number))
+    dt_main[dt_rep, on = .(card_serial_number),
+            fiscal_number := fifelse(is.na(fiscal_number), i.fiscal_number, fiscal_number)]
+    n_recuperados <- n_vazios_antes - sum(is.na(dt_main$fiscal_number))
+    message(sprintf("  Repescagem de NIF aplicada: %d registos preenchidos (%d cartões únicos)",
+                    n_recuperados, n_cartoes))
+
+    if (!is.null(dt_az)) {
+      dt_az[, card_serial_number := as.character(card_serial_number)]
+      dt_az[dt_rep, on = .(card_serial_number),
+            fiscal_number := fifelse(is.na(fiscal_number), i.fiscal_number, fiscal_number)]
+    }
   }
 
 
