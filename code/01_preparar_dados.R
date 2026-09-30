@@ -48,9 +48,10 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   # ── 1. Ficheiro principal PasseJovem ─────────────────────────────────────
   # Pode ser CSV (antes de julho 2026) ou XLSX (julho 2026 em diante)
   f_pj <- list.files(paths$input,
-                     pattern = "PasseJovem",
+                     pattern    = "PasseJovem",
                      full.names = TRUE,
                      ignore.case = TRUE)
+
   if (length(f_pj) == 0)
     stop("Ficheiro PasseJovem nao encontrado em: ", paths$input)
   if (length(f_pj) > 1) {
@@ -64,9 +65,10 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
 
   # ── 2. Ficheiro Cascais (TML_*.xlsx) ─────────────────────────────────────
   f_casc <- list.files(paths$input,
-                       pattern = "TML_.*\\.(xlsx|xls)$",
+                       pattern    = "TML_.*\\.(xlsx|xls)$",
                        full.names = TRUE,
                        ignore.case = TRUE)
+
   if (length(f_casc) == 0) {
     warning("Ficheiro Cascais (TML_*.xlsx) nao encontrado; a continuar sem dados de Cascais.")
     dt_casc <- NULL
@@ -82,9 +84,10 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
 
   # ── 3. Complemento Azambuja ───────────────────────────────────────────────
   f_az <- list.files(paths$input,
-                     pattern = "Complemento_Azambuja",
+                     pattern    = "Complemento_Azambuja",
                      full.names = TRUE,
                      ignore.case = TRUE)
+
   if (length(f_az) == 0) {
     # Fallback: segunda folha do XLSX principal (formato julho 2026+)
     ext_pj <- tolower(tools::file_ext(f_pj))
@@ -114,57 +117,69 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
 
 
   # ── 4. Combinar PasseJovem + Cascais ─────────────────────────────────────
+  # bind_rows() alinha automaticamente por nome de coluna e preenche com NA
+  # as colunas que existam num tibble mas não no outro (ex: doc_number, doc_type)
   if (!is.null(dt_casc)) {
-    # Garantir que ambas as tabelas têm as mesmas colunas antes de fazer bind
-    cols_pj   <- names(dt_pj)
-    cols_casc <- names(dt_casc)
-
-    # Adicionar colunas que faltam no Cascais (ex: doc_number, doc_type)
-    for (col in setdiff(cols_pj, cols_casc)) {
-      dt_casc[, (col) := NA]
-    }
-    # Remover colunas extra do Cascais que não existam no main
-    cols_extra <- setdiff(cols_casc, cols_pj)
-    if (length(cols_extra) > 0) dt_casc[, (cols_extra) := NULL]
-
-    dt_main <- rbindlist(list(dt_pj, dt_casc), use.names = TRUE)
+    dt_main <- bind_rows(dt_pj, dt_casc) |> as.data.table()
   } else {
     dt_main <- dt_pj
   }
+
+  # Garantir que card_serial_number é character (necessário para os joins abaixo)
+  dt_main <- dt_main |>
+    mutate(card_serial_number = as.character(card_serial_number)) |>
+    as.data.table()
 
 
   # ── 4b. Preencher NIFs em falta via repescagem ───────────────────────────
   # data/auxiliar/nif_repescagem2024.csv contém NIFs identificados para cartões
   # cujo fiscal_number não consta nos dados primários.
-  # Preenche o fiscal_number apenas quando este se encontra vazio (NA),
-  # antes de realizar a manipulação dos dados.
+  # Faz um left_join pelo número de cartão e preenche apenas onde o NIF está a NA.
   f_rep <- file.path(paths$auxiliar, "nif_repescagem2024.csv")
   if (file.exists(f_rep)) {
-    dt_rep <- fread(f_rep, colClasses = "character")
-    setnames(dt_rep, tolower(names(dt_rep)))
-    dt_rep[, fiscal_number := normalizar_nif(fiscal_number)]
-    dt_rep <- dt_rep[!is.na(fiscal_number) & nzchar(trimws(card_serial_number))]
 
-    # Garantir tipo character para matching
-    dt_rep[, card_serial_number := as.character(card_serial_number)]
-    dt_main[, card_serial_number := as.character(card_serial_number)]
+    # Ler tabela de repescagem e limpar com um pipe dplyr
+    dt_rep <- fread(f_rep, colClasses = "character") |>
+      rename_with(tolower) |>
+      mutate(
+        fiscal_number      = normalizar_nif(fiscal_number),
+        card_serial_number = as.character(card_serial_number)
+      ) |>
+      filter(!is.na(fiscal_number), nzchar(trimws(card_serial_number))) |>
+      distinct(card_serial_number, .keep_all = TRUE)
 
-    # Identificar cartões que vão ser preenchidos
-    cartoes_preenchidos <- intersect(dt_main[is.na(fiscal_number), card_serial_number], dt_rep$card_serial_number)
-    n_cartoes <- length(unique(cartoes_preenchidos))
+    # Contar quantos cartões sem NIF vão receber um NIF da repescagem
+    cartoes_na <- dt_main |> filter(is.na(fiscal_number)) |> pull(card_serial_number)
+    n_cartoes  <- length(unique(intersect(cartoes_na, dt_rep$card_serial_number)))
 
-    # Preencher apenas onde fiscal_number está em falta
+    # Preencher fiscal_number apenas onde está a NA (coalesce: mantém o original se existir)
     n_vazios_antes <- sum(is.na(dt_main$fiscal_number))
-    dt_main[dt_rep, on = .(card_serial_number),
-            fiscal_number := fifelse(is.na(fiscal_number), i.fiscal_number, fiscal_number)]
+    dt_main <- dt_main |>
+      left_join(
+        dt_rep |> select(card_serial_number, fiscal_number_rep = fiscal_number),
+        by = "card_serial_number"
+      ) |>
+      mutate(
+        fiscal_number = coalesce(fiscal_number, fiscal_number_rep)
+      ) |>
+      select(-fiscal_number_rep) |>
+      as.data.table()
     n_recuperados <- n_vazios_antes - sum(is.na(dt_main$fiscal_number))
+
     message(sprintf("  Repescagem de NIF aplicada: %d registos preenchidos (%d cartões únicos)",
                     n_recuperados, n_cartoes))
 
+    # Aplicar a mesma repescagem ao Azambuja, se existir
     if (!is.null(dt_az)) {
-      dt_az[, card_serial_number := as.character(card_serial_number)]
-      dt_az[dt_rep, on = .(card_serial_number),
-            fiscal_number := fifelse(is.na(fiscal_number), i.fiscal_number, fiscal_number)]
+      dt_az <- dt_az |>
+        mutate(card_serial_number = as.character(card_serial_number)) |>
+        left_join(
+          dt_rep |> select(card_serial_number, fiscal_number_rep = fiscal_number),
+          by = "card_serial_number"
+        ) |>
+        mutate(fiscal_number = coalesce(fiscal_number, fiscal_number_rep)) |>
+        select(-fiscal_number_rep) |>
+        as.data.table()
     }
   }
 
@@ -182,21 +197,26 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   #     Esta linha deve ser tratada como Navegante 12 (código 1020).
   mask_crianca <- is.na(dt_main$ticket_operator_code) & is.na(dt_main$ticket_code)
   if (any(mask_crianca)) {
-    dt_main[mask_crianca, `:=`(
-      ticket_operator_code = 31L,
-      ticket_code          = 1020L,
-      ticket_name          = "Navegante 12",
-      price                = 0,
-      price_ticket_base    = 40
-    )]
+    dt_main <- dt_main |>
+      mutate(
+        ticket_operator_code = if_else(mask_crianca, 31L,          ticket_operator_code),
+        ticket_code          = if_else(mask_crianca, 1020L,         ticket_code),
+        ticket_name          = if_else(mask_crianca, "Navegante 12", ticket_name),
+        price                = if_else(mask_crianca, 0,              price),
+        price_ticket_base    = if_else(mask_crianca, 40,             price_ticket_base)
+      ) |>
+      as.data.table()
     message(sprintf("  Perfil crianca corrigido: %d registos", sum(mask_crianca)))
   }
 
   # 5c. Remover registos sem year_dist (dados inválidos)
-  dt_main <- dt_main[!is.na(year_dist)]
+  dt_main <- dt_main |>
+    filter(!is.na(year_dist))
 
   # 5d. Verificar se existem registos de outros meses (aviso apenas)
-  n_outros <- nrow(dt_main[year_dist != ano | month_dist != mes])
+  n_outros <- dt_main |>
+    filter(year_dist != ano | month_dist != mes) |>
+    nrow()
   if (n_outros > 0)
     warning(sprintf("%d registos com ano/mes diferente de %d/%02d", n_outros, ano, mes))
 
@@ -207,10 +227,16 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   #     Corrige datas de nascimento erradas exportadas pelo sistema ITS.
   f_dn_corr <- file.path(paths$auxiliar, "data_nascimento_correct.csv")
   if (file.exists(f_dn_corr)) {
-    dt_dn <- fread(f_dn_corr, sep = ";", colClasses = "character")
-    dt_dn[, dn_corrigida := parse_date_safe(dn_corrigida)]
-    dt_dn <- dt_dn[!is.na(dn_corrigida)]  # ignorar linhas sem correção
-    dt_main[dt_dn, on = .(card_serial_number), birth_date := i.dn_corrigida]
+    dt_dn <- fread(f_dn_corr, sep = ";", colClasses = "character") |>
+      mutate(dn_corrigida = parse_date_safe(dn_corrigida)) |>
+      filter(!is.na(dn_corrigida)) |>
+      distinct(card_serial_number, .keep_all = TRUE)    # garante chave única para o join
+
+    dt_main <- dt_main |>
+      left_join(dt_dn |> select(card_serial_number, dn_corrigida), by = "card_serial_number") |>
+      mutate(birth_date = coalesce(dn_corrigida, birth_date)) |>
+      select(-dn_corrigida) |>
+      as.data.table()
     message(sprintf("  Correcoes de data de nascimento aplicadas: %d registos", nrow(dt_dn)))
   }
 
@@ -220,34 +246,48 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   #     pois NIFs errados estão muitas vezes associados a datas de nascimento erradas.
   f_nif_corr <- file.path(paths$auxiliar, "nif_correct.csv")
   if (file.exists(f_nif_corr)) {
-    dt_nif <- fread(f_nif_corr, sep = ";", colClasses = "character")
-    dt_nif[, fiscal_number   := normalizar_nif(fiscal_number)]
-    dt_nif[, birth_date_corr := parse_date_safe(birth_date)]
+    dt_nif <- fread(f_nif_corr, sep = ";", colClasses = "character") |>
+      mutate(
+        fiscal_number   = normalizar_nif(fiscal_number),
+        birth_date_corr = parse_date_safe(birth_date)
+      )
 
-    # Aplicar NIF corrigido
-    dt_nif_nif <- dt_nif[!is.na(fiscal_number)]
-    if (nrow(dt_nif_nif) > 0)
-      dt_main[dt_nif_nif, on = .(card_serial_number), fiscal_number := i.fiscal_number]
+    # Aplicar NIF e data de nascimento corrigidos num único left_join
+    # (coalesce: o valor corrigido substitui o original apenas quando existe)
+    dt_nif_join <- dt_nif |>
+      filter(!is.na(fiscal_number) | !is.na(birth_date_corr)) |>
+      distinct(card_serial_number, .keep_all = TRUE) |>   # garante chave única para o join
+      select(card_serial_number, fiscal_number_corr = fiscal_number, birth_date_corr)
 
-    # Aplicar data de nascimento corrigida (quando presente no ficheiro nif_correct)
-    dt_nif_dn <- dt_nif[!is.na(birth_date_corr)]
-    if (nrow(dt_nif_dn) > 0)
-      dt_main[dt_nif_dn, on = .(card_serial_number), birth_date := i.birth_date_corr]
+    n_nif_corr <- dt_nif |> filter(!is.na(fiscal_number)) |> nrow()
 
-    message(sprintf("  Correcoes de NIF aplicadas: %d registos", nrow(dt_nif_nif)))
+    dt_main <- dt_main |>
+      left_join(dt_nif_join, by = "card_serial_number") |>
+      mutate(
+        fiscal_number = coalesce(fiscal_number_corr, fiscal_number),
+        birth_date    = coalesce(birth_date_corr,    birth_date)
+      ) |>
+      select(-fiscal_number_corr, -birth_date_corr) |>
+      as.data.table()
+
+    message(sprintf("  Correcoes de NIF aplicadas: %d registos", n_nif_corr))
   }
 
   # 6c. Recalcular age a partir da birth_date corrigida
   #     Após aplicar nif_correct e data_nascimento_correct, a birth_date pode ter
-  #     mudado (ex: 2024-10-01 -> 2004-12-26) mas a coluna age continua com o
-  #     valor original exportado pelo ITS. Recalculamos age para todos os registos
-  #     onde birth_date está preenchida, usando o critério do sistema ITS:
-  #     diferença em anos completos entre birth_date e o 1º dia do mês de referência.
+  #     mudado mas a coluna age continua com o valor original do ITS.
+  #     Recalculamos age para todos os registos onde birth_date está preenchida,
+  #     usando o critério do ITS: diferença em anos completos até ao 1º do mês de referência.
   ref_date <- as.Date(sprintf("%d-%02d-01", ano, mes))
-  dt_main[!is.na(birth_date),
-          age := as.integer(
-            floor(as.numeric(difftime(ref_date, birth_date, units = "days")) / 365.25)
-          )]
+  dt_main <- dt_main |>
+    mutate(
+      age = if_else(
+        !is.na(birth_date),
+        as.integer(floor(as.numeric(difftime(ref_date, birth_date, units = "days")) / 365.25)),
+        age
+      )
+    ) |>
+    as.data.table()
   message("  Idade recalculada a partir da birth_date corrigida.")
 
   # 6d. Correcao pontual da idade para casos limite (mes de nascimento = mes de referencia)
@@ -261,9 +301,12 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   #
   #     Regra 2 — limite inferior: se age == 3 E nasceu no mes de referencia,
   #       a pessoa ja fez 4 anos neste mes -> corrigir para age = 4.
-
-  dt_main[age == 25L & lubridate::month(birth_date) == mes, age := 24L]
-  dt_main[age == 3L  & lubridate::month(birth_date) == mes, age := 4L]
+  dt_main <- dt_main |>
+    mutate(
+      age = if_else(age == 25L & lubridate::month(birth_date) == mes, 24L, age),
+      age = if_else(age == 3L  & lubridate::month(birth_date) == mes, 4L,  age)
+    ) |>
+    as.data.table()
 
   message(sprintf("  Total de registos limpos: %d", nrow(dt_main)))
 

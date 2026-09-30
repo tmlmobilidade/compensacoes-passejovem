@@ -81,10 +81,10 @@ agregar_grupo <- function(ticket_operator_code, ticket_code, ticket_name,
   nome_dist <- calc_nome_dist(ticket_name_new)
 
   # Número total de validações (soma do grupo + eventual Azambuja — juntado depois)
-  nv  <- sum(count_val)
+  nv      <- sum(count_val)
   ptb_num <- as.numeric(ptb_new)
 
-  # Compensação AML
+  # Aplicar regra de compensação AML
   comp <- if (nv < THRESHOLD_VAL) PCT_VAL * ptb_num * nv else ptb_num
 
   list(
@@ -118,36 +118,37 @@ agregar_por_grupo <- function(dt, por = c("fiscal", "card")) {
   por <- match.arg(por)
   key <- if (por == "fiscal") "fiscal_number" else "card_serial_number"
 
-  # Separar registos únicos (um bilhete) de múltiplos (vários bilhetes)
+  # Contar quantos bilhetes distintos tem cada NIF/cartão
   contagens   <- dt[, .N, by = c(key)]
-  keys_single <- contagens[N == 1L][[key]]
-  keys_multi  <- contagens[N  > 1L][[key]]
+  keys_single <- contagens[N == 1L][[key]]   # apenas 1 bilhete (~95% dos casos)
+  keys_multi  <- contagens[N  > 1L][[key]]   # vários bilhetes (~5% dos casos)
 
   # ── Casos simples: apenas 1 bilhete por pessoa (≈95% dos dados) ───────────
   # Processado de forma vectorizada, sem loops
   dt_single <- dt[get(key) %in% keys_single]
 
   has_comp_single <- dt_single$ticket_code %in% CODES_COMP
+  # Se for complemento sozinho: preço base é sempre 60; senão usa o valor da coluna
   ptb_single      <- fifelse(has_comp_single, 60, dt_single$price_ticket_base)
   ptb_str_single  <- fifelse(has_comp_single, "60", as.character(dt_single$price_ticket_base))
   nv_single       <- dt_single$count_val
+  # Aplicar regra de compensação AML a cada linha individual
   comp_single     <- fifelse(nv_single < THRESHOLD_VAL,
                              PCT_VAL * ptb_single * nv_single,
                              ptb_single)
 
-  # Para comNIF: bilhete complemento do operador 31 tem código/nome especial
   ops_single   <- as.character(dt_single$ticket_operator_code)
   codes_single <- dt_single$ticket_code
   names_single <- dt_single$ticket_name
 
   if (por == "fiscal") {
+    # comNIF: bilhete complemento do operador 31 tem código/nome especial consoante a idade
     e_comp_31 <- dt_single$ticket_operator_code == 31L & has_comp_single
+
+    # Primeiro assume código 6180 (< 19 anos / 418); depois corrige para 6181 se sub23
     tc_new <- fifelse(e_comp_31,
-                      fifelse(dt_single$age < 19L,
-                              paste0("6180_", codes_single),
-                              paste0("6180_", codes_single)),
+                      paste0("6180_", codes_single),
                       as.character(codes_single))
-    # Corrigir: sub23 usa 6181
     tc_new <- fifelse(e_comp_31 & dt_single$age >= 19L,
                       paste0("6181_", codes_single), tc_new)
 
@@ -157,12 +158,15 @@ agregar_por_grupo <- function(dt, por = c("fiscal", "card")) {
                               paste0("Navegante Metropolitano sub23 Gratuito+", names_single)),
                       names_single)
   } else {
+    # semNIF: sem lógica especial de complemento
     tc_new <- as.character(codes_single)
     tn_new <- names_single
   }
 
+  # Construir data.table de resultado para os casos simples
   res_single <- data.table(
     am                       = "AML",
+    # Emissor deduzido do código de operador
     emissor                  = fifelse(dt_single$ticket_operator_code == 31L, "AT AML",
                                fifelse(dt_single$ticket_operator_code == 21L, "AT Cascais",
                                fifelse(dt_single$ticket_operator_code == 16L, "MTS", ""))),
@@ -181,6 +185,7 @@ agregar_por_grupo <- function(dt, por = c("fiscal", "card")) {
     birth_date_new           = dt_single$birth_date
   )
 
+  # Adicionar coluna identificadora (NIF para comNIF, cartão para semNIF)
   if (por == "fiscal") {
     res_single[, fiscal_number        := dt_single$fiscal_number]
     res_single[, cardserialnumber_new := dt_single$card_serial_number]
@@ -190,7 +195,7 @@ agregar_por_grupo <- function(dt, por = c("fiscal", "card")) {
 
 
   # ── Casos com múltiplos bilhetes (≈5% dos dados) ──────────────────────────
-  # Processado em grupo — mais lento mas necessário para lógica correcta
+  # Processado por grupo — mais lento mas necessário para lógica correcta
   dt_multi <- dt[get(key) %in% keys_multi]
 
   if (nrow(dt_multi) > 0) {
@@ -281,46 +286,73 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
   # ── Filtrar: apenas passes gratuitos do mês ───────────────────────────────
   # Excluir: price != 0, price_ticket_base ausente, ou sem validações
-  dt_mes <- dt_main[year_dist == ano & month_dist == mes &
-                    price == 0 &
-                    !is.na(price_ticket_base) &
-                    count_val > 0L]
-  # Garantir que NIF vazio está como NA
-  dt_mes[fiscal_number %in% c("", "0", "NA"), fiscal_number := NA_character_]
+  dt_mes <- dt_main |>
+    filter(
+      year_dist  == ano,
+      month_dist == mes,
+      price      == 0,
+      !is.na(price_ticket_base),
+      count_val  > 0L
+    )
+
+  # Garantir que NIF vazio está como NA (normalização extra por precaução)
+  dt_mes <- dt_mes |>
+    mutate(fiscal_number = if_else(fiscal_number %in% c("", "0", "NA"),
+                                   NA_character_, fiscal_number)) |>
+    as.data.table()
   message(sprintf("  Passes gratis com validacoes: %d", nrow(dt_mes)))
 
 
   # ── Agregar Azambuja por NIF e por cartão ─────────────────────────────────
-  # O Azambuja dá validações adicionais a quem tem o complemento
+  # O Azambuja dá validações adicionais a quem tem o complemento.
+  # Separamos por NIF (para juntar ao comNIF) e por cartão (para semNIF).
   if (!is.null(dt_az)) {
-    dt_az[fiscal_number %in% c("", "0", "NA"), fiscal_number := NA_character_]
+    dt_az <- dt_az |>
+      mutate(fiscal_number = if_else(fiscal_number %in% c("", "0", "NA"),
+                                     NA_character_, fiscal_number)) |>
+      as.data.table()
 
-    az_fiscal <- dt_az[!is.na(fiscal_number),
-                        .(count_val_az = sum(count_val), ticket_code_az = first(ticket_code)),
-                        by = .(fiscal_number)]
+    # Azambuja com NIF identificado -> vai juntar-se ao comNIF
+    az_fiscal <- dt_az |>
+      filter(!is.na(fiscal_number)) |>
+      group_by(fiscal_number) |>
+      summarise(
+        count_val_az  = sum(count_val),
+        ticket_code_az = first(ticket_code),
+        .groups = "drop"
+      ) |>
+      as.data.table()
 
-    az_card   <- dt_az[is.na(fiscal_number),
-                        .(count_val_az = sum(count_val), ticket_code_az = first(ticket_code)),
-                        by = .(card_serial_number)]
+    # Azambuja sem NIF -> vai juntar-se ao semNIF por cartão
+    az_card <- dt_az |>
+      filter(is.na(fiscal_number)) |>
+      group_by(card_serial_number) |>
+      summarise(
+        count_val_az   = sum(count_val),
+        ticket_code_az = first(ticket_code),
+        .groups = "drop"
+      ) |>
+      as.data.table()
   } else {
     az_fiscal <- NULL
     az_card   <- NULL
   }
 
- 
+
   # ── ComNIF: agregar por NIF ───────────────────────────────────────────────
   message("  A processar comNIF ...")
-  dt_com_raw <- dt_mes[!is.na(fiscal_number)]
+
+  # Filtrar apenas registos com NIF válido
+  dt_com_raw <- dt_mes |> filter(!is.na(fiscal_number))
   dt_comNIF  <- agregar_por_grupo(dt_com_raw, "fiscal")
- 
-  # remover idades 25 e 3 anos
-  nok_com <- dt_comNIF[age_new == 3L | age_new >= 25L]
-  # dt_comNIF <- dt_comNIF[age_new!=25]
-  # dt_comNIF <- dt_comNIF[age_new!=3]
-  dt_comNIF <- dt_comNIF[age_new != 3L & age_new < 25L]
 
+  # Separar registos NOK (fora da faixa etária elegível) antes de os remover
+  # age_new == 3  -> demasiado novo (< 4 anos)
+  # age_new >= 25 -> demasiado velho (fora do passe jovem)
+  nok_com   <- dt_comNIF |> filter(age_new == 3L | age_new >= 25L)
+  dt_comNIF <- dt_comNIF |> filter(age_new != 3L, age_new < 25L)
 
-  # Juntar validações do Azambuja e recalcular compensação
+  # Juntar validações do Azambuja e recalcular compensação com o total
   if (!is.null(az_fiscal) && nrow(az_fiscal) > 0) {
     dt_comNIF[az_fiscal, on = .(fiscal_number), `:=`(
       numval      = numval + i.count_val_az,
@@ -333,26 +365,28 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     )]
   }
 
-  # Seleccionar colunas finais na ordem correcta
+  # Seleccionar e ordenar as colunas finais do comNIF
   cols_comNIF <- c("am", "emissor", "year_dist", "month_dist", "fiscal_number",
                    "nome_imt", "price_ticket_base_new", "numval", "compensacao",
                    "ticket_operator_code_new", "ticket_code_new", "ticket_name_new",
                    "compaz", "nome_dist", "age_new", "birth_date_new",
                    "cardserialnumber_new")
-  dt_comNIF <- dt_comNIF[, ..cols_comNIF]
+  dt_comNIF <- dt_comNIF |> select(all_of(cols_comNIF)) |> as.data.table()
   message(sprintf("  comNIF: %d registos, compensacao total: %.2f EUR",
                   nrow(dt_comNIF), sum(dt_comNIF$compensacao, na.rm = TRUE)))
 
 
   # ── SemNIF: agregar por cartão ────────────────────────────────────────────
   message("  A processar semNIF ...")
-  dt_sem_raw <- dt_mes[is.na(fiscal_number)]
+
+  # Filtrar apenas registos sem NIF
+  dt_sem_raw <- dt_mes |> filter(is.na(fiscal_number))
   dt_semNIF  <- agregar_por_grupo(dt_sem_raw, "card")
- 
-  # remover idades 3 e 25 anos
-  nok_sem <- dt_semNIF[age_new == 3L | age_new >= 25L]
-  dt_semNIF <- dt_semNIF[age_new != 3L & age_new < 25L]
-  
+
+  # Separar registos NOK (fora da faixa etária elegível)
+  nok_sem   <- dt_semNIF |> filter(age_new == 3L | age_new >= 25L)
+  dt_semNIF <- dt_semNIF |> filter(age_new != 3L, age_new < 25L)
+
   # Juntar validações do Azambuja e recalcular compensação
   if (!is.null(az_card) && nrow(az_card) > 0) {
     dt_semNIF[az_card, on = .(card_serial_number), `:=`(
@@ -366,50 +400,60 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     )]
   }
 
+  # Seleccionar e ordenar as colunas finais do semNIF
   cols_semNIF <- c("am", "emissor", "year_dist", "month_dist", "card_serial_number",
                    "nome_imt", "price_ticket_base_new", "numval", "compensacao",
                    "ticket_operator_code_new", "ticket_code_new", "ticket_name_new",
                    "compaz", "nome_dist", "age_new", "birth_date_new")
-  dt_semNIF <- dt_semNIF[, ..cols_semNIF]
+  dt_semNIF <- dt_semNIF |> select(all_of(cols_semNIF)) |> as.data.table()
   message(sprintf("  semNIF: %d registos, compensacao total: %.2f EUR",
                   nrow(dt_semNIF), sum(dt_semNIF$compensacao, na.rm = TRUE)))
 
 
   # ── Lista de registos a verificar ────────────────────────────────────────
-  # Exporta pessoas com dados suspeitos para confirmar manualmente
-  dt_verificar <- rbindlist(list(
-    dt_mes[is.na(fiscal_number), .(
-      motivo             = "Sem NIF",
-      card_serial_number,
-      fiscal_number      = NA_character_,
-      birth_date,
-      age,
-      ticket_name
-    )],
-    dt_mes[!is.na(fiscal_number) & age > 23L, .(
-      motivo             = "Idade > 23",
-      card_serial_number,
-      fiscal_number,
-      birth_date,
-      age,
-      ticket_name
-    )]
-  ), use.names = TRUE)
+  # Exporta pessoas com dados suspeitos para confirmar manualmente:
+  #   - "Sem NIF": não foi possível identificar o titular
+  #   - "Idade > 23": titular perto do limite de idade (24 ainda é elegível mas merece atenção)
+  dt_verificar <- bind_rows(
+    dt_mes |>
+      filter(is.na(fiscal_number)) |>
+      transmute(
+        motivo             = "Sem NIF",
+        card_serial_number,
+        fiscal_number      = NA_character_,
+        birth_date,
+        age,
+        ticket_name
+      ),
+    dt_mes |>
+      filter(!is.na(fiscal_number), age > 23L) |>
+      transmute(
+        motivo = "Idade > 23",
+        card_serial_number,
+        fiscal_number,
+        birth_date,
+        age,
+        ticket_name
+      )
+  ) |>
+    as.data.table()
 
   message(sprintf("  A verificar: %d registos suspeitos", nrow(dt_verificar)))
 
- # ── Registos NOK (idade incompatível após correcção) ─────────────────────
+
+  # ── Registos NOK (idade incompatível após correcção) ─────────────────────
   # Após a correcção pontual em 01_preparar_dados.R (regras dos meses limite),
   # ainda podem restar registos com age_new == 3 (demasiado novo) ou age_new >= 25
   # (demasiado velho). Estes são excluídos da compensação e guardados em age_nok.csv.
- 
-  dt_age_nok <- rbindlist(
-    list(cbind(nok_com, tipo = "comNIF"), cbind(nok_sem, tipo = "semNIF")),
-    use.names = TRUE, fill = TRUE
-  )
+  dt_age_nok <- bind_rows(
+    nok_com |> mutate(tipo = "comNIF"),
+    nok_sem |> mutate(tipo = "semNIF")
+  ) |>
+    as.data.table()
 
   message(sprintf("  NOK (age 3 ou >=25): %d comNIF + %d semNIF = %d registos",
                   nrow(nok_com), nrow(nok_sem), nrow(dt_age_nok)))
+
 
   # ── Gravar ficheiros de output ────────────────────────────────────────────
   out_com  <- file.path(paths$output, output_filename(ano, mes, "comNIF"))

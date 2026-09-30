@@ -10,12 +10,13 @@
 # -----------------------------------------------------------------------------
 # Pacotes
 # -----------------------------------------------------------------------------
-pkgs <- c("data.table", "readxl", "openxlsx", "lubridate", "stringr")
+pkgs <- c("data.table", "dplyr", "readxl", "openxlsx", "lubridate", "stringr")
 for (p in pkgs) {
   if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
 }
 suppressPackageStartupMessages({
-  library(data.table)   # leitura rápida e manipulação de tabelas grandes
+  library(data.table)   # leitura rápida (fread/fwrite) e tabelas grandes
+  library(dplyr)        # manipulação de dados com verbos legíveis
   library(readxl)       # leitura de ficheiros Excel (.xlsx)
   library(openxlsx)     # escrita de ficheiros Excel com formatação
   library(lubridate)    # manipulação de datas
@@ -156,38 +157,41 @@ read_passe_jovem <- function(path) {
     )
   } else if (ext %in% c("xlsx", "xls")) {
     # Leitura do XLSX (formato julho 2026+)
-    df <- read_excel(path, sheet = 1)
-    dt <- as.data.table(df)
+    dt <- as.data.table(read_excel(path, sheet = 1))
     # Manter colunas extra de documento (doc_number, doc_type) se existirem
   } else {
     stop("Formato de ficheiro nao suportado: ", path)
   }
 
-  # Normalizar nomes das colunas para lowercase
-  setnames(dt, tolower(names(dt)))
-
-  # Remover coluna ticket_code_base se existir (não usada)
-  if ("ticket_code_base" %in% names(dt)) dt[, ticket_code_base := NULL]
-  if ("v_delivered"      %in% names(dt)) dt[, v_delivered      := NULL]
-
-  # Converter tipos
-  # suppressWarnings: XLSX pode ter células não-numéricas (erros Excel, brancos)
-  # que geram avisos de coerção inofensivos — os NAs resultantes são filtrados adiante.
-  dt[, birth_date        := parse_date_safe(as.character(birth_date))]
-  dt[, fiscal_number     := normalizar_nif(fiscal_number)]
-  dt[, price             := suppressWarnings(as.numeric(price))]
-  dt[, price_ticket_base := suppressWarnings(as.numeric(price_ticket_base))]
-
-  # Renomear colunas de documento se existirem (formato julho 2026+)
-  if ("id_doc_number"      %in% names(dt)) setnames(dt, "id_doc_number",      "doc_number")
-  if ("id_doc_number_desc" %in% names(dt)) setnames(dt, "id_doc_number_desc", "doc_type")
-
-  dt
+  dt |>
+    # Normalizar nomes das colunas para lowercase
+    rename_with(tolower) |>
+    # Remover colunas não usadas (silencioso se não existirem)
+    select(-any_of(c("ticket_code_base", "v_delivered"))) |>
+    mutate(
+      # Converter tipos — suppressWarnings porque XLSX pode ter células não-numéricas
+      # (erros Excel, brancos) que geram avisos de coerção; os NAs são filtrados adiante
+      year_dist            = suppressWarnings(as.integer(year_dist)),
+      month_dist           = suppressWarnings(as.integer(month_dist)),
+      age                  = suppressWarnings(as.integer(age)),
+      ticket_operator_code = suppressWarnings(as.integer(ticket_operator_code)),
+      ticket_code          = suppressWarnings(as.integer(ticket_code)),
+      count_val            = suppressWarnings(as.integer(count_val)),
+      card_serial_number   = as.character(card_serial_number),
+      ticket_name          = as.character(ticket_name),
+      birth_date           = parse_date_safe(as.character(birth_date)),
+      fiscal_number        = normalizar_nif(fiscal_number),
+      price                = suppressWarnings(as.numeric(price)),
+      price_ticket_base    = suppressWarnings(as.numeric(price_ticket_base))
+    ) |>
+    # Renomear colunas de documento se existirem (formato julho 2026+)
+    rename(any_of(c(doc_number = "id_doc_number", doc_type = "id_doc_number_desc"))) |>
+    as.data.table()
 }
 
 #' Lê o ficheiro de Complemento Azambuja (CSV com mesmo formato base)
 read_complemento_azambuja <- function(path) {
-  dt <- fread(path,
+  fread(path,
     sep = ";", dec = ",",
     encoding = "UTF-8",
     colClasses = list(
@@ -196,10 +200,10 @@ read_complemento_azambuja <- function(path) {
     ),
     select = c("YEAR_DIST", "MONTH_DIST", "CARD_SERIAL_NUMBER",
                "FISCAL_NUMBER", "TICKET_CODE", "COUNT_VAL")
-  )
-  setnames(dt, tolower(names(dt)))
-  dt[, fiscal_number := normalizar_nif(fiscal_number)]
-  dt
+  ) |>
+    rename_with(tolower) |>
+    mutate(fiscal_number = normalizar_nif(fiscal_number)) |>
+    as.data.table()
 }
 
 #' Lê o Complemento Azambuja a partir de uma folha de um ficheiro XLSX.
@@ -209,21 +213,23 @@ read_complemento_azambuja <- function(path) {
 #' @param path  Caminho para o ficheiro XLSX
 #' @param sheet Nome ou índice da folha (default: 2)
 read_complemento_azambuja_xlsx <- function(path, sheet = 2) {
-  df <- read_excel(path, sheet = sheet)
-  dt <- as.data.table(df)
-  setnames(dt, tolower(names(dt)))
 
-  # Manter só as colunas necessárias
+  # Colunas necessárias (any_of ignora silenciosamente as que não existam)
   cols_needed <- c("year_dist", "month_dist", "card_serial_number",
                    "fiscal_number", "ticket_code", "count_val")
-  cols_present <- intersect(cols_needed, names(dt))
-  dt <- dt[, ..cols_present]
 
-  dt[, card_serial_number := as.character(card_serial_number)]
-  dt[, fiscal_number      := normalizar_nif(as.character(fiscal_number))]
-  dt[, ticket_code        := suppressWarnings(as.integer(ticket_code))]
-  dt[, count_val          := suppressWarnings(as.integer(count_val))]
-  dt
+  read_excel(path, sheet = sheet) |>
+    rename_with(tolower) |>
+    select(any_of(cols_needed)) |>
+    mutate(
+      year_dist          = suppressWarnings(as.integer(year_dist)),
+      month_dist         = suppressWarnings(as.integer(month_dist)),
+      card_serial_number = as.character(card_serial_number),
+      fiscal_number      = normalizar_nif(as.character(fiscal_number)),
+      ticket_code        = suppressWarnings(as.integer(ticket_code)),
+      count_val          = suppressWarnings(as.integer(count_val))
+    ) |>
+    as.data.table()
 }
 
 
@@ -234,28 +240,33 @@ read_complemento_azambuja_xlsx <- function(path, sheet = 2) {
 #' @param ano  Ano de referência
 #' @param mes  Mês de referência
 read_cascais <- function(path, ano, mes) {
-  df <- read_excel(path)
-  dt <- as.data.table(df)
-  setnames(dt, tolower(names(dt)))
 
-  # Normalizar campos essenciais
-  dt[, year_dist            := as.integer(ano)]
-  dt[, month_dist           := as.integer(mes)]
-  dt[, ticket_operator_code := 21L]              # código do operador Cascais
-  dt[, price                := 0]                # sempre gratuito
-  dt[, price_ticket_base    := PRECO_CASCAIS]    # preço fixo (ficheiro vem a 0)
-  dt[, birth_date           := as.Date(birth_date)]
-  dt[, fiscal_number        := normalizar_nif(as.character(fiscal_number))]
-
-  # Manter só as colunas que existem no main
+  # Colunas a manter (na ordem do ficheiro principal)
   cols_base <- c("year_dist", "month_dist", "card_serial_number", "age",
                  "fiscal_number", "ticket_operator_code", "ticket_code",
                  "ticket_name", "price", "price_ticket_base", "count_val",
                  "birth_date")
-  cols_existentes <- intersect(cols_base, names(dt))
-  dt <- dt[, ..cols_existentes]
 
-  dt
+  read_excel(path) |>
+    # Normalizar nomes das colunas para lowercase
+    rename_with(tolower) |>
+    mutate(
+      year_dist            = as.integer(ano),
+      month_dist           = as.integer(mes),
+      card_serial_number   = as.character(card_serial_number),
+      age                  = suppressWarnings(as.integer(age)),
+      ticket_operator_code = 21L,                              # código do operador Cascais
+      ticket_code          = suppressWarnings(as.integer(ticket_code)),
+      ticket_name          = as.character(ticket_name),
+      price                = 0,                                # sempre gratuito
+      price_ticket_base    = PRECO_CASCAIS,                    # preço fixo (ficheiro vem a 0)
+      count_val            = suppressWarnings(as.integer(count_val)),
+      birth_date           = as.Date(birth_date),
+      fiscal_number        = normalizar_nif(as.character(fiscal_number))
+    ) |>
+    # Manter só as colunas que existem no ficheiro principal (ignora extras silenciosamente)
+    select(any_of(cols_base)) |>
+    as.data.table()
 }
 
 
@@ -263,11 +274,11 @@ read_cascais <- function(path, ano, mes) {
 # Funções de limpeza
 # -----------------------------------------------------------------------------
 
-#' Normaliza NIF: "" e "0" passam a NA
+#' Normaliza NIF: "", "0" e "NA" passam a NA
 normalizar_nif <- function(x) {
   x <- as.character(x)
-  x[x %in% c("", "0", "NA")] <- NA_character_
-  x
+  # Substituir valores inválidos por NA (if_else preserva o tipo character)
+  if_else(x %in% c("", "0", "NA"), NA_character_, x)
 }
 
 #' Parse de datas em vários formatos (DD/MM/YYYY ou YYYY-MM-DD)
@@ -283,7 +294,7 @@ parse_date_safe <- function(x) {
 #' Estes bilhetes não são elegíveis para compensação.
 remove_lxbt <- function(dt) {
   # NA em ticket_name são mantidos (perfil de criança sem bilhete explícito)
-  dt[is.na(ticket_name) | !str_starts(ticket_name, "LX-BT")]
+  dt |> filter(is.na(ticket_name) | !str_starts(ticket_name, "LX-BT"))
 }
 
 
@@ -314,7 +325,7 @@ code_prio <- function(c) {
 #' - Com complemento 418/sub23: mantém "Parte + Navegante Complemento 418/sub23"
 #' - Outros: devolve apenas a parte antes do primeiro "+"
 calc_nome_dist <- function(tn) {
-  has_plus <- grepl("+", tn, fixed = TRUE)
+  has_plus  <- grepl("+", tn, fixed = TRUE)
   has_comp_a <- grepl("Navegante Complemento 418/sub23 \\(A\\)", tn)
   has_comp   <- grepl("Navegante Complemento 418/sub23", tn) & !has_comp_a
 

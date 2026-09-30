@@ -37,7 +37,7 @@ code_dir <- tryCatch({
   }
 }, error = function(e) file.path(getwd(), "code"))
 
-# Carregar os 3 scripts do pipeline
+# Carregar os 3 scripts do pipeline (cada um faz source() de 00_config.R internamente)
 source(file.path(code_dir, "01_preparar_dados.R"),        local = TRUE)
 source(file.path(code_dir, "02_calcular_compensacoes.R"), local = TRUE)
 source(file.path(code_dir, "03_exportar_reporte.R"),      local = TRUE)
@@ -56,25 +56,30 @@ run_pipeline <- function(ano, meses = NULL) {
 
   raiz <- here_root()
 
-  # Se não foram especificados meses, detectar automaticamente
+  # Se não foram especificados meses, detectar automaticamente as pastas em data/
   if (is.null(meses)) {
     pasta_data <- file.path(raiz, "data")
-    dirs <- list.dirs(pasta_data, recursive = FALSE, full.names = FALSE)
-    # Formato das pastas: YYYY_MM_mes (ex: "2026_05_maio")
-    dirs_ano <- dirs[grepl(sprintf("^%d_", ano), dirs)]
-    meses <- as.integer(sub(sprintf("^%d_(\\d{2})_.*", ano), "\\1", dirs_ano))
-    meses <- sort(meses[!is.na(meses)])
+
+    # Listar subpastas de data/ com o formato YYYY_MM_mes (ex: "2026_05_maio")
+    meses <- list.dirs(pasta_data, recursive = FALSE, full.names = FALSE) |>
+      # Manter apenas pastas do ano pedido
+      (\(dirs) dirs[grepl(sprintf("^%d_", ano), dirs)])() |>
+      # Extrair o número do mês do nome da pasta (posição 6-7)
+      (\(dirs) as.integer(sub(sprintf("^%d_(\\d{2})_.*", ano), "\\1", dirs)))() |>
+      (\(m) sort(m[!is.na(m)]))()
+
     if (length(meses) == 0)
       stop("Nenhum mes encontrado em data/ para o ano ", ano)
     message("Meses detectados automaticamente: ", paste(meses, collapse = ", "))
   }
 
-  # Processar cada mês
+  # Processar cada mês sequencialmente
   for (mes in meses) {
     message("============================================================")
     message(sprintf(" Ano: %d | Mes: %02d (%s)", ano, mes, MESES_PT_UPPER[mes]))
     message("============================================================")
 
+    # Correr os 3 passos do pipeline; continuar para o próximo mês se houver erro
     tryCatch({
       preparar_dados(ano, mes, raiz)
       calcular_compensacoes(ano, mes, raiz)

@@ -5,9 +5,9 @@ library(tidyverse)
 
 
 julho_comNIF <- read_delim("data/2026_07_julho/output/2026_07_comNIF.csv", 
-                              delim = ";", escape_double = FALSE, trim_ws = TRUE) |> select(-1) # remove row.numbers
+                              delim = ";", escape_double = FALSE, trim_ws = TRUE)
 julho_semNIF <- read_delim("data/2026_07_julho/output/2026_07_semNIF.csv", 
-                              delim = ";", escape_double = FALSE, trim_ws = TRUE) |> select(-1) # remove row.numbers
+                              delim = ";", escape_double = FALSE, trim_ws = TRUE)
 julho_age_nok <- read_delim("data/2026_07_julho/output/2026_07_age_nok.csv", 
                                          delim = ";", escape_double = FALSE, trim_ws = TRUE) |> select(-1) |> filter(!is.na(year_dist))
 
@@ -21,7 +21,7 @@ julho_comNIF_dn24 = julho_comNIF |> filter(age_new >= 24)
 # table(julho_comNIF$ticket_operator_code_new)
 table(julho_comNIF$emissor)
 # AT AML AT Cascais 
-# 404047        559 
+# 404193        559 
 
 table(julho_comNIF$nome_imt)
 # Navegante Metropolitano      Navegante Metropolitano + Complemento                         Viver Cascais 
@@ -39,9 +39,9 @@ sum(julho_comNIF$compensacao) + sum(julho_semNIF$compensacao) #10772756 (TEM DE 
 library(readxl)
 library(tidyverse)
 ANITA_comNIF <- read_excel("Exemplos/2026_07_julho/07_2026_comNIF_AR.xlsx", 
-                           sheet = "07_2026") |> select(-1)
+                           sheet = "07_2026") |> select(-1) # remove row.numbers
 julho_comNIF <- read_delim("data/2026_07_julho/output/2026_07_comNIF.csv", 
-                           delim = ";", escape_double = FALSE, trim_ws = TRUE) |> select(-1) # remove row.numbers
+                           delim = ";", escape_double = FALSE, trim_ws = TRUE) 
 
 # separar os nok
 ANITA_nok = ANITA_comNIF |> filter(`ok/NOK corrigido` != "ok")
@@ -54,9 +54,9 @@ missing = ANITA_comNIF_redux |> filter(!fiscal_number %in% c(julho_comNIF_redux$
 nrow(missing)# 0 
 
 ANITA_semNIF <- read_excel("Exemplos/2026_07_julho/07_2026_semNIF_AR.xlsx", 
-                           sheet = "07_2026") |> select(-1)
+                           sheet = "07_2026") |> select(-1) # remove row.numbers
 julho_semNIF <- read_delim("data/2026_07_julho/output/2026_07_semNIF.csv", 
-                           delim = ";", escape_double = FALSE, trim_ws = TRUE) |> select(-1) # remove row.numbers
+                           delim = ";", escape_double = FALSE, trim_ws = TRUE) 
 # separar os nok
 ANITA_nok = ANITA_nok |> bind_rows(ANITA_semNIF |> filter(`ok/NOK` != "ok"))
 ANITA_semNIF = ANITA_semNIF |> filter(`ok/NOK` == "ok")

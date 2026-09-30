@@ -74,10 +74,12 @@ COLS_SEMNIF <- c(
 #' @param dt   data.table com os dados de comNIF ou semNIF
 #' @param cols vector de nomes de colunas a seleccionar (na ordem do template)
 prep_para_template <- function(dt, cols) {
-  df <- as.data.frame(dt)[, cols]
-  # Formatar data de nascimento como texto (ex: "25/12/2003")
-  df$birth_date_new <- format(as.Date(df$birth_date_new), "%d/%m/%Y")
-  df
+  dt |>
+    as_tibble() |>
+    select(all_of(cols)) |>
+    # Formatar data de nascimento como texto (ex: "25/12/2003")
+    mutate(birth_date_new = format(as.Date(birth_date_new), "%d/%m/%Y")) |>
+    as.data.frame()
 }
 
 #' Preenche as células de cabeçalho do template com Ano, Mês e nome da AT.
@@ -187,26 +189,32 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
 
 
   # ── Preencher resumo ──────────────────────────────────────────────────────
-  # Total por emissor (comNIF + semNIF combinados)
-  resumo_com <- dt_comNIF[, .(
-    am           = first(am),
-    emissor,
-    ano          = ano,
-    mes          = mes,
-    compensacao  = sum(compensacao, na.rm = TRUE),
-    tipo         = "comNIF"
-  ), by = .(emissor)][, emissor := NULL]
+  # Total de compensação por emissor (comNIF + semNIF combinados)
+  resumo_com <- dt_comNIF |>
+    group_by(emissor) |>
+    summarise(
+      am          = first(am),
+      ano         = ano,
+      mes         = mes,
+      compensacao = sum(compensacao, na.rm = TRUE),
+      tipo        = "comNIF",
+      .groups = "drop"
+    ) |>
+    select(-emissor)   # o template não tem coluna "emissor" no resumo
 
-  resumo_sem <- dt_semNIF[, .(
-    am           = first(am),
-    emissor,
-    ano          = ano,
-    mes          = mes,
-    compensacao  = sum(compensacao, na.rm = TRUE),
-    tipo         = "semNIF"
-  ), by = .(emissor)][, emissor := NULL]
+  resumo_sem <- dt_semNIF |>
+    group_by(emissor) |>
+    summarise(
+      am          = first(am),
+      ano         = ano,
+      mes         = mes,
+      compensacao = sum(compensacao, na.rm = TRUE),
+      tipo        = "semNIF",
+      .groups = "drop"
+    ) |>
+    select(-emissor)
 
-  df_resumo <- as.data.frame(rbindlist(list(resumo_com, resumo_sem)))
+  df_resumo <- bind_rows(resumo_com, resumo_sem) |> as.data.frame()
 
   writeData(wb, sheet_resumo, df_resumo,
             startRow = TEMPLATE_DATA_START_ROW, startCol = 1,
