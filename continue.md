@@ -1,8 +1,9 @@
-The output .xlsx is not correct, the values do not match the columns. See compensação, for instance, is not in the right place.
-The july should be the reference to use this xlsx v2 template, as it requires to add the Tipo de Documento,	N.º DO DOCUMENTO and Data de nascimento, in the abscence of NIF. These values are only in the new PasseJovem_ValidaçõesLimpas.xlsx, in both sheets, as ID_DOC_NUMBER and ID_DOC_NUMBER_DESC
-So, for the previous months, those fields in the output xlsx should be empty.
-
-* The "Categoria" variable should be create as:
-  If passe nome nas "Complemento", -> "B", otherwise "A".
-
-* [ ]  update the procedure.md
+- [x] O output .xlsx de Julho 2026 foi corrigido com o template v2:
+  - Adicionadas as colunas "Tipo de Documento", "N.º DO DOCUMENTO" e "Data de nascimento" para os casos sem NIF.
+  - Alinhamento de colunas corrigido (incluindo coluna 10/11 "Estimativa" e coluna de Compensação).
+  - Variável "Categoria" definida: "B" se o nome do passe contém "Complemento", "A" caso contrário.
+- [x] Processamento de semNIF enriquecido com `doc_type` e `doc_number`:
+  - Agrupamento por documento quando o mesmo titular possui múltiplos cartões (ex: passaportes PA515908 e U0253488), somando validações e combinando tipos de bilhete.
+  - Verificação de anomalias (cartões de cidadão com zeros/noves/repetidos/< 6 dígitos, e documentos com datas de nascimento divergentes como 00000, 000000 e PCO39594).
+  - Exportação dedicada dos casos suspeitos para `<ano>_<mm>_documentos_estranhos.csv`.
+- [ ] Atualizar procedure.md quando aplicável.

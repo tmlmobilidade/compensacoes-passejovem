@@ -114,6 +114,15 @@ comparacao_group_semNIF = ANITA_semNIF_group |>
          dif_validacoes = validacoes_rosa - validacoes_original,
          dif_compensacao = compensacao_rosa - compensacao_original) |> 
   filter(dif_passes != 0 | dif_validacoes != 0 | dif_compensacao != 0)
-nrow(comparacao_group_semNIF)#0
+nrow(comparacao_group_semNIF)
+# Diferenças esperadas face à Anita (2 titulares com 2 cartões fundidos pelo mesmo documento):
+# - PA515908 (Passaporte): 2 cartões (12 + 28 = 40 validações, 40 € compensação)
+# - U0253488 (Passaporte): 2 cartões (1 + 56 = 57 validações, 40 € compensação)
+# Total de passes semNIF passa de 2207 para 2205; compensação passa de 46772 € para 46746 €.
 
-# Está tudo certo!
+# Documentos estranhos e divergências detetadas ----------------------------
+julho_docs_estranhos <- read_delim("data/2026_07_julho/output/2026_07_documentos_estranhos.csv",
+                                   delim = ";", escape_double = FALSE, trim_ws = TRUE)
+table(julho_docs_estranhos$motivo)
+# Casos como 00000, 000000, PCO39594 e 85205 mantêm-se isolados por cartão
+# e não foram fundidos erroneamente entre diferentes pessoas.

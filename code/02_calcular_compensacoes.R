@@ -267,7 +267,8 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
   dt_main <- fread(f_limpos, sep = ";", dec = ".",
     colClasses = list(
-      character = c("card_serial_number", "fiscal_number", "ticket_name"),
+      character = c("card_serial_number", "fiscal_number", "ticket_name",
+                    "doc_number", "doc_type"),
       integer   = c("year_dist", "month_dist", "age",
                     "ticket_operator_code", "ticket_code", "count_val"),
       numeric   = c("price", "price_ticket_base"),
@@ -376,36 +377,246 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
                   nrow(dt_comNIF), sum(dt_comNIF$compensacao, na.rm = TRUE)))
 
 
-  # ── SemNIF: agregar por cartão ────────────────────────────────────────────
+  # ── SemNIF: processar ─────────────────────────────────────────────────────
   message("  A processar semNIF ...")
 
   # Filtrar apenas registos sem NIF
   dt_sem_raw <- dt_mes |> filter(is.na(fiscal_number))
-  dt_semNIF  <- agregar_por_grupo(dt_sem_raw, "card")
 
-  # Separar registos NOK (fora da faixa etária elegível)
-  nok_sem   <- dt_semNIF |> filter(age_new == 3L | age_new >= 25L)
-  dt_semNIF <- dt_semNIF |> filter(age_new != 3L, age_new < 25L)
+  # Verificar se existem dados de documento (julho 2026 em diante)
+  tem_docs <- "doc_number" %in% names(dt_sem_raw) && any(!is.na(dt_sem_raw$doc_number))
 
-  # Juntar validações do Azambuja e recalcular compensação
-  if (!is.null(az_card) && nrow(az_card) > 0) {
-    dt_semNIF[az_card, on = .(card_serial_number), `:=`(
-      numval      = numval + i.count_val_az,
-      compaz      = i.ticket_code_az,
-      compensacao = {
-        nv_total <- numval + i.count_val_az
-        ptb      <- as.numeric(price_ticket_base_new)
-        fifelse(nv_total < THRESHOLD_VAL, PCT_VAL * ptb * nv_total, ptb)
-      }
-    )]
+  if (tem_docs) {
+    # ── Validação e tratamento de documentos (julho 2026+) ───────────────────
+    # 1. Identificar documentos com múltiplas datas de nascimento distintas
+    docs_multi_bd <- dt_sem_raw |>
+      filter(!is.na(doc_number) & nzchar(trimws(doc_number))) |>
+      group_by(doc_number) |>
+      filter(n_distinct(birth_date) > 1) |>
+      pull(doc_number) |>
+      unique()
+
+    # 2. Classificar anomalias nos números de documento com dplyr
+    dt_sem_raw <- dt_sem_raw |>
+      mutate(
+        doc_clean      = trimws(as.character(doc_number)),
+        doc_type_clean = toupper(trimws(as.character(doc_type))),
+        is_cc          = doc_type_clean == "CITIZEN_CARD",
+        motivo_doc     = case_when(
+          doc_number %in% docs_multi_bd & grepl("^0+$", doc_clean) ~ "Cartao de Cidadao com apenas zeros e datas de nascimento distintas",
+          doc_number %in% docs_multi_bd ~ "Documento com datas de nascimento distintas",
+          is_cc & grepl("^0+$", doc_clean) ~ "Cartao de Cidadao com apenas zeros",
+          is_cc & grepl("^9+$", doc_clean) ~ "Cartao de Cidadao com apenas noves",
+          is_cc & grepl("^(.)\\1+$", doc_clean) ~ "Cartao de Cidadao com digitos repetidos",
+          is_cc & nchar(gsub("\\s+", "", doc_clean)) < 6 ~ "Cartao de Cidadao com numero invulgar (< 6 digitos)",
+          !is_cc & grepl("^0+$", doc_clean) ~ "Documento com apenas zeros",
+          !is_cc & grepl("^9+$", doc_clean) ~ "Documento com apenas noves",
+          tolower(doc_clean) %in% c("test", "teste", "null", "none", "na", "xxx", "12345", "123456") ~ "Documento com valor invalido",
+          TRUE ~ NA_character_
+        )
+      )
+
+    # 3. Lista exportada de documentos estranhos / suspeitos
+    dt_docs_estranhos <- dt_sem_raw |>
+      filter(!is.na(motivo_doc)) |>
+      transmute(
+        motivo = motivo_doc,
+        doc_type,
+        doc_number,
+        card_serial_number,
+        birth_date,
+        age,
+        ticket_name,
+        count_val,
+        price_ticket_base,
+        year_dist,
+        month_dist
+      ) |>
+      distinct() |>
+      as.data.table()
+
+    message(sprintf("  Documentos estranhos/suspeitos: %d registos detetados", nrow(dt_docs_estranhos)))
+
+    # 4. Chave de agrupamento:
+    #    - Se tem documento válido e sem anomalia -> agrupa por documento (mesmo titular com múltiplos cartões)
+    #    - Se tem documento anómalo ou ausente   -> agrupa por cartão (evita fundir titulares distintos com dummy docs)
+    dt_sem_raw <- dt_sem_raw |>
+      mutate(
+        group_id = if_else(
+          !is.na(doc_clean) & nzchar(doc_clean) & is.na(motivo_doc),
+          paste0("DOC_", doc_type_clean, "_", doc_clean),
+          paste0("CARD_", card_serial_number)
+        )
+      )
+
+    # Separar singles e multis para processamento eficiente
+    group_counts <- dt_sem_raw |> count(group_id)
+    singles <- group_counts |> filter(n == 1L) |> pull(group_id)
+    multis  <- group_counts |> filter(n > 1L)  |> pull(group_id)
+
+    # Singles: processamento vectorizado via dplyr
+    dt_sem_single <- dt_sem_raw |>
+      filter(group_id %in% singles) |>
+      mutate(
+        has_comp = ticket_code %in% CODES_COMP,
+        ptb_new = if_else(has_comp, "60", as.character(price_ticket_base)),
+        ptb_num = as.numeric(ptb_new),
+        comp = if_else(count_val < THRESHOLD_VAL, PCT_VAL * ptb_num * count_val, ptb_num),
+        emissor = case_when(
+          ticket_operator_code == 31L ~ "AT AML",
+          ticket_operator_code == 21L ~ "AT Cascais",
+          ticket_operator_code == 16L ~ "MTS",
+          TRUE ~ ""
+        ),
+        ticket_operator_code_new = as.character(ticket_operator_code),
+        ticket_code_new = as.character(ticket_code),
+        ticket_name_new = ticket_name,
+        nome_dist = calc_nome_dist(ticket_name),
+        nome_imt = unname(NOME_IMT[ptb_new]),
+        card_serial_number = as.character(card_serial_number),
+        cardserialnumber_new = as.character(card_serial_number),
+        numval = count_val,
+        compensacao = comp,
+        compaz = NA_integer_,
+        age_new = age,
+        birth_date_new = birth_date,
+        am = "AML"
+      ) |>
+      select(
+        am, emissor, year_dist, month_dist,
+        doc_type, doc_number, card_serial_number,
+        nome_imt, price_ticket_base_new = ptb_new,
+        numval, compensacao,
+        ticket_operator_code_new, ticket_code_new, ticket_name_new,
+        compaz, nome_dist, age_new, birth_date_new,
+        cardserialnumber_new
+      )
+
+    # Multis: agregação por grupo (mesmo documento com múltiplos cartões/bilhetes)
+    dt_sem_multi <- dt_sem_raw |>
+      filter(group_id %in% multis) |>
+      group_by(group_id) |>
+      summarise(
+        am = "AML",
+        emissor = {
+          ord_op <- order(op_prio(ticket_operator_code))
+          calc_emissor(paste(ticket_operator_code[ord_op], collapse = "_"))
+        },
+        year_dist = first(year_dist),
+        month_dist = first(month_dist),
+        doc_type = first(na.omit(doc_type)),
+        doc_number = first(na.omit(doc_number)),
+        card_serial_number = paste(sort(unique(card_serial_number)), collapse = "_"),
+        cardserialnumber_new = paste(sort(unique(card_serial_number)), collapse = "_"),
+        nome_imt = {
+          has_comp <- any(ticket_code %in% CODES_COMP)
+          max_ptb  <- max(price_ticket_base, na.rm = TRUE)
+          ptb_new  <- if (n() == 1L && has_comp) "60"
+                      else if (has_comp) as.character(max_ptb + 20)
+                      else as.character(max_ptb)
+          unname(calc_nome_imt(ptb_new))
+        },
+        price_ticket_base_new = {
+          has_comp <- any(ticket_code %in% CODES_COMP)
+          max_ptb  <- max(price_ticket_base, na.rm = TRUE)
+          if (n() == 1L && has_comp) "60"
+          else if (has_comp) as.character(max_ptb + 20)
+          else as.character(max_ptb)
+        },
+        numval = sum(count_val),
+        compensacao = {
+          has_comp <- any(ticket_code %in% CODES_COMP)
+          max_ptb  <- max(price_ticket_base, na.rm = TRUE)
+          ptb_new  <- if (n() == 1L && has_comp) "60"
+                      else if (has_comp) as.character(max_ptb + 20)
+                      else as.character(max_ptb)
+          ptb_num  <- as.numeric(ptb_new)
+          nv       <- sum(count_val)
+          if (nv < THRESHOLD_VAL) PCT_VAL * ptb_num * nv else ptb_num
+        },
+        ticket_operator_code_new = {
+          ord_op <- order(op_prio(ticket_operator_code))
+          paste(ticket_operator_code[ord_op], collapse = "_")
+        },
+        ticket_code_new = {
+          ord <- order(op_prio(ticket_operator_code), code_prio(ticket_code))
+          paste(ticket_code[ord], collapse = "_")
+        },
+        ticket_name_new = {
+          ord <- order(op_prio(ticket_operator_code), code_prio(ticket_code))
+          paste(ticket_name[ord], collapse = "+")
+        },
+        compaz = NA_integer_,
+        nome_dist = {
+          ord <- order(op_prio(ticket_operator_code), code_prio(ticket_code))
+          calc_nome_dist(paste(ticket_name[ord], collapse = "+"))
+        },
+        age_new = min(age, na.rm = TRUE),
+        birth_date_new = max(birth_date, na.rm = TRUE),
+        .groups = "drop"
+      ) |>
+      select(-group_id)
+
+    dt_semNIF <- bind_rows(dt_sem_single, dt_sem_multi)
+
+    # Separar registos NOK (fora da faixa etária elegível)
+    nok_sem   <- dt_semNIF |> filter(age_new == 3L | age_new >= 25L)
+    dt_semNIF <- dt_semNIF |> filter(age_new != 3L, age_new < 25L)
+
+    # Juntar validações do Azambuja via dplyr e recalcular compensação
+    if (!is.null(az_card) && nrow(az_card) > 0) {
+      dt_semNIF <- dt_semNIF |>
+        left_join(az_card, by = "card_serial_number") |>
+        mutate(
+          compaz = ticket_code_az,
+          numval = numval + coalesce(count_val_az, 0L),
+          compensacao = if_else(
+            numval < THRESHOLD_VAL,
+            PCT_VAL * as.numeric(price_ticket_base_new) * numval,
+            as.numeric(price_ticket_base_new)
+          )
+        ) |>
+        select(-count_val_az, -ticket_code_az)
+    }
+
+    # Seleccionar e ordenar as colunas finais do semNIF
+    cols_semNIF <- c("am", "emissor", "year_dist", "month_dist",
+                     "doc_type", "doc_number", "card_serial_number",
+                     "nome_imt", "price_ticket_base_new", "numval", "compensacao",
+                     "ticket_operator_code_new", "ticket_code_new", "ticket_name_new",
+                     "compaz", "nome_dist", "age_new", "birth_date_new",
+                     "cardserialnumber_new")
+    dt_semNIF <- dt_semNIF |> select(all_of(cols_semNIF)) |> as.data.table()
+
+  } else {
+    # Meses anteriores (sem campos de documento) -> mantém agregação por cartão
+    dt_docs_estranhos <- NULL
+    dt_semNIF  <- agregar_por_grupo(dt_sem_raw, "card")
+
+    # Separar registos NOK (fora da faixa etária elegível)
+    nok_sem   <- dt_semNIF |> filter(age_new == 3L | age_new >= 25L)
+    dt_semNIF <- dt_semNIF |> filter(age_new != 3L, age_new < 25L)
+
+    # Juntar validações do Azambuja e recalcular compensação
+    if (!is.null(az_card) && nrow(az_card) > 0) {
+      dt_semNIF[az_card, on = .(card_serial_number), `:=`(
+        numval      = numval + i.count_val_az,
+        compaz      = i.ticket_code_az,
+        compensacao = {
+          nv_total <- numval + i.count_val_az
+          ptb      <- as.numeric(price_ticket_base_new)
+          fifelse(nv_total < THRESHOLD_VAL, PCT_VAL * ptb * nv_total, ptb)
+        }
+      )]
+    }
+
+    # Seleccionar e ordenar as colunas finais do semNIF
+    cols_semNIF <- c("am", "emissor", "year_dist", "month_dist", "card_serial_number",
+                     "nome_imt", "price_ticket_base_new", "numval", "compensacao",
+                     "ticket_operator_code_new", "ticket_code_new", "ticket_name_new",
+                     "compaz", "nome_dist", "age_new", "birth_date_new")
+    dt_semNIF <- dt_semNIF |> select(all_of(cols_semNIF)) |> as.data.table()
   }
-
-  # Seleccionar e ordenar as colunas finais do semNIF
-  cols_semNIF <- c("am", "emissor", "year_dist", "month_dist", "card_serial_number",
-                   "nome_imt", "price_ticket_base_new", "numval", "compensacao",
-                   "ticket_operator_code_new", "ticket_code_new", "ticket_name_new",
-                   "compaz", "nome_dist", "age_new", "birth_date_new")
-  dt_semNIF <- dt_semNIF |> select(all_of(cols_semNIF)) |> as.data.table()
   message(sprintf("  semNIF: %d registos, compensacao total: %.2f EUR",
                   nrow(dt_semNIF), sum(dt_semNIF$compensacao, na.rm = TRUE)))
 
@@ -460,11 +671,17 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   out_sem  <- file.path(paths$output, output_filename(ano, mes, "semNIF"))
   out_ver  <- file.path(paths$output, output_filename(ano, mes, "a_verificar"))
   out_nok  <- file.path(paths$output, output_filename(ano, mes, "age_nok"))
+  out_estranhos <- file.path(paths$output, output_filename(ano, mes, "documentos_estranhos"))
 
   write_csv_pj(dt_comNIF,    out_com)
   write_csv_pj(dt_semNIF,    out_sem)
   write_csv_pj(dt_verificar, out_ver)
   write_csv_pj(dt_age_nok,   out_nok)
+
+  if (!is.null(dt_docs_estranhos) && nrow(dt_docs_estranhos) > 0) {
+    write_csv_pj(dt_docs_estranhos, out_estranhos)
+    message(sprintf("  Gravado: %s (%d registos)", basename(out_estranhos), nrow(dt_docs_estranhos)))
+  }
 
   elapsed <- round((proc.time() - t0)[["elapsed"]], 1)
   message(sprintf("  Gravado: %s", basename(out_com)))
@@ -473,7 +690,12 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   message(sprintf("  Gravado: %s", basename(out_nok)))
   message(sprintf("[02] Concluido em %.1f segundos.\n", elapsed))
 
-  invisible(list(comNIF = dt_comNIF, semNIF = dt_semNIF, age_nok = dt_age_nok))
+  invisible(list(
+    comNIF               = dt_comNIF,
+    semNIF               = dt_semNIF,
+    age_nok              = dt_age_nok,
+    documentos_estranhos = dt_docs_estranhos
+  ))
 }
 
 

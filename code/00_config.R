@@ -186,6 +186,10 @@ read_passe_jovem <- function(path) {
     ) |>
     # Renomear colunas de documento se existirem (formato julho 2026+)
     rename(any_of(c(doc_number = "id_doc_number", doc_type = "id_doc_number_desc"))) |>
+    mutate(across(any_of(c("doc_number", "doc_type")), ~ {
+      val <- trimws(as.character(.x))
+      if_else(val %in% c("", "NA"), NA_character_, val)
+    })) |>
     as.data.table()
 }
 

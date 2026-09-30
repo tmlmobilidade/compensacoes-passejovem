@@ -63,22 +63,60 @@ COLS_SEMNIF <- c(
   "nome_dist"                 # col 12
 )
 
+# Colunas oficiais do template v2 (julho 2026 em diante, com colunas de documento)
+COLS_COMNIF_V2 <- c(
+  "am",                       # col 1:  Identificação AM/CIM
+  "emissor",                  # col 2:  Entidade emissora
+  "year_dist",                # col 3:  Ano
+  "month_dist",               # col 4:  Mês
+  "fiscal_number",            # col 5:  N.º NIF
+  "birth_date_new",           # col 6:  Data de nascimento
+  "nome_imt",                 # col 7:  Designação (título referência)
+  "price_ticket_base_new",    # col 8:  PVP
+  "numval",                   # col 9:  N.º Validações
+  "estimativa",               # col 10: Estimativa (vazio / NA)
+  "compensacao",              # col 11: Compensação (euros)
+  "categoria"                 # col 12: Categoria ("A" ou "B")
+)
+
+COLS_SEMNIF_V2 <- c(
+  "am",                       # col 1:  Identificação AM/CIM
+  "emissor",                  # col 2:  Entidade emissora
+  "year_dist",                # col 3:  Ano
+  "month_dist",               # col 4:  Mês
+  "doc_type",                 # col 5:  Tipo de Documento
+  "doc_number",               # col 6:  N.º DO DOCUMENTO
+  "birth_date_new",           # col 7:  Data de nascimento
+  "nome_imt",                 # col 8:  Designação (título referência)
+  "price_ticket_base_new",    # col 9:  PVP
+  "numval",                   # col 10: N.º Validações
+  "estimativa",               # col 11: Estimativa (vazio / NA)
+  "compensacao",              # col 12: Compensação (euros)
+  "categoria"                 # col 13: Categoria ("A" ou "B")
+)
+
 
 # =============================================================================
 # Funções auxiliares
 # =============================================================================
 
 #' Prepara o data frame para escrita no template: selecciona e ordena colunas,
-#' formata datas como texto DD/MM/YYYY (o template usa texto, não datas Excel).
+#' formata datas como texto DD/MM/YYYY (o template usa texto, não datas Excel),
+#' e adiciona as variáveis estimativa e categoria quando aplicável.
 #'
 #' @param dt   data.table com os dados de comNIF ou semNIF
 #' @param cols vector de nomes de colunas a seleccionar (na ordem do template)
 prep_para_template <- function(dt, cols) {
   dt |>
     as_tibble() |>
+    mutate(
+      birth_date_new = format(as.Date(birth_date_new), "%d/%m/%Y"),
+      estimativa     = NA_real_,
+      categoria      = if ("ticket_name_new" %in% names(dt)) {
+        if_else(grepl("Complemento", ticket_name_new), "B", "A")
+      } else "A"
+    ) |>
     select(all_of(cols)) |>
-    # Formatar data de nascimento como texto (ex: "25/12/2003")
-    mutate(birth_date_new = format(as.Date(birth_date_new), "%d/%m/%Y")) |>
     as.data.frame()
 }
 
@@ -144,7 +182,8 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
     colClasses = list(
       character = c("am", "emissor", "card_serial_number", "nome_imt",
                     "price_ticket_base_new", "ticket_operator_code_new",
-                    "ticket_code_new", "ticket_name_new", "nome_dist"),
+                    "ticket_code_new", "ticket_name_new", "nome_dist",
+                    "doc_type", "doc_number"),
       integer   = c("year_dist", "month_dist", "numval", "age_new"),
       numeric   = c("compensacao"),
       IDate     = c("birth_date_new")
@@ -152,8 +191,14 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
 
 
   # ── Preparar dados para escrita ───────────────────────────────────────────
-  df_com <- prep_para_template(dt_comNIF, COLS_COMNIF)
-  df_sem <- prep_para_template(dt_semNIF, COLS_SEMNIF)
+  if ("doc_number" %in% names(dt_semNIF)) {
+    # Formato v2 (julho 2026 em diante, com colunas de documento)
+    df_com <- prep_para_template(dt_comNIF, COLS_COMNIF_V2)
+    df_sem <- prep_para_template(dt_semNIF, COLS_SEMNIF_V2)
+  } else {
+    df_com <- prep_para_template(dt_comNIF, COLS_COMNIF)
+    df_sem <- prep_para_template(dt_semNIF, COLS_SEMNIF)
+  }
 
 
   # ── Copiar template e abrir com openxlsx ─────────────────────────────────
