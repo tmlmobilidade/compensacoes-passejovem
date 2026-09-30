@@ -258,11 +258,11 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
 
   # ── Ler ficheiros intermédios ─────────────────────────────────────────────
-  f_limpos <- file.path(paths$output, output_filename(ano, mes, "dados_limpos"))
-  f_az     <- file.path(paths$output, output_filename(ano, mes, "complemento_azambuja"))
+  f_limpos <- file.path(paths$output, output_filename(ano, mes, "limpos_preagregacao"))
+  f_az <- file.path(paths$output, output_filename(ano, mes, "complemento_azambuja"))
 
   if (!file.exists(f_limpos))
-    stop("Ficheiro dados_limpos nao encontrado: ", f_limpos,
+    stop("Ficheiro limpos_preagregacao nao encontrado: ", f_limpos,
          "\n  Execute primeiro: preparar_dados(", ano, ", ", mes, ")")
 
   dt_main <- fread(f_limpos, sep = ";", dec = ".",

@@ -8,7 +8,7 @@
 #   - <ano><mm>_Complemento_Azambuja.csv           (complemento Azambuja, opcional)
 #
 # Ficheiros de saída (em data/<ano>_<mm>_<mes>/output/):
-#   - <ano>_<mm>_dados_limpos.csv
+#   - <ano>_<mm>_limpos_preagregacao.csv
 #   - <ano>_<mm>_complemento_azambuja.csv  (se existir)
 #
 # Também aplica a repescagem e correções manuais de:
@@ -312,7 +312,7 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
 
 
   # ── 7. Gravar ficheiros intermédios ──────────────────────────────────────
-  out_limpos <- file.path(paths$output, output_filename(ano, mes, "dados_limpos"))
+  out_limpos <- file.path(paths$output, output_filename(ano, mes, "limpos_preagregacao"))
   write_csv_pj(dt_main, out_limpos)
   message(sprintf("  Gravado: %s", basename(out_limpos)))
 
