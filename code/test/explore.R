@@ -51,7 +51,7 @@ ANITA_comNIF_redux = ANITA_comNIF |> select(fiscal_number, age_new, age_calculad
 julho_comNIF_redux = julho_comNIF |> select(fiscal_number, age_new, birth_date_new) |> arrange(birth_date_new)
 
 missing = ANITA_comNIF_redux |> filter(!fiscal_number %in% c(julho_comNIF_redux$fiscal_number))
-# 0 
+nrow(missing)# 0 
 
 ANITA_semNIF <- read_excel("Exemplos/2026_07_julho/07_2026_semNIF_AR.xlsx", 
                            sheet = "07_2026") |> select(-1)
@@ -88,7 +88,7 @@ comparacao_group_comNIF = ANITA_comNIF_group |>
          dif_validacoes = validacoes_rosa - validacoes_original,
          dif_compensacao = compensacao_rosa - compensacao_original) |> 
   filter(dif_passes != 0 | dif_validacoes != 0 | dif_compensacao != 0)
-
+nrow(comparacao_group_comNIF)#0
 
 # semNIF
 
@@ -114,5 +114,6 @@ comparacao_group_semNIF = ANITA_semNIF_group |>
          dif_validacoes = validacoes_rosa - validacoes_original,
          dif_compensacao = compensacao_rosa - compensacao_original) |> 
   filter(dif_passes != 0 | dif_validacoes != 0 | dif_compensacao != 0)
+nrow(comparacao_group_semNIF)#0
 
 # Está tudo certo!
