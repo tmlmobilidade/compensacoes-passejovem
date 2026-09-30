@@ -202,6 +202,31 @@ read_complemento_azambuja <- function(path) {
   dt
 }
 
+#' Lê o Complemento Azambuja a partir de uma folha de um ficheiro XLSX.
+#' Usado quando os dados Azambuja estão na segunda folha do XLSX principal
+#' (formato a partir de julho 2026).
+#'
+#' @param path  Caminho para o ficheiro XLSX
+#' @param sheet Nome ou índice da folha (default: 2)
+read_complemento_azambuja_xlsx <- function(path, sheet = 2) {
+  df <- read_excel(path, sheet = sheet)
+  dt <- as.data.table(df)
+  setnames(dt, tolower(names(dt)))
+
+  # Manter só as colunas necessárias
+  cols_needed <- c("year_dist", "month_dist", "card_serial_number",
+                   "fiscal_number", "ticket_code", "count_val")
+  cols_present <- intersect(cols_needed, names(dt))
+  dt <- dt[, ..cols_present]
+
+  dt[, card_serial_number := as.character(card_serial_number)]
+  dt[, fiscal_number      := normalizar_nif(as.character(fiscal_number))]
+  dt[, ticket_code        := suppressWarnings(as.integer(ticket_code))]
+  dt[, count_val          := suppressWarnings(as.integer(count_val))]
+  dt
+}
+
+
 #' Lê o ficheiro Excel de Cascais (TML_<mes><ano>.xlsx)
 #' O ficheiro não tem preço base preenchido — usamos o valor fixo PRECO_CASCAIS.
 #'

@@ -86,8 +86,23 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
                      full.names = TRUE,
                      ignore.case = TRUE)
   if (length(f_az) == 0) {
-    warning("Ficheiro Complemento Azambuja nao encontrado; a continuar sem complemento.")
-    dt_az <- NULL
+    # Fallback: segunda folha do XLSX principal (formato julho 2026+)
+    ext_pj <- tolower(tools::file_ext(f_pj))
+    if (ext_pj %in% c("xlsx", "xls")) {
+      sheets_pj <- tryCatch(readxl::excel_sheets(f_pj), error = function(e) character(0))
+      az_sheet  <- grep("Azambuja", sheets_pj, value = TRUE, ignore.case = TRUE)
+      if (length(az_sheet) > 0) {
+        message("  Complemento Azambuja encontrado na folha '", az_sheet[1],
+                "' de ", basename(f_pj))
+        dt_az <- read_complemento_azambuja_xlsx(f_pj, sheet = az_sheet[1])
+      } else {
+        warning("Ficheiro Complemento Azambuja nao encontrado; a continuar sem complemento.")
+        dt_az <- NULL
+      }
+    } else {
+      warning("Ficheiro Complemento Azambuja nao encontrado; a continuar sem complemento.")
+      dt_az <- NULL
+    }
   } else {
     if (length(f_az) > 1) {
       warning("Mais do que um ficheiro Azambuja encontrado; a usar o primeiro.")
