@@ -307,14 +307,18 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     az_card   <- NULL
   }
 
-
+ 
   # ── ComNIF: agregar por NIF ───────────────────────────────────────────────
   message("  A processar comNIF ...")
   dt_com_raw <- dt_mes[!is.na(fiscal_number)]
   dt_comNIF  <- agregar_por_grupo(dt_com_raw, "fiscal")
+ 
   # remover idades 25 e 3 anos
-  dt_comNIF <- dt_comNIF[age_new!=25]
-  dt_comNIF <- dt_comNIF[age_new!=3]
+  nok_com <- dt_comNIF[age_new == 3L | age_new >= 25L]
+  # dt_comNIF <- dt_comNIF[age_new!=25]
+  # dt_comNIF <- dt_comNIF[age_new!=3]
+  dt_comNIF <- dt_comNIF[age_new != 3L & age_new < 25L]
+
 
   # Juntar validações do Azambuja e recalcular compensação
   if (!is.null(az_fiscal) && nrow(az_fiscal) > 0) {
@@ -344,7 +348,11 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   message("  A processar semNIF ...")
   dt_sem_raw <- dt_mes[is.na(fiscal_number)]
   dt_semNIF  <- agregar_por_grupo(dt_sem_raw, "card")
-
+ 
+  # remover idades 3 e 25 anos
+  nok_sem <- dt_semNIF[age_new == 3L | age_new >= 25L]
+  dt_semNIF <- dt_semNIF[age_new != 3L & age_new < 25L]
+  
   # Juntar validações do Azambuja e recalcular compensação
   if (!is.null(az_card) && nrow(az_card) > 0) {
     dt_semNIF[az_card, on = .(card_serial_number), `:=`(
@@ -365,25 +373,6 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   dt_semNIF <- dt_semNIF[, ..cols_semNIF]
   message(sprintf("  semNIF: %d registos, compensacao total: %.2f EUR",
                   nrow(dt_semNIF), sum(dt_semNIF$compensacao, na.rm = TRUE)))
-
-
-  # ── Registos NOK (idade incompatível após correcção) ─────────────────────
-  # Após a correcção pontual em 01_preparar_dados.R (regras dos meses limite),
-  # ainda podem restar registos com age_new == 3 (demasiado novo) ou age_new >= 25
-  # (demasiado velho). Estes são excluídos da compensação e guardados em age_nok.csv.
-  nok_com <- dt_comNIF[age_new == 3L | age_new >= 25L]
-  nok_sem <- dt_semNIF[age_new == 3L | age_new >= 25L]
-
-  dt_comNIF <- dt_comNIF[age_new != 3L & age_new < 25L]
-  dt_semNIF <- dt_semNIF[age_new != 3L & age_new < 25L]
-
-  dt_age_nok <- rbindlist(
-    list(cbind(nok_com, tipo = "comNIF"), cbind(nok_sem, tipo = "semNIF")),
-    use.names = TRUE, fill = TRUE
-  )
-
-  message(sprintf("  NOK (age 3 ou >=25): %d comNIF + %d semNIF = %d registos",
-                  nrow(nok_com), nrow(nok_sem), nrow(dt_age_nok)))
 
 
   # ── Lista de registos a verificar ────────────────────────────────────────
@@ -409,6 +398,18 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
   message(sprintf("  A verificar: %d registos suspeitos", nrow(dt_verificar)))
 
+ # ── Registos NOK (idade incompatível após correcção) ─────────────────────
+  # Após a correcção pontual em 01_preparar_dados.R (regras dos meses limite),
+  # ainda podem restar registos com age_new == 3 (demasiado novo) ou age_new >= 25
+  # (demasiado velho). Estes são excluídos da compensação e guardados em age_nok.csv.
+ 
+  dt_age_nok <- rbindlist(
+    list(cbind(nok_com, tipo = "comNIF"), cbind(nok_sem, tipo = "semNIF")),
+    use.names = TRUE, fill = TRUE
+  )
+
+  message(sprintf("  NOK (age 3 ou >=25): %d comNIF + %d semNIF = %d registos",
+                  nrow(nok_com), nrow(nok_sem), nrow(dt_age_nok)))
 
   # ── Gravar ficheiros de output ────────────────────────────────────────────
   out_com  <- file.path(paths$output, output_filename(ano, mes, "comNIF"))
