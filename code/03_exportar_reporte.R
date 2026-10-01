@@ -171,6 +171,7 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
   stopifnot(dir.exists(paths$output))
 
   message(sprintf("[03] A exportar reporte para %d/%02d ...", ano, mes))
+  t0 <- proc.time()
 
 
   # ── Verificar template ────────────────────────────────────────────────────
@@ -288,7 +289,7 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
     # ── Formato v2 (julho 2026 em diante) ──
     # Sheet 1: Coluna M (13) - Número do cartão de suporte
     writeData(wb, sheet_com, x = "Número do cartão de suporte ao título de transporte",
-              startRow = 11, startCol = 13)
+              startRow = 10, startCol = 13)
     mergeCells(wb, sheet_com, cols = 13, rows = 10:12)
     addStyle(wb, sheet_com, header_style, rows = 10:12, cols = 13, gridExpand = TRUE)
     setColWidths(wb, sheet_com, cols = 13, widths = 25)
@@ -302,7 +303,7 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
 
     # Sheet 2: Coluna N (14) - Número do cartão de suporte (col M mantém Categoria)
     writeData(wb, sheet_sem, x = "Número do cartão de suporte ao título de transporte",
-              startRow = 11, startCol = 14)
+              startRow = 10, startCol = 14)
     mergeCells(wb, sheet_sem, cols = 14, rows = 10:12)
     addStyle(wb, sheet_sem, header_style, rows = 10:12, cols = 14, gridExpand = TRUE)
     setColWidths(wb, sheet_sem, cols = 14, widths = 25)
@@ -383,8 +384,9 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
   # ── Gravar ────────────────────────────────────────────────────────────────
   saveWorkbook(wb, out_xlsx, overwrite = TRUE)
 
+  elapsed <- round((proc.time() - t0)[["elapsed"]], 1)
   message(sprintf("  Gravado: %s", basename(out_xlsx)))
-  message("[03] Concluido.\n")
+  message(sprintf("[03] Concluido em %.1f segundos.\n", elapsed))
 
   # Mostrar resumo no ecrã
   message("  === RESUMO ===")

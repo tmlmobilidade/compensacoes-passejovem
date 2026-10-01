@@ -301,6 +301,27 @@ remove_lxbt <- function(dt) {
   dt |> filter(is.na(ticket_name) | !str_starts(ticket_name, "LX-BT"))
 }
 
+#' Verifica se um documento está na lista de exceções (id_exception.csv)
+#' Permite correspondência por (doc_type, doc_number) ou apenas por doc_number
+#' quando doc_type não está especificado no ficheiro de exceções.
+is_in_id_exception <- function(type_vec, num_vec, dt_exc) {
+  if (is.null(dt_exc) || nrow(dt_exc) == 0) return(rep(FALSE, length(num_vec)))
+  num_clean  <- trimws(as.character(num_vec))
+  type_clean <- toupper(trimws(as.character(type_vec)))
+
+  exc_with_type <- dt_exc[!is.na(doc_type) & nzchar(doc_type)]
+  match_with_type <- if (nrow(exc_with_type) > 0) {
+    paste0(type_clean, "::", num_clean) %in% paste0(exc_with_type$doc_type, "::", exc_with_type$doc_number)
+  } else rep(FALSE, length(num_clean))
+
+  exc_no_type <- dt_exc[is.na(doc_type) | !nzchar(doc_type)]
+  match_no_type <- if (nrow(exc_no_type) > 0) {
+    num_clean %in% exc_no_type$doc_number
+  } else rep(FALSE, length(num_clean))
+
+  match_with_type | match_no_type
+}
+
 
 # -----------------------------------------------------------------------------
 # Funções auxiliares de cálculo
@@ -363,5 +384,15 @@ calc_nome_imt <- function(ptb_str) {
 #' Grava um data.table como CSV separado por ";" com encoding UTF-8
 write_csv_pj <- function(dt, path) {
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-  fwrite(dt, path, sep = ";", dec = ".", na = "", dateTimeAs = "write.csv", row.names = FALSE)
+  tryCatch(
+    fwrite(dt, path, sep = ";", dec = ".", na = "", dateTimeAs = "write.csv", row.names = FALSE),
+    error = function(e) {
+      if (grepl("Permission denied", conditionMessage(e))) {
+        stop(sprintf("Nao foi possivel gravar '%s'.\nO ficheiro esta aberto noutro programa (ex: Excel)? Feche o ficheiro e tente novamente.", basename(path)), call. = FALSE)
+      } else {
+        stop(e)
+      }
+    }
+  )
 }
+

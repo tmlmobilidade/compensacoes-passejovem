@@ -53,6 +53,7 @@ source(file.path(code_dir, "03_exportar_reporte.R"),      local = TRUE)
 #' @param meses  Vector de meses a processar (ex: c(5, 6, 7))
 #'               Se NULL, detecta automaticamente os meses disponíveis em data/
 run_pipeline <- function(ano, meses = NULL) {
+  t0_pipe <- proc.time()
 
   raiz <- here_root()
 
@@ -89,7 +90,8 @@ run_pipeline <- function(ano, meses = NULL) {
     })
   }
 
-  message("\nPipeline concluido.")
+  elapsed_pipe <- round((proc.time() - t0_pipe)[["elapsed"]], 1)
+  message(sprintf("\nPipeline concluido em %.1f segundos.", elapsed_pipe))
 }
 
 

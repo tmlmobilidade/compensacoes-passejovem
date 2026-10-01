@@ -43,6 +43,7 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   dir.create(paths$output, recursive = TRUE, showWarnings = FALSE)
 
   message(sprintf("[01] A preparar dados para %d/%02d ...", ano, mes))
+  t0 <- proc.time()
 
 
   # ── 1. Ficheiro principal PasseJovem ─────────────────────────────────────
@@ -322,7 +323,8 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
     message(sprintf("  Gravado: %s", basename(out_az)))
   }
 
-  message("[01] Concluido.\n")
+  elapsed <- round((proc.time() - t0)[["elapsed"]], 1)
+  message(sprintf("[01] Concluido em %.1f segundos.\n", elapsed))
   invisible(list(passe_jovem = dt_main, azambuja = dt_az))
 }
 

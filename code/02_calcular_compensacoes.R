@@ -7,6 +7,9 @@
 #   - <ano>_<mm>_semNIF.csv   (agregado por número de cartão, para quem não tem NIF)
 #   - <ano>_<mm>_a_verificar.csv  (lista de pessoas com dados suspeitos)
 #
+# Também suporta exceções manuais de identificação de:
+#   - data/auxiliar/id_exception.csv (documentos conhecidos por serem usados por crianças diferentes)
+#
 # Regra de compensação (AML):
 #   - < 20 validações -> 5% * preço_base * n_validações
 #   - >= 20 validações -> preço_base (título completo)
@@ -284,6 +287,19 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
       ))
   } else NULL
 
+  # Ler lista de exceções de documentos de identificação (data/auxiliar/id_exception.csv)
+  # Documentos conhecidos por serem usados por crianças diferentes (fraude / partilhado)
+  f_id_exc <- file.path(paths$auxiliar, "id_exception.csv")
+  dt_id_exc <- if (file.exists(f_id_exc)) {
+    dt_tmp <- fread(f_id_exc, colClasses = "character")
+    names(dt_tmp) <- tolower(names(dt_tmp))
+    if (!"doc_type" %in% names(dt_tmp)) dt_tmp[, doc_type := NA_character_]
+    dt_tmp[, doc_type := toupper(trimws(as.character(doc_type)))]
+    dt_tmp[, doc_number := trimws(as.character(doc_number))]
+    dt_tmp[!is.na(doc_number) & nzchar(doc_number)]
+  } else NULL
+
+
 
   # ── Filtrar: apenas passes gratuitos do mês ───────────────────────────────
   # Excluir: price != 0, price_ticket_base ausente, ou sem validações
@@ -396,13 +412,48 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
       pull(doc_number) |>
       unique()
 
-    # 2. Classificar anomalias nos números de documento com dplyr
+    # 2. Identificar documentos na lista de exceções (id_exception.csv)
+    #    Estes documentos são conhecidos por pertencerem a crianças diferentes (fraude / partilhado).
+    #    Não devem ser fundidos/agrupados; cada cartão deve ser tratado separadamente.
     dt_sem_raw <- dt_sem_raw |>
       mutate(
         doc_clean      = trimws(as.character(doc_number)),
         doc_type_clean = toupper(trimws(as.character(doc_type))),
-        is_cc          = doc_type_clean == "CITIZEN_CARD",
-        motivo_doc     = case_when(
+        is_id_exc      = is_in_id_exception(doc_type, doc_number, dt_id_exc)
+      )
+
+    # Atribuir sufixo determinístico (_1, _2, ...) ao doc_number dos registos em exceção
+    exc_mapping <- NULL
+    if (any(dt_sem_raw$is_id_exc)) {
+      exc_mapping <- dt_sem_raw |>
+        filter(is_id_exc) |>
+        distinct(doc_type_clean, doc_clean, card_serial_number) |>
+        arrange(doc_type_clean, doc_clean, card_serial_number) |>
+        group_by(doc_type_clean, doc_clean) |>
+        mutate(
+          sufixo          = row_number(),
+          doc_number_novo = paste0(doc_clean, "_", sufixo)
+        ) |>
+        ungroup()
+
+      dt_sem_raw <- dt_sem_raw |>
+        left_join(
+          exc_mapping |> select(doc_type_clean, doc_clean, card_serial_number, doc_number_novo),
+          by = c("doc_type_clean", "doc_clean", "card_serial_number")
+        ) |>
+        mutate(
+          doc_number = coalesce(doc_number_novo, doc_number),
+          doc_clean  = coalesce(doc_number_novo, doc_clean)
+        ) |>
+        select(-doc_number_novo)
+    }
+
+    # 3. Classificar anomalias nos números de documento com dplyr
+    dt_sem_raw <- dt_sem_raw |>
+      mutate(
+        is_cc      = doc_type_clean == "CITIZEN_CARD",
+        motivo_doc = case_when(
+          is_id_exc ~ "Documento em excecao (partilhado por jovens diferentes)",
           doc_number %in% docs_multi_bd & grepl("^0+$", doc_clean) ~ "Cartao de Cidadao com apenas zeros e datas de nascimento distintas",
           doc_number %in% docs_multi_bd ~ "Documento com datas de nascimento distintas",
           is_cc & grepl("^0+$", doc_clean) ~ "Cartao de Cidadao com apenas zeros",
@@ -416,7 +467,7 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
         )
       )
 
-    # 3. Lista exportada de documentos estranhos / suspeitos
+    # 4. Lista exportada de documentos estranhos / suspeitos
     dt_docs_estranhos <- dt_sem_raw |>
       filter(!is.na(motivo_doc)) |>
       transmute(
@@ -437,15 +488,16 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
     message(sprintf("  Documentos estranhos/suspeitos: %d registos detetados", nrow(dt_docs_estranhos)))
 
-    # 4. Chave de agrupamento:
+    # 5. Chave de agrupamento:
+    #    - Se é exceção de ID -> agrupa por cartão (trata cada titular como separado, não soma validações)
     #    - Se tem documento válido e sem anomalia -> agrupa por documento (mesmo titular com múltiplos cartões)
     #    - Se tem documento anómalo ou ausente   -> agrupa por cartão (evita fundir titulares distintos com dummy docs)
     dt_sem_raw <- dt_sem_raw |>
       mutate(
-        group_id = if_else(
-          !is.na(doc_clean) & nzchar(doc_clean) & is.na(motivo_doc),
-          paste0("DOC_", doc_type_clean, "_", doc_clean),
-          paste0("CARD_", card_serial_number)
+        group_id = case_when(
+          is_id_exc ~ paste0("CARD_", card_serial_number),
+          !is.na(doc_clean) & nzchar(doc_clean) & is.na(motivo_doc) ~ paste0("DOC_", doc_type_clean, "_", doc_clean),
+          TRUE ~ paste0("CARD_", card_serial_number)
         )
       )
 
@@ -591,6 +643,8 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   } else {
     # Meses anteriores (sem campos de documento) -> mantém agregação por cartão
     dt_docs_estranhos <- NULL
+    exc_mapping       <- NULL
+    docs_multi_bd     <- character(0)
     dt_semNIF  <- agregar_por_grupo(dt_sem_raw, "card")
 
     # Separar registos NOK (fora da faixa etária elegível)
@@ -623,33 +677,98 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
   # ── Lista de registos a verificar ────────────────────────────────────────
   # Exporta pessoas com dados suspeitos para confirmar manualmente:
+  #   - "Exceção ID (documento partilhado)": documento na lista de exceções (fraude / partilhado)
+  #   - "Documento com datas de nascimento distintas": mesmo doc_number com múltiplas birth_date
   #   - "Sem NIF": não foi possível identificar o titular
   #   - "Idade > 23": titular perto do limite de idade (24 ainda é elegível mas merece atenção)
-  dt_verificar <- bind_rows(
-    dt_mes |>
-      filter(is.na(fiscal_number)) |>
+
+  tem_docs_mes <- "doc_number" %in% names(dt_mes) && any(!is.na(dt_mes$doc_number))
+  is_exc_mes <- if (tem_docs_mes) {
+    is_in_id_exception(dt_mes$doc_type, dt_mes$doc_number, dt_id_exc)
+  } else {
+    rep(FALSE, nrow(dt_mes))
+  }
+
+  is_multi_bd_mes <- if (tem_docs_mes && exists("docs_multi_bd") && length(docs_multi_bd) > 0) {
+    !is_exc_mes & is.na(dt_mes$fiscal_number) & (dt_mes$doc_number %in% docs_multi_bd)
+  } else {
+    rep(FALSE, nrow(dt_mes))
+  }
+
+  # 1. Casos com exceção de documento ID (fraude / partilhado)
+  dt_ver_exc <- if (any(is_exc_mes)) {
+    dt_exc_sub <- dt_mes |> filter(is_exc_mes)
+    if (!is.null(exc_mapping) && nrow(exc_mapping) > 0) {
+      dt_exc_sub <- dt_exc_sub |>
+        mutate(
+          doc_type_clean = toupper(trimws(as.character(doc_type))),
+          doc_clean      = trimws(as.character(doc_number))
+        ) |>
+        left_join(
+          exc_mapping |> select(doc_type_clean, doc_clean, card_serial_number, doc_number_novo),
+          by = c("doc_type_clean", "doc_clean", "card_serial_number")
+        ) |>
+        mutate(doc_number = coalesce(doc_number_novo, doc_number)) |>
+        select(-doc_type_clean, -doc_clean, -any_of("doc_number_novo"))
+    }
+    dt_exc_sub |>
       transmute(
-        motivo             = "Sem NIF",
-        card_serial_number,
-        fiscal_number      = NA_character_,
-        birth_date,
-        age,
-        ticket_name
-      ),
-    dt_mes |>
-      filter(!is.na(fiscal_number), age > 23L) |>
-      transmute(
-        motivo = "Idade > 23",
-        card_serial_number,
-        fiscal_number,
+        motivo             = "Excecao ID (documento partilhado)",
+        card_serial_number = as.character(card_serial_number),
+        fiscal_number      = as.character(fiscal_number),
         birth_date,
         age,
         ticket_name
       )
-  ) |>
+  } else NULL
+
+  # 2. Casos com documento associado a datas de nascimento distintas
+  dt_ver_multi_bd <- if (any(is_multi_bd_mes)) {
+    dt_mes |>
+      filter(is_multi_bd_mes) |>
+      transmute(
+        motivo             = "Documento com datas de nascimento distintas",
+        card_serial_number = as.character(card_serial_number),
+        fiscal_number      = as.character(fiscal_number),
+        birth_date,
+        age,
+        ticket_name
+      )
+  } else NULL
+
+  # 3. Casos sem NIF (excluindo os já capturados na exceção de ID ou com datas distintas)
+  dt_ver_sem <- dt_mes |>
+    filter(is.na(fiscal_number) & !is_exc_mes & !is_multi_bd_mes) |>
+    transmute(
+      motivo             = "Sem NIF",
+      card_serial_number = as.character(card_serial_number),
+      fiscal_number      = NA_character_,
+      birth_date,
+      age,
+      ticket_name
+    )
+
+  # 4. Casos com NIF e idade > 23 (excluindo exceções de ID e com datas distintas)
+  dt_ver_idade <- dt_mes |>
+    filter(!is.na(fiscal_number), age > 23L, !is_exc_mes, !is_multi_bd_mes) |>
+    transmute(
+      motivo             = "Idade > 23",
+      card_serial_number = as.character(card_serial_number),
+      fiscal_number      = as.character(fiscal_number),
+      birth_date,
+      age,
+      ticket_name
+    )
+
+  dt_verificar <- bind_rows(dt_ver_exc, dt_ver_multi_bd, dt_ver_sem, dt_ver_idade) |>
     as.data.table()
 
-  message(sprintf("  A verificar: %d registos suspeitos", nrow(dt_verificar)))
+  message(sprintf("  A verificar: %d registos suspeitos (%d excecao ID, %d datas distintas, %d sem NIF, %d idade > 23)",
+                  nrow(dt_verificar),
+                  if (is.null(dt_ver_exc)) 0 else nrow(dt_ver_exc),
+                  if (is.null(dt_ver_multi_bd)) 0 else nrow(dt_ver_multi_bd),
+                  nrow(dt_ver_sem),
+                  nrow(dt_ver_idade)))
 
 
   # ── Registos NOK (idade incompatível após correcção) ─────────────────────
