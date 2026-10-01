@@ -147,7 +147,7 @@ prep_para_template <- function(dt, cols) {
 #' @param ano      inteiro
 #' @param mes      inteiro
 fill_cabecalho <- function(wb, sheet, ano, mes) {
-  writeData(wb, sheet, x = "ÁREA METROPOLITANA DE LISBOA", startRow = 5, startCol = 2,
+  writeData(wb, sheet, x = "AML", startRow = 5, startCol = 2,
             colNames = FALSE)
   writeData(wb, sheet, x = as.character(ano), startRow = 6, startCol = 2,
             colNames = FALSE)
@@ -241,11 +241,19 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
   file.copy(template_path, out_xlsx, overwrite = TRUE)
   wb <- loadWorkbook(out_xlsx)
 
-  sheets <- names(wb)
-  # O template tem 4 abas; as duas primeiras são comNIF e semNIF
-  sheet_com    <- sheets[1]   # "CIM_AT - ANO_MÊS - Com NIF"
-  sheet_sem    <- sheets[2]   # "CIM_AT - ANO_MÊS - Sem NIF"
-  sheet_resumo <- sheets[3]   # "RESUMO ANO_MÊS - CIM"
+  # O template tem 4 abas; renomear as 3 primeiras com CIM_AT / CIM e ANO_MÊS:
+  #   sheet 1: "AML_2026_07_ComNIF"
+  #   sheet 2: "AML_2026_07_SemNIF"
+  #   sheet 3: "RESUMO_2026_07_AML"
+  ano_mes_str  <- sprintf("%04d_%02d", ano, mes)
+  sheet_com    <- paste0("AML_", ano_mes_str, "_ComNIF")
+  sheet_sem    <- paste0("AML_", ano_mes_str, "_SemNIF")
+  sheet_resumo <- paste0("RESUMO_", ano_mes_str, "_AML")
+
+  renameWorksheet(wb, sheet = 1, newName = sheet_com)
+  renameWorksheet(wb, sheet = 2, newName = sheet_sem)
+  renameWorksheet(wb, sheet = 3, newName = sheet_resumo)
+
 
 
   # ── Preencher cabeçalhos (Ano, Mês, AT) ──────────────────────────────────
