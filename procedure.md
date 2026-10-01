@@ -6,7 +6,8 @@ As regras de compensação estão definidas na Portaria 7A/2024, que teve já 2 
 `documents\2024_01_05_portaria_7a.pdf` (1a versão), `documents\2024_12_Portaria 307-A_2024_1.pdf` (1a alteração), `documents\2026_07_portaria_287_2026_1_passejovem.pdf` (2a alteração)
 
 - Todos os jovens até 23 anos (inclusive), com NIF e Data de Nascimento.
-  - Excepção para jovens estudantes de Arquitectura ou Medicina - aí o limite são 24 anos (inclusive) - estes têm de entregar um documento da universidade.
+
+  - Excepção para jovens estudantes de  Arquitetura e Urbanismo, Ciências Farmacêuticas, Medicina, Medicina Dentária, Medicina Veterinária - aí o limite são 24 anos (inclusive) - estes têm de entregar um documento da universidade.
 - Não podem ter mais do que 1 passe gratuito (por exemplo Navegante em Lisboa, e Andante no Porto) - isto é verificado pelo IMT após comparação das tabelas enviadas e lista de NIF
 - Não precisa de ter o passe relativo ao seu local de residência (pode escolher outra área)
 - Pode viver em CIMS distintas e ter o complemento de passe interregional (ex: Torres Vedras, Oeste)
