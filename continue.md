@@ -1,9 +1,14 @@
-- [x] O output .xlsx de Julho 2026 foi corrigido com o template v2:
+
+- [X]  O output .xlsx de Julho 2026 foi corrigido com o template v2:
   - Adicionadas as colunas "Tipo de Documento", "N.º DO DOCUMENTO" e "Data de nascimento" para os casos sem NIF.
   - Alinhamento de colunas corrigido (incluindo coluna 10/11 "Estimativa" e coluna de Compensação).
   - Variável "Categoria" definida: "B" se o nome do passe contém "Complemento", "A" caso contrário.
-- [x] Processamento de semNIF enriquecido com `doc_type` e `doc_number`:
+- [X]  Processamento de semNIF enriquecido com `doc_type` e `doc_number`:
   - Agrupamento por documento quando o mesmo titular possui múltiplos cartões (ex: passaportes PA515908 e U0253488), somando validações e combinando tipos de bilhete.
   - Verificação de anomalias (cartões de cidadão com zeros/noves/repetidos/< 6 dígitos, e documentos com datas de nascimento divergentes como 00000, 000000 e PCO39594).
   - Exportação dedicada dos casos suspeitos para `<ano>_<mm>_documentos_estranhos.csv`.
-- [ ] Atualizar procedure.md quando aplicável.
+- [X]  Ajustes finos no ficheiro para IMT (Julho 2026):
+  - **No comNIF**: ordenado por NIF; NIF como número; PVP como número; data de nascimento como Date Excel (`dd/mm/yyyy`); compensação formatada com 2 casas decimais; adicionada coluna M com cabeçalho "Número do cartão de suporte ao título de transporte" contendo `cardserialnumber_new`.
+  - **No semNIF**: ordenado por `doc_type` e `doc_number`; PVP como número; data de nascimento como Date Excel (`dd/mm/yyyy`); compensação formatada com 2 casas decimais; adicionada coluna N (preservando Categoria na M) com cabeçalho "Número do cartão de suporte ao título de transporte" contendo `cardserialnumber_new`.
+  - **No RESUMO**: colunas alinhadas com o cabeçalho (AML | AT TML / AT CASCAIS | ANO | MÊS | COMPENSAÇÃO); linha de TOTAL em negrito com traço superior; valores com separador de milhares e 2 casas decimais; células residuais limpas.
+- [ ]  Atualizar procedure.md quando aplicável.
