@@ -413,8 +413,8 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
       unique()
 
     # 2. Identificar documentos na lista de exceções (id_exception.csv)
-    #    Estes documentos são conhecidos por pertencerem a crianças diferentes (fraude / partilhado).
-    #    Não devem ser fundidos/agrupados; cada cartão deve ser tratado separadamente.
+    #    Estes documentos são exceções para JUNTAR: mesmo que tenham anomalias
+    #    (como múltiplas datas de nascimento distintas), sabemos que é a mesma pessoa.
     dt_sem_raw <- dt_sem_raw |>
       mutate(
         doc_clean      = trimws(as.character(doc_number)),
@@ -422,38 +422,13 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
         is_id_exc      = is_in_id_exception(doc_type, doc_number, dt_id_exc)
       )
 
-    # Atribuir sufixo determinístico (_1, _2, ...) ao doc_number dos registos em exceção
-    exc_mapping <- NULL
-    if (any(dt_sem_raw$is_id_exc)) {
-      exc_mapping <- dt_sem_raw |>
-        filter(is_id_exc) |>
-        distinct(doc_type_clean, doc_clean, card_serial_number) |>
-        arrange(doc_type_clean, doc_clean, card_serial_number) |>
-        group_by(doc_type_clean, doc_clean) |>
-        mutate(
-          sufixo          = row_number(),
-          doc_number_novo = paste0(doc_clean, "_", sufixo)
-        ) |>
-        ungroup()
-
-      dt_sem_raw <- dt_sem_raw |>
-        left_join(
-          exc_mapping |> select(doc_type_clean, doc_clean, card_serial_number, doc_number_novo),
-          by = c("doc_type_clean", "doc_clean", "card_serial_number")
-        ) |>
-        mutate(
-          doc_number = coalesce(doc_number_novo, doc_number),
-          doc_clean  = coalesce(doc_number_novo, doc_clean)
-        ) |>
-        select(-doc_number_novo)
-    }
-
     # 3. Classificar anomalias nos números de documento com dplyr
+    # Documentos na lista de exceções para juntar (id_exception.csv) NÃO são classificados com anomalia impeditiva
     dt_sem_raw <- dt_sem_raw |>
       mutate(
         is_cc      = doc_type_clean == "CITIZEN_CARD",
         motivo_doc = case_when(
-          is_id_exc ~ "Documento em excecao (partilhado por jovens diferentes)",
+          is_id_exc ~ NA_character_, # Exceção manual para juntar: limpa motivo para permitir agrupamento por documento
           doc_number %in% docs_multi_bd & grepl("^0+$", doc_clean) ~ "Cartao de Cidadao com apenas zeros e datas de nascimento distintas",
           doc_number %in% docs_multi_bd ~ "Documento com datas de nascimento distintas",
           is_cc & grepl("^0+$", doc_clean) ~ "Cartao de Cidadao com apenas zeros",
@@ -489,15 +464,14 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     message(sprintf("  Documentos estranhos/suspeitos: %d registos detetados", nrow(dt_docs_estranhos)))
 
     # 5. Chave de agrupamento:
-    #    - Se é exceção de ID -> agrupa por cartão (trata cada titular como separado, não soma validações)
-    #    - Se tem documento válido e sem anomalia -> agrupa por documento (mesmo titular com múltiplos cartões)
-    #    - Se tem documento anómalo ou ausente   -> agrupa por cartão (evita fundir titulares distintos com dummy docs)
+    #    - Se tem documento válido e sem anomalia (ou é exceção para juntar) -> agrupa por documento
+    #    - Se tem documento anómalo ou ausente -> agrupa por cartão (evita fundir titulares distintos com dummy docs)
     dt_sem_raw <- dt_sem_raw |>
       mutate(
-        group_id = case_when(
-          is_id_exc ~ paste0("CARD_", card_serial_number),
-          !is.na(doc_clean) & nzchar(doc_clean) & is.na(motivo_doc) ~ paste0("DOC_", doc_type_clean, "_", doc_clean),
-          TRUE ~ paste0("CARD_", card_serial_number)
+        group_id = if_else(
+          !is.na(doc_clean) & nzchar(doc_clean) & is.na(motivo_doc),
+          paste0("DOC_", doc_type_clean, "_", doc_clean),
+          paste0("CARD_", card_serial_number)
         )
       )
 
@@ -643,7 +617,6 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   } else {
     # Meses anteriores (sem campos de documento) -> mantém agregação por cartão
     dt_docs_estranhos <- NULL
-    exc_mapping       <- NULL
     docs_multi_bd     <- character(0)
     dt_semNIF  <- agregar_por_grupo(dt_sem_raw, "card")
 
@@ -695,25 +668,12 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     rep(FALSE, nrow(dt_mes))
   }
 
-  # 1. Casos com exceção de documento ID (fraude / partilhado)
+  # 1. Casos com exceção de documento ID (juntos por exceção apesar de datas distintas)
   dt_ver_exc <- if (any(is_exc_mes)) {
-    dt_exc_sub <- dt_mes |> filter(is_exc_mes)
-    if (!is.null(exc_mapping) && nrow(exc_mapping) > 0) {
-      dt_exc_sub <- dt_exc_sub |>
-        mutate(
-          doc_type_clean = toupper(trimws(as.character(doc_type))),
-          doc_clean      = trimws(as.character(doc_number))
-        ) |>
-        left_join(
-          exc_mapping |> select(doc_type_clean, doc_clean, card_serial_number, doc_number_novo),
-          by = c("doc_type_clean", "doc_clean", "card_serial_number")
-        ) |>
-        mutate(doc_number = coalesce(doc_number_novo, doc_number)) |>
-        select(-doc_type_clean, -doc_clean, -any_of("doc_number_novo"))
-    }
-    dt_exc_sub |>
+    dt_mes |>
+      filter(is_exc_mes) |>
       transmute(
-        motivo             = "Excecao ID (documento partilhado)",
+        motivo             = "Excecao ID (datas de nascimento distintas)",
         card_serial_number = as.character(card_serial_number),
         fiscal_number      = as.character(fiscal_number),
         birth_date,
