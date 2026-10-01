@@ -170,7 +170,7 @@ agregar_por_grupo <- function(dt, por = c("fiscal", "card")) {
   res_single <- data.table(
     am                       = "AML",
     # Emissor deduzido do código de operador
-    emissor                  = fifelse(dt_single$ticket_operator_code == 31L, "AT AML",
+    emissor                  = fifelse(dt_single$ticket_operator_code == 31L, "AT TML",
                                fifelse(dt_single$ticket_operator_code == 21L, "AT Cascais",
                                fifelse(dt_single$ticket_operator_code == 16L, "MTS", ""))),
     year_dist                = dt_single$year_dist,
@@ -494,7 +494,7 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
         ptb_num = as.numeric(ptb_new),
         comp = if_else(count_val < THRESHOLD_VAL, PCT_VAL * ptb_num * count_val, ptb_num),
         emissor = case_when(
-          ticket_operator_code == 31L ~ "AT AML",
+          ticket_operator_code == 31L ~ "AT TML",
           ticket_operator_code == 21L ~ "AT Cascais",
           ticket_operator_code == 16L ~ "MTS",
           TRUE ~ ""

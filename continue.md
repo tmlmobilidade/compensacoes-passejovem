@@ -1,4 +1,3 @@
-
 - [X]  O output .xlsx de Julho 2026 foi corrigido com o template v2:
   - Adicionadas as colunas "Tipo de Documento", "N.º DO DOCUMENTO" e "Data de nascimento" para os casos sem NIF.
   - Alinhamento de colunas corrigido (incluindo coluna 10/11 "Estimativa" e coluna de Compensação).
@@ -12,3 +11,12 @@
   - **No semNIF**: ordenado por `doc_type` e `doc_number`; PVP como número; data de nascimento como Date Excel (`dd/mm/yyyy`); compensação formatada com 2 casas decimais; adicionada coluna N (preservando Categoria na M) com cabeçalho "Número do cartão de suporte ao título de transporte" contendo `cardserialnumber_new`.
   - **No RESUMO**: colunas alinhadas com o cabeçalho (AML | AT TML / AT CASCAIS | ANO | MÊS | COMPENSAÇÃO); linha de TOTAL em negrito com traço superior; valores com separador de milhares e 2 casas decimais; células residuais limpas.
 - [ ]  Atualizar procedure.md quando aplicável.
+
+
+Documentarion.
+
+I want to update the README, based on this structure of the  example C:\GIS\Compensacoes\README.md
+
+I also want to update the procedure.md, including the notes for exceptions and so on
+
+Be in mind that I don't care anympre abour previous months anymore (may, june) because they had different requirements than july.
