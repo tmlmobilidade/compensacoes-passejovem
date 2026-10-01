@@ -423,12 +423,15 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
       )
 
     # 3. Classificar anomalias nos números de documento com dplyr
-    # Documentos na lista de exceções para juntar (id_exception.csv) NÃO são classificados com anomalia impeditiva
+    # Documentos na lista de exceções (id_exception.csv) são identificados com motivo dedicado
     dt_sem_raw <- dt_sem_raw |>
       mutate(
         is_cc      = doc_type_clean == "CITIZEN_CARD",
         motivo_doc = case_when(
-          is_id_exc ~ NA_character_, # Exceção manual para juntar: limpa motivo para permitir agrupamento por documento
+          is_id_exc ~ paste0(
+            if_else(doc_type_clean == "PASSPORT", "Passaporte", "Documento"),
+            " partilhado por jovens diferentes (fraude/excecao)"
+          ),
           doc_number %in% docs_multi_bd & grepl("^0+$", doc_clean) ~ "Cartao de Cidadao com apenas zeros e datas de nascimento distintas",
           doc_number %in% docs_multi_bd ~ "Documento com datas de nascimento distintas",
           is_cc & grepl("^0+$", doc_clean) ~ "Cartao de Cidadao com apenas zeros",
@@ -442,7 +445,8 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
         )
       )
 
-    # 4. Lista exportada de documentos estranhos / suspeitos
+    # 4. Lista exportada de documentos estranhos / suspeitos (semNIF)
+    #    Remove linhas duplicadas mantendo apenas um registo por cartão
     dt_docs_estranhos <- dt_sem_raw |>
       filter(!is.na(motivo_doc)) |>
       transmute(
@@ -458,18 +462,19 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
         year_dist,
         month_dist
       ) |>
-      distinct() |>
+      distinct(card_serial_number, .keep_all = TRUE) |>
+      arrange(doc_type, doc_number, card_serial_number) |>
       as.data.table()
 
-    message(sprintf("  Documentos estranhos/suspeitos: %d registos detetados", nrow(dt_docs_estranhos)))
+    message(sprintf("  Documentos estranhos/suspeitos (semNIF): %d registos detetados", nrow(dt_docs_estranhos)))
 
     # 5. Chave de agrupamento:
-    #    - Se tem documento válido e sem anomalia (ou é exceção para juntar) -> agrupa por documento
+    #    - Se tem documento válido e sem anomalia (OU é exceção para juntar) -> agrupa por documento
     #    - Se tem documento anómalo ou ausente -> agrupa por cartão (evita fundir titulares distintos com dummy docs)
     dt_sem_raw <- dt_sem_raw |>
       mutate(
         group_id = if_else(
-          !is.na(doc_clean) & nzchar(doc_clean) & is.na(motivo_doc),
+          (!is.na(doc_clean) & nzchar(doc_clean) & is.na(motivo_doc)) | is_id_exc,
           paste0("DOC_", doc_type_clean, "_", doc_clean),
           paste0("CARD_", card_serial_number)
         )
@@ -750,7 +755,7 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   out_sem  <- file.path(paths$output, output_filename(ano, mes, "semNIF"))
   out_ver  <- file.path(paths$output, output_filename(ano, mes, "a_verificar"))
   out_nok  <- file.path(paths$output, output_filename(ano, mes, "age_nok"))
-  out_estranhos <- file.path(paths$output, output_filename(ano, mes, "documentos_estranhos"))
+  out_estranhos <- file.path(paths$output, output_filename(ano, mes, "documentos_estranhos_semNIF"))
 
   write_csv_pj(dt_comNIF,    out_com)
   write_csv_pj(dt_semNIF,    out_sem)
@@ -770,10 +775,10 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   message(sprintf("[02] Concluido em %.1f segundos.\n", elapsed))
 
   invisible(list(
-    comNIF               = dt_comNIF,
-    semNIF               = dt_semNIF,
-    age_nok              = dt_age_nok,
-    documentos_estranhos = dt_docs_estranhos
+    comNIF                      = dt_comNIF,
+    semNIF                      = dt_semNIF,
+    age_nok                     = dt_age_nok,
+    documentos_estranhos_semNIF = dt_docs_estranhos
   ))
 }
 
