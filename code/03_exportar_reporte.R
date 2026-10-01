@@ -376,7 +376,7 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
 
   addStyle(wb, sheet_resumo, style_resumo_center, rows = 13:14, cols = 3:4, gridExpand = TRUE)
   addStyle(wb, sheet_resumo, style_resumo_num,    rows = 13:14, cols = 5,   gridExpand = TRUE)
-  addStyle(wb, sheet_resumo, style_total_line,    rows = 15,    cols = 2:5, gridExpand = TRUE)
+  addStyle(wb, sheet_resumo, style_total_line,    rows = 15,    cols = 1:5, gridExpand = TRUE)
   addStyle(wb, sheet_resumo, style_total_label,   rows = 15,    cols = 2)
   addStyle(wb, sheet_resumo, style_total_val,     rows = 15,    cols = 5)
 
