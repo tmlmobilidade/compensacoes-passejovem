@@ -26,7 +26,7 @@ source(file.path(dirname(sys.frame(1)$ofile), "00_config.R"),
 
 # Nome do ficheiro template (relativo à raiz do projecto)
 TEMPLATE_FILE <- file.path(
-  "Exemplos",
+  "documents",
   "Template_PASSE GRATUITO JOVEM - REPORTE - CIM_AT para IMT (Mensal) - 2026 - V2.xlsx"
 )
 
