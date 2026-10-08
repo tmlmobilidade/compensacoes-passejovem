@@ -317,6 +317,11 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   write_csv_pj(dt_main, out_limpos)
   message(sprintf("  Gravado: %s", basename(out_limpos)))
 
+  # Gravar contagem de registos brutos de bilhética (para histórico e relatórios)
+  n_brutos <- nrow(dt_pj) + if (!is.null(dt_casc)) nrow(dt_casc) else 0L
+  out_brutos <- file.path(paths$output, output_filename(ano, mes, "registos_brutos", ext = "rds"))
+  saveRDS(n_brutos, out_brutos)
+
   if (!is.null(dt_az)) {
     out_az <- file.path(paths$output, output_filename(ano, mes, "complemento_azambuja"))
     write_csv_pj(dt_az, out_az)

@@ -1,0 +1,5 @@
+project:
+  type: default
+  post-render:
+    - powershell -ExecutionPolicy Bypass -File code/templates/postprocess_docx.ps1
+

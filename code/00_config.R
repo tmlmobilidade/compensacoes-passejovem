@@ -92,9 +92,14 @@ here_root <- function() {
     if (dir.exists(file.path(candidate, "code"))) return(normalizePath(candidate))
   }
 
-  # 4. Directório de trabalho como último recurso
+  # 4. Directório de trabalho (ou pasta-mãe se estiver em code/)
   wd <- normalizePath(getwd())
   if (dir.exists(file.path(wd, "code"))) return(wd)
+  if (dir.exists(file.path(dirname(wd), "code"))) return(normalizePath(dirname(wd)))
+  if (requireNamespace("here", quietly = TRUE)) {
+    h <- tryCatch(normalizePath(here::here()), error = function(e) NULL)
+    if (!is.null(h) && dir.exists(file.path(h, "code"))) return(h)
+  }
 
   stop(
     "Nao foi possivel determinar a raiz do projecto PasseJovem.\n",
@@ -395,4 +400,100 @@ write_csv_pj <- function(dt, path) {
     }
   )
 }
+
+
+# -----------------------------------------------------------------------------
+# Atualização de compensações anteriores (data/auxiliar/compensacao_pj_anteriores.csv)
+# -----------------------------------------------------------------------------
+
+#' Atualiza a tabela de compensações anteriores com os dados da run do mês.
+#' Lê os outputs gerados pelo pipeline (<ano>_<mm>_comNIF.csv e <ano>_<mm>_semNIF.csv)
+#' e adiciona ou atualiza a linha correspondente em data/auxiliar/compensacao_pj_anteriores.csv.
+#'
+#' @param ano  Ano de referência (ex: 2026)
+#' @param mes  Mês de referência (1–12)
+#' @param raiz Raiz do projecto (detectada automaticamente)
+#' @return data.frame com a tabela atualizada (invisível)
+atualizar_compensacao_pj_anteriores <- function(ano, mes, raiz = here_root()) {
+  paths <- month_paths(ano, mes, raiz)
+  f_ant <- file.path(paths$auxiliar, "compensacao_pj_anteriores.csv")
+
+  f_com <- file.path(paths$output, output_filename(ano, mes, "comNIF"))
+  f_sem <- file.path(paths$output, output_filename(ano, mes, "semNIF"))
+
+  if (!file.exists(f_com) || !file.exists(f_sem)) {
+    warning("Ficheiros comNIF/semNIF nao encontrados para atualizar compensacao_pj_anteriores.csv.")
+    return(invisible(NULL))
+  }
+
+  dt_com <- fread(f_com, sep = ";", dec = ".")
+  dt_sem <- fread(f_sem, sep = ";", dec = ".")
+
+  # Registos brutos do mês (se gravado pelo 01_preparar_dados.R)
+  f_brutos <- file.path(paths$output, output_filename(ano, mes, "registos_brutos", ext = "rds"))
+  n_registos <- if (file.exists(f_brutos)) {
+    readRDS(f_brutos)
+  } else {
+    f_limpos <- file.path(paths$output, output_filename(ano, mes, "limpos_preagregacao"))
+    if (file.exists(f_limpos)) nrow(fread(f_limpos, sep = ";", dec = ".")) else NA_integer_
+  }
+
+  n_users      <- nrow(dt_com) + nrow(dt_sem)
+  n_semnif     <- nrow(dt_sem)
+  n_vals       <- sum(dt_com$numval, na.rm = TRUE) + sum(dt_sem$numval, na.rm = TRUE)
+  v_user       <- if (n_users > 0) n_vals / n_users else 0
+  comp_tot     <- sum(dt_com$compensacao, na.rm = TRUE) + sum(dt_sem$compensacao, na.rm = TRUE)
+  comp_user    <- if (n_users > 0) comp_tot / n_users else 0
+
+  if (file.exists(f_ant)) {
+    df_ant <- utils::read.csv2(f_ant, stringsAsFactors = FALSE, dec = ",")
+  } else {
+    df_ant <- data.frame(
+      ano                    = integer(),
+      mes                    = integer(),
+      registos_pj            = integer(),
+      utilizadores_pj        = integer(),
+      utilizadores_pj_semNIF = integer(),
+      validacoes_pj          = integer(),
+      validacoes_utilizador  = numeric(),
+      compensacao_valor      = numeric(),
+      compensasao_utilizador = numeric(),
+      stringsAsFactors       = FALSE
+    )
+  }
+
+  idx <- which(df_ant$ano == ano & df_ant$mes == mes)
+  if (length(idx) > 0) {
+    reg_val <- if (!is.na(n_registos)) n_registos else df_ant$registos_pj[idx]
+    df_ant$registos_pj[idx]              <- reg_val
+    df_ant$utilizadores_pj[idx]         <- n_users
+    df_ant$utilizadores_pj_semNIF[idx]  <- n_semnif
+    df_ant$validacoes_pj[idx]           <- n_vals
+    df_ant$validacoes_utilizador[idx]   <- round(v_user, 8)
+    df_ant$compensacao_valor[idx]       <- round(comp_tot, 2)
+    df_ant$compensasao_utilizador[idx]  <- round(comp_user, 8)
+    message(sprintf("[00] Mes %d/%02d atualizado em compensacao_pj_anteriores.csv", ano, mes))
+  } else {
+    nova_linha <- data.frame(
+      ano                    = as.integer(ano),
+      mes                    = as.integer(mes),
+      registos_pj            = as.integer(n_registos),
+      utilizadores_pj        = as.integer(n_users),
+      utilizadores_pj_semNIF = as.integer(n_semnif),
+      validacoes_pj          = as.integer(n_vals),
+      validacoes_utilizador  = round(v_user, 8),
+      compensacao_valor      = round(comp_tot, 2),
+      compensasao_utilizador = round(comp_user, 8),
+      stringsAsFactors       = FALSE
+    )
+    df_ant <- rbind(df_ant, nova_linha)
+    df_ant <- df_ant[order(df_ant$ano, df_ant$mes), ]
+    message(sprintf("[00] Novo mes %d/%02d adicionado a compensacao_pj_anteriores.csv", ano, mes))
+  }
+
+  dir.create(dirname(f_ant), recursive = TRUE, showWarnings = FALSE)
+  utils::write.table(df_ant, f_ant, sep = ";", dec = ",", row.names = FALSE, na = "", quote = FALSE)
+  invisible(df_ant)
+}
+
 

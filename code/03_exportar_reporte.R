@@ -396,6 +396,9 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
   message(sprintf("  Gravado: %s", basename(out_xlsx)))
   message(sprintf("[03] Concluido em %.1f segundos.\n", elapsed))
 
+  # ── Auto-atualização de compensacao_pj_anteriores.csv ────────────────────
+  atualizar_compensacao_pj_anteriores(ano, mes, raiz)
+
   # Mostrar resumo no ecrã
   message("  === RESUMO ===")
   message(sprintf("  comNIF: %d passes | %.2f EUR",
