@@ -12,11 +12,9 @@
   - **No RESUMO**: colunas alinhadas com o cabeçalho (AML | AT TML / AT CASCAIS | ANO | MÊS | COMPENSAÇÃO); linha de TOTAL em negrito com traço superior; valores com separador de milhares e 2 casas decimais; células residuais limpas.
 - [ ]  Atualizar procedure.md quando aplicável.
 
+* [ ]  Documentation of processes and methods
 
-Documentarion.
-
-I want to update the README, based on this structure of the  example C:\GIS\Compensacoes\README.md
-
-I also want to update the procedure.md, including the notes for exceptions and so on
-
-Be in mind that I don't care anympre abour previous months anymore (may, june) because they had different requirements than july.
+* I want to update the README, based on this structure of the  example C:\GIS\Compensacoes\README.md
+* I also want to update the procedure.md, including the notes for exceptions and so on
+* Be in mind that I don't care anympre abour previous months anymore (may, june) because they had different requirements than july.
+* maybe continue from conversation "SQL Questy Natural Language Translation".
