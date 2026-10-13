@@ -17,14 +17,14 @@ As regras de compensação estão definidas na Portaria 7-A/2024, que teve já 2
 O valor da compensação por cada passe gratuito para jovens estudantes é calculado da seguinte forma:
 
 - **a) Nas AM:**
-  - i) Cada validação corresponde a 5 % do valor do título de referência, pagando-se este valor multiplicado pelo número de validações realizadas até se atingir 20 validações;
+  - i) Cada validação corresponde a **5 % do valor do título de referência**, pagando-se este valor multiplicado pelo número de validações realizadas até se atingir **20 validações**;
   - ii) Atingidas 20 validações, inclusive, é pago o valor do título de referência por inteiro.
 - **b) Nas CIM:**
-  - i) Cada validação corresponde a 10 % do valor do título de referência, até 10 validações;
+  - i) Cada validação corresponde a **10 % do valor do título de referência**, até **10 validações**;
   - ii) Atingidas 10 validações, inclusive, é pago o valor do título de referência por inteiro.
-- **c)** Os passes sem qualquer validação não dão direito a compensação.
+- **c)** Os passes sem qualquer validação nesse mês não dão direito a compensação.
 
-O complemento interregional não pode ser vendido separadamente, tem de ser com o Navegante.
+O complemento interregional não pode ser vendido separadamente, tem de ser adquirido com o Navegante.
 
 > Este pipeline só trata a **AML** (regra a): `THRESHOLD_VAL = 20`, `PCT_VAL = 0.05`.
 
@@ -54,7 +54,7 @@ Deixaram de existir os Navegantes municipais sub18 e sub23, e o Navegante 12. No
 
 > **Âmbito:** apenas meses **a partir de julho de 2026** (input XLSX com `ID_DOC_NUMBER`/`ID_DOC_NUMBER_DESC`, template Excel v2). Maio e junho tinham requisitos diferentes e já não são suportados/mantidos.
 
-O fluxo foi totalmente migrado para R (sem Postgres/DBeaver). O processamento é local, via `data.table` (10 a 60 s por mês, ~450 000 registos).
+O fluxo foi totalmente migrado para R (sem recorrer a consulta das bases de dados Postgres/DBeaver). O processamento é local, via `data.table` (10 a 60 s por mês, ~450 000 registos).
 
 ## Estrutura de Pastas
 
@@ -67,7 +67,7 @@ PasseJovem/
 │   ├── 03_exportar_reporte.R        # Excel AML/IMT + histórico
 │   ├── 10_documentos.R              # Informação (Quarto/Typst/DOCX)
 │   ├── 99_run_pipeline.R            # Orquestrador
-│   └── doc_params.R                 # Parâmetros de emissão
+│   └── doc_params.R                 # Parâmetros de emissão dos documentos
 └── data/
     ├── auxiliar/                    # Correções, exceções e histórico
     └── <ano>_<mm>_<mes>/
@@ -111,7 +111,7 @@ run_pipeline(ano = 2026, meses = 7)
    - `data_nascimento_correct.csv` → substitui `birth_date` por `dn_corrigida`;
    - `nif_correct.csv` → substitui `fiscal_number` e/ou `birth_date`.
 9. **Recalcular a idade** a partir da `birth_date` (anos completos até ao dia 1 do mês de referência: `floor(dias/365.25)`).
-10. **Idade em casos-limite** (o ITS ignora o dia): se `age == 25` e nasceu no mês de referência → `24`; se `age == 3` e nasceu no mês de referência → `4`.
+10. **Idade em casos-limite** (ignora-se o dia de aniversário): se `age == 25` e nasceu no mês de referência → `24`; se `age == 3` e nasceu no mês de referência → `4`.
 
 > [!IMPORTANT]
 > Se houver mais do que um ficheiro `PasseJovem` ou `TML_*`, o pipeline usa o primeiro e emite um aviso — mantém só um por pasta.
@@ -127,8 +127,8 @@ run_pipeline(ano = 2026, meses = 7)
 
 | Grupo | Chave | Notas |
 | --- | --- | --- |
-| **comNIF** | `fiscal_number` | Vários cartões/bilhetes do mesmo NIF são somados |
-| **semNIF** | documento (`DOC_<tipo>_<número>`) ou cartão (`CARD_<n.º>`) | Ver regras abaixo |
+| **comNIF** | `fiscal_number` | Vários cartões/bilhetes do mesmo NIF são somados (e tornados explícitos) |
+| **semNIF** | documento de identificação (`DOC_<tipo>_<número>`) ou número do cartão (`CARD_<n.º>`) | Ver regras abaixo |
 
 Quando um titular tem vários bilhetes:
 
@@ -157,15 +157,15 @@ numval >= 20  →  compensacao = preço_base
 Após as correções, registos com `age_new == 3` (demasiado novo) ou `age_new >= 25` são **excluídos** da compensação e guardados em `age_nok.csv`.
 
 > [!NOTE]
-> O limite legal é 23 (24 para os cursos listados). O pipeline só exclui ≥ 25; os com 24 anos entram na compensação e **têm de ser conferidos** com o documento da universidade (ver `a_verificar.csv`).
+> O limite legal é 23 (24 para os cursos listados). O pipeline só exclui ≥ 25; os com 24 anos entram na compensação e **têm de ser conferidos** com o documento da universidade (ver `a_verificar.csv` -> Enviados ao Departamento de Clientes).
 
 ## semNIF — documentos e exceções
 
-Quem não tem NIF é identificado pelo documento (`doc_type`, `doc_number`). Para evitar fundir pessoas diferentes com documentos "dummy":
+Quem não tem NIF é identificado pelo documento (`doc_type`, `doc_number`). Para evitar fundir pessoas diferentes com documentos "dummy" (ex: `00000`):
 
 | Situação | Motivo registado | Agrupa por |
 | --- | --- | --- |
-| Documento válido, sem anomalia | — | **documento** (soma validações de vários cartões do mesmo titular, ex: passaportes `PA515908` e `U0253488`) |
+| Documento válido, sem anomalia | — | **documento** (soma validações de vários cartões do mesmo titular, ex: passaportes `PA1234XX` e `U012345YY`) |
 | Documento em `id_exception.csv` | "… partilhado por jovens diferentes (fraude/exceção)" | **documento** (exceção para juntar) |
 | Mesmo `doc_number` com datas de nascimento distintas | "Documento com datas de nascimento distintas" | **cartão** |
 | Cartão de Cidadão só zeros / só noves / dígitos repetidos / < 6 dígitos | "Cartão de Cidadão com …" | **cartão** |
@@ -177,7 +177,7 @@ Todos os casos com motivo são exportados para `<ano>_<mm>_documentos_estranhos_
 
 ### Lista de exceções (`data/auxiliar/id_exception.csv`)
 
-Formato `doc_type;doc_number;motivo`. Se `doc_type` estiver vazio, a correspondência é só pelo número. Exemplo atual: `PASSPORT;PCO39594`.
+Formato `doc_type;doc_number;motivo`. Se `doc_type` estiver vazio, a correspondência é só pelo número. Exemplo: `;PA1234XX`.
 
 ## Registos a verificar (`a_verificar.csv`)
 
