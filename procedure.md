@@ -2,8 +2,8 @@
 
 ## Regras
 
-As regras de compensação estão definidas na Portaria 7-A/2024, que teve já 2 alterações:
-`documents\2024_01_05_portaria_7a.pdf` (1.ª versão), `documents\2024_12_Portaria 307-A_2024_1.pdf` (1.ª alteração), `documents\2026_07_portaria_287_2026_1_passejovem.pdf` (2.ª alteração).
+As regras de compensação estão definidas na [Portaria 7-A/2024](https://diariodarepublica.pt/dr/detalhe/portaria/7-a-2024-836205473), que teve já 2 alterações:
+`documents\2024_01_05_portaria_7a.pdf` (1.ª versão), `documents\2024_12_Portaria 307-A_2024_1.pdf` ([1.ª alteração](https://diariodarepublica.pt/dr/detalhe/portaria/307-a-2024-898320378)), `documents\2026_07_portaria_287_2026_1_passejovem.pdf` ([2.ª alteração](https://diariodarepublica.pt/dr/detalhe/portaria/287-2026-1144685810)).
 
 - Todos os jovens até 23 anos (inclusive), com NIF e data de nascimento.
   - Exceção para estudantes de Arquitetura e Urbanismo, Ciências Farmacêuticas, Medicina, Medicina Dentária e Medicina Veterinária: o limite é 24 anos (inclusive); têm de entregar um documento da universidade.
