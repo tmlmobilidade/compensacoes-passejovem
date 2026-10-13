@@ -16,8 +16,8 @@ meses_pagos_ano_atual <- 1:5   # jan a mai pagos; jun e jul por pagar
 
 # ---- Pagamentos por conta (Portaria n.º 287/2026/1) --------------------------
 # Total já recebido da ETF em pagamentos por conta (texto da secção Pagamento)
-pagamentos_conta_valor <- 22433186.22
 pagamentos_conta_n     <- 2   # n.º de pagamentos por conta já recebidos
+pagamentos_conta_valor <- pagamentos_conta_n * 11216593.11
 
 # ---- Configuração de renderização --------------------------------------------
 RENDER_PDF  <- TRUE
