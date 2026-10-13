@@ -73,6 +73,7 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   if (length(f_casc) == 0) {
     warning("Ficheiro Cascais (TML_*.xlsx) nao encontrado; a continuar sem dados de Cascais.")
     dt_casc <- NULL
+    n_cascais_registos <- 0L
   } else {
     if (length(f_casc) > 1) {
       warning("Mais do que um ficheiro Cascais encontrado; a usar o primeiro.")
@@ -80,6 +81,8 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
     }
     message("  Lendo: ", basename(f_casc))
     dt_casc <- read_cascais(f_casc, ano, mes)
+    n_cascais_registos <- nrow(dt_casc)   # registos enviados pela AT Cascais, antes de qualquer limpeza
+    message(sprintf("  Registos Viver Cascais enviados (antes de limpeza): %d", n_cascais_registos))
   }
 
 
@@ -189,6 +192,12 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
 
   # 5a. Remover bilhetes LX-BT (não elegíveis para compensação)
   n_antes <- nrow(dt_main)
+  # Guardar os registos LX-BT removidos (para contar, no relatório, os que têm
+  # em simultâneo um passe Navegante com o mesmo NIF)
+  lxbt_removidos <- dt_main |>
+    filter(!is.na(ticket_name) & str_starts(ticket_name, "LX-BT")) |>
+    select(any_of(c("fiscal_number", "card_serial_number"))) |>
+    as.data.frame()
   dt_main <- remove_lxbt(dt_main)
   message(sprintf("  Registos LX-BT removidos: %d", n_antes - nrow(dt_main)))
 
@@ -321,6 +330,11 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   n_brutos <- nrow(dt_pj) + if (!is.null(dt_casc)) nrow(dt_casc) else 0L
   out_brutos <- file.path(paths$output, output_filename(ano, mes, "registos_brutos", ext = "rds"))
   saveRDS(n_brutos, out_brutos)
+
+  # Contagens auxiliares para o texto da informação (lidas por informacao1.qmd)
+  out_cont <- file.path(paths$output, output_filename(ano, mes, "contagens_01", ext = "rds"))
+  saveRDS(list(n_cascais_registos = n_cascais_registos,
+               lxbt_removidos     = lxbt_removidos), out_cont)
 
   if (!is.null(dt_az)) {
     out_az <- file.path(paths$output, output_filename(ano, mes, "complemento_azambuja"))

@@ -1,3 +1,4 @@
+
 - [X]  O output .xlsx de Julho 2026 foi corrigido com o template v2:
   - Adicionadas as colunas "Tipo de Documento", "N.º DO DOCUMENTO" e "Data de nascimento" para os casos sem NIF.
   - Alinhamento de colunas corrigido (incluindo coluna 10/11 "Estimativa" e coluna de Compensação).
@@ -14,7 +15,10 @@
 
 * [ ]  Documentation of processes and methods
 
-* I want to update the README, based on this structure of the  example C:\GIS\Compensacoes\README.md
-* I also want to update the procedure.md, including the notes for exceptions and so on
-* Be in mind that I don't care anympre abour previous months anymore (may, june) because they had different requirements than july.
 * maybe continue from conversation "SQL Questy Natural Language Translation".
+
+Don't rely on run_report.txt, because that was a copy-past from the terminal console afer run_all. Unless you have a wah to keep that file up-do-date (whenever I run_all), but I think is more reliable to go the the source of those values.
+
+28 is the ones that have LX-BT and that have also the same NIF in a Navegante. So it is from the 160 LX-BT, the ones that also show in the Navegante comNIF.
+
+For the initial registos Cascais (1863?) this is a value that also should be printed after reading that file and before applying the filtering and cleaning. Because I can confirm that 559 is the final number, but I don't know the initial one, to be included in the text.
