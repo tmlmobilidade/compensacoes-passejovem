@@ -21,6 +21,7 @@ suppressPackageStartupMessages({
 #' @param fontsize numérico; escala do tamanho de letra (padrão 0.85 para ~9.35pt com texto base 11pt)
 #' @param fontsize_notes numérico; escala do tamanho de letra das notas de rodapé (padrão 0.7 para ~7.7pt)
 #' @param italic_notes lógico; se TRUE coloca as notas de rodapé em itálico (padrão FALSE)
+#' @param width vetor numérico com as larguras ou proporções das colunas (ex.: c(0.6, 0.4) ou c(60, 40)); opcional
 #' @param ... argumentos adicionais passados a tinytable::tt()
 #' @return Objeto tinytable
 tml_table <- function(x, 
@@ -32,6 +33,7 @@ tml_table <- function(x,
                       fontsize_notes = 0.7, 
                       italic_notes = FALSE, 
                       alignv = NULL,
+                      width = NULL,
                       ...) {
   dots <- list(...)
   if ("notes_fontsize" %in% names(dots)) {
@@ -45,7 +47,7 @@ tml_table <- function(x,
 
   # Word (DOCX): tabela Markdown processada pelo Pandoc + filtro docx_styles.lua
   if (is_docx_output()) {
-    return(tml_table_docx(x, align = align, notes = notes, bold_total = bold_total))
+    return(tml_table_docx(x, align = align, notes = notes, bold_total = bold_total, width = width))
   }
 
   if (is.data.frame(x)) {
@@ -59,6 +61,12 @@ tml_table <- function(x,
         col
       }
     })
+  }
+  if (!is.null(width) && is.numeric(width)) {
+    if (length(width) > 1 && sum(width) > 1.01) {
+      width <- width / sum(width)
+    }
+    dots[["width"]] <- width
   }
   tt_args <- c(list(x = x, caption = caption, notes = notes), dots)
   tab <- do.call(tinytable::tt, tt_args)
@@ -117,7 +125,7 @@ is_docx_output <- function() {
 #' - notas: texto simples (vetor) ou list(a = list(i, j, text)) com marcador
 #'   sobrescrito na célula (i = 0 é o cabeçalho);
 #' - o estilo de letra das células é aplicado pelo estilo Compact do Word (Calibri 8.5 pt).
-tml_table_docx <- function(x, align = NULL, notes = NULL, bold_total = TRUE) {
+tml_table_docx <- function(x, align = NULL, notes = NULL, bold_total = TRUE, width = NULL) {
   x <- as.data.frame(x, stringsAsFactors = FALSE, check.names = FALSE)
   esc <- function(s) {
     s <- as.character(s)
@@ -170,18 +178,24 @@ tml_table_docx <- function(x, align = NULL, notes = NULL, bold_total = TRUE) {
     parts <- unlist(strsplit(v_clean, "<br>", fixed = TRUE))
     max(nchar(trimws(parts)), 1, na.rm = TRUE)
   }
-  w <- vapply(seq_len(nc), function(j) {
-    has_eur <- any(grepl("€", cells[[j]], fixed = TRUE))
-    has_pct <- any(grepl("%", cells[[j]], fixed = TRUE))
-    cell_w  <- maxw_vec(cells[[j]])
-    hdr_parts <- unlist(strsplit(clean_str(header[j]), "<br>", fixed = TRUE))
-    hdr_words <- unlist(strsplit(hdr_parts, "\\s+"))
-    hdr_w   <- max(nchar(trimws(hdr_words)), 1, na.rm = TRUE)
-    
-    col_w   <- max(cell_w, hdr_w)
-    min_col <- if (j == 1) 16 else if (has_eur) 19 else if (has_pct) 13 else 8
-    max(col_w, min_col)
-  }, numeric(1))
+
+  if (!is.null(width) && is.numeric(width) && length(width) == nc) {
+    pct <- width / sum(width)
+    w   <- pmax(round(pct * 100), 3)
+  } else {
+    w <- vapply(seq_len(nc), function(j) {
+      has_eur <- any(grepl("€", cells[[j]], fixed = TRUE))
+      has_pct <- any(grepl("%", cells[[j]], fixed = TRUE))
+      cell_w  <- maxw_vec(cells[[j]])
+      hdr_parts <- unlist(strsplit(clean_str(header[j]), "<br>", fixed = TRUE))
+      hdr_words <- unlist(strsplit(hdr_parts, "\\s+"))
+      hdr_w   <- max(nchar(trimws(hdr_words)), 1, na.rm = TRUE)
+      
+      col_w   <- max(cell_w, hdr_w)
+      min_col <- if (j == 1) 16 else if (has_eur) 19 else if (has_pct) 13 else 8
+      max(col_w, min_col)
+    }, numeric(1))
+  }
   al <- if (is.null(align)) rep("l", nc) else rep_len(align, nc)
   sep <- vapply(seq_len(nc), function(j) {
     d <- strrep("-", w[j])

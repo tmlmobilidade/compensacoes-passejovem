@@ -328,6 +328,7 @@ colnames(t1_data) <- c("Designação do título", "Título base", "Preço refer�
 tml_table(
   t1_data,
   align = c("l", "l", "r"),
+  width = c(50, 40, 20),
   notes = list(a = list(i = c(1:2), j = 1, text = "Inclui o Passe Navegante 12."),
                b = list(i = 2, j = 1, text = "Passes de natureza inter-regional."))
   )
@@ -429,7 +430,11 @@ t2_display <- data.frame(
 )
 colnames(t2_display) <- c("Designação do título", "N.º passes elegíveis\npara compensação", "Nº validações", "Compensação (€)")
 
-tml_table(t2_display, align = c("l", "r", "r", "r"), bold_total = TRUE, fontsize = 0.82)
+tml_table(t2_display,
+ align = c("l", "r", "r", "r"),
+ width = c(40, 20, 20, 20),
+ bold_total = TRUE,
+ fontsize = 0.82)
 ```
 
 ```{r}
