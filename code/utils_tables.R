@@ -96,6 +96,45 @@ tml_table <- function(x,
   if (!is.null(alignv)) {
     tab <- style_tt(tab, alignv = alignv)
   }
+
+  # Estilos para tabela de reporte/pagamentos (ex.: Tabela 5)
+  if (nrow(x) > 0) {
+    col1 <- trimws(gsub("\\*", "", as.character(x[[1]])))
+
+    # Cores na coluna Estado (Pago -> Verde, Por pagar -> Vermelho)
+    if (ncol(x) >= 3) {
+      col3 <- trimws(as.character(x[[3]]))
+      pago_idx <- which(col3 == "Pago")
+      if (length(pago_idx) > 0) {
+        tab <- style_tt(tab, i = pago_idx, j = 3, color = "#27AE60")
+      }
+      por_pagar_idx <- which(col3 == "Por pagar")
+      if (length(por_pagar_idx) > 0) {
+        tab <- style_tt(tab, i = por_pagar_idx, j = 3, color = "#C0392B")
+      }
+    }
+
+    # Linha divisória após anos anteriores (ex.: Subtotal 2025)
+    subtot_ant_idx <- which(grepl("^Subtotal\\s+\\d{4}\\s+solicitado e pago", col1, ignore.case = TRUE))
+    if (length(subtot_ant_idx) > 0) {
+      tab <- style_tt(tab, i = max(subtot_ant_idx), line = "b", line_width = 0.05)
+    }
+
+    # Linha divisória após o mês atual e destaque em negrito
+    subtot_ano_idx <- which(grepl("^Subtotal\\s+\\d{4}\\s+solicitado$", col1, ignore.case = TRUE))
+    if (length(subtot_ano_idx) > 0 && subtot_ano_idx[1] > 1) {
+      cur_m <- subtot_ano_idx[1] - 1
+      tab <- style_tt(tab, i = cur_m, j = 1:min(2, ncol(x)), bold = TRUE)
+      tab <- style_tt(tab, i = cur_m, line = "b", line_width = 0.05)
+    }
+
+    # Sombreado nas linhas de comparação plurianual (ex.: Subtotal 2024-2026)
+    pluri_idx <- which(grepl("^Subtotal\\s+\\d{4}-\\d{4}", col1, ignore.case = TRUE))
+    if (length(pluri_idx) > 0) {
+      tab <- style_tt(tab, i = pluri_idx, background = "#EAEAEA")
+    }
+
+  }
   tab
 }
 
@@ -145,6 +184,21 @@ tml_table_docx <- function(x, align = NULL, notes = NULL, bold_total = TRUE, wid
     for (r in tot) {
       v <- unlist(cells[r, ], use.names = FALSE)
       cells[r, ] <- as.list(ifelse(nzchar(v) & v != "\u00a0", paste0("**", v, "**"), "\u00a0"))
+    }
+  }
+
+  # Destaque em negrito das colunas 1 e 2 do mês atual na Tabela 5
+  if (nr > 0) {
+    col1_clean <- trimws(as.character(x[[1]]))
+    subtot_ano_idx <- which(grepl("^Subtotal\\s+\\d{4}\\s+solicitado$", col1_clean, ignore.case = TRUE))
+    if (length(subtot_ano_idx) > 0 && subtot_ano_idx[1] > 1) {
+      cur_m <- subtot_ano_idx[1] - 1
+      for (c_idx in 1:min(2, nc)) {
+        val <- as.character(cells[cur_m, c_idx])
+        if (nzchar(val) && val != "\u00a0") {
+          cells[cur_m, c_idx] <- paste0("**", val, "**")
+        }
+      }
     }
   }
 

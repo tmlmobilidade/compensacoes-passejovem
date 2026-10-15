@@ -134,9 +134,17 @@ foreach ($f in $files) {
             $modified = $true
         }
 
-        # Limpar w:pPr duplicados em paragrafos que receberam pPr customizado via Lua
-        if ($xml -match '<w:p[ >][^>]*?<w:pPr>.*?</w:pPr><w:pPr>') {
-            $xml = [regex]::Replace($xml, '(<w:p[ >][^>]*?)<w:pPr>.*?</w:pPr><w:pPr>', '$1<w:pPr>')
+        # Limpar w:pPr duplicados em paragrafos que receberam pPr customizado via Lua (sem cruzar fronteira de paragrafo)
+        $xmlBeforeCleanPpr = $xml
+        $xml = [regex]::Replace($xml, '(<w:p[ >][^>]*?)<w:pPr>(?:(?!</w:p>).)*?</w:pPr><w:pPr>', '$1<w:pPr>', [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        if ($xml -ne $xmlBeforeCleanPpr) {
+            $modified = $true
+        }
+
+        # Limpar w:tcPr duplicados em celulas que receberam tcPr customizado via Lua
+        if ($xml.Contains('<w:tcPr /><w:tcPr>') -or $xml.Contains('<w:tcPr/><w:tcPr>')) {
+            $xml = $xml.Replace('<w:tcPr /><w:tcPr>', '<w:tcPr>')
+            $xml = $xml.Replace('<w:tcPr/><w:tcPr>', '<w:tcPr>')
             $modified = $true
         }
         

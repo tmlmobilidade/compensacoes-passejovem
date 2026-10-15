@@ -12,21 +12,25 @@ local pass1 = {
       end
     end
 
-    -- 2. Processar corpos: linha TOTAL e variação 'vs'
+    -- 2. Processar corpos: linha TOTAL, subtotais, sombreados e cores
     for _, body in ipairs(tbl.bodies) do
-      for _, row in ipairs(body.body) do
-        local is_total = false
-        local is_var = false
-        for _, cell in ipairs(row.cells) do
-          local txt = pandoc.utils.stringify(cell)
-          if txt:match("^TOTAL") then
-            is_total = true
-            break
-          elseif txt:match("%s+vs%s+") then
-            is_var = true
-            break
-          end
-        end
+      local num_rows = #body.body
+      for row_idx, row in ipairs(body.body) do
+        local txt1 = pandoc.utils.stringify(row.cells[1])
+        local next_txt1 = (row_idx < num_rows) and pandoc.utils.stringify(body.body[row_idx + 1].cells[1]) or ""
+
+        local is_total = txt1:match("^TOTAL")
+        local is_var   = txt1:match("%s+vs%s+")
+
+        -- Tabela 5: Linha horizontal abaixo do ano anterior (antes dos meses)
+        local is_subtot_ant = txt1:match("^Subtotal%s+%d+%s+solicitado e pago") and (next_txt1:match("^%a%a%a/%d%d") or next_txt1:match("^%*%*%a%a%a/%d%d"))
+
+        -- Tabela 5: Linha horizontal abaixo do mês atual (antes de Subtotal 2026 solicitado)
+        local is_mes_atual_border = next_txt1:match("^Subtotal%s+%d+%s+solicitado$")
+
+        -- Tabela 5: Sombreado nas linhas plurianuais (Subtotal 2024-2026)
+        local is_plurianual = txt1:match("^Subtotal%s+%d+%-%d+")
+
         if is_total then
           for _, cell in ipairs(row.cells) do
             local raw_tc = pandoc.RawBlock(
@@ -42,6 +46,34 @@ local pass1 = {
               '<w:tcPr><w:tcBorders><w:top w:val="single" w:sz="8" w:space="0" w:color="000000"/><w:bottom w:val="single" w:sz="8" w:space="0" w:color="000000"/></w:tcBorders></w:tcPr>'
             )
             cell.contents:insert(1, raw_tc)
+          end
+        elseif is_subtot_ant or is_mes_atual_border then
+          for _, cell in ipairs(row.cells) do
+            local raw_tc = pandoc.RawBlock(
+              "openxml",
+              '<w:tcPr><w:tcBorders><w:bottom w:val="single" w:sz="8" w:space="0" w:color="000000"/></w:tcBorders></w:tcPr>'
+            )
+            cell.contents:insert(1, raw_tc)
+          end
+        elseif is_plurianual then
+          for _, cell in ipairs(row.cells) do
+            local raw_tc = pandoc.RawBlock(
+              "openxml",
+              '<w:tcPr><w:shd w:val="clear" w:color="auto" w:fill="EAEAEA"/></w:tcPr>'
+            )
+            cell.contents:insert(1, raw_tc)
+          end
+        end
+
+        -- Cores na coluna Estado (Pago -> Verde #27AE60, Por pagar -> Vermelho #C0392B)
+        for _, cell in ipairs(row.cells) do
+          local ctxt = pandoc.utils.stringify(cell):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+          if ctxt == "Pago" then
+            local raw_r = pandoc.RawInline("openxml", '<w:r><w:rPr><w:color w:val="27AE60"/></w:rPr><w:t>Pago</w:t></w:r>')
+            cell.contents = { pandoc.Plain({ raw_r }) }
+          elseif ctxt == "Por pagar" then
+            local raw_r = pandoc.RawInline("openxml", '<w:r><w:rPr><w:color w:val="C0392B"/></w:rPr><w:t>Por pagar</w:t></w:r>')
+            cell.contents = { pandoc.Plain({ raw_r }) }
           end
         end
       end
