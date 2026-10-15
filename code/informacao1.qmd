@@ -605,7 +605,7 @@ p
 ```
 
 
-# Pagamento
+# Pagamentos
 
 Com base em dados reais disponíveis até à data, incluindo o valor de `r mes_nome` de `r ANO`, o montante solicitado ao IMT desde a implementação da gratuitidade totaliza `r scales::number(tot_hist_solicitado / 1e6, accuracy = 0.1, decimal.mark = ",")` milhões de euros, dos quais `r scales::number(tot_2024_pago / 1e6, accuracy = 0.1, decimal.mark = ",")` milhões em 2024, `r scales::number(tot_2025_pago / 1e6, accuracy = 0.1, decimal.mark = ",")` milhões em 2025 e `r scales::number(tot_ano_solicitado / 1e6, accuracy = 0.1, decimal.mark = ",")` milhões referentes a `r ANO`, conforme @tbl-5.
 
