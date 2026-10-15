@@ -58,8 +58,8 @@ Exemplos/
 documents/old_procedure
 tests/
 
-code/informacao1.qmd
 
 /.quarto/
 **/*.quarto_ipynb
 code/informacao1.pdf
+code/informacao1.docx
