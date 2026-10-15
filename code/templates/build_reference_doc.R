@@ -71,7 +71,7 @@ build_reference_doc <- function(
   r_tbl_text      <- '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:lang w:val="pt-PT"/>'
   r_tbl_small     <- '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:lang w:val="pt-PT"/>'
 
-  p_tbl_note <- '<w:spacing w:before="60" w:after="180" w:line="240" w:lineRule="auto"/><w:ind w:right="0"/><w:jc w:val="left"/>'
+  p_tbl_note <- '<w:spacing w:before="60" w:after="0" w:line="240" w:lineRule="auto"/><w:ind w:right="0"/><w:jc w:val="left"/>'
   r_tbl_note <- '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="15"/><w:szCs w:val="15"/><w:color w:val="595959"/>'
 
   p_caption <- '<w:keepNext/><w:spacing w:before="140" w:after="80" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/>'
@@ -82,6 +82,9 @@ build_reference_doc <- function(
 
   p_bloco_peq  <- '<w:spacing w:before="0" w:after="30" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/>'
   p_linha_desp <- '<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="000000"/></w:pBdr><w:spacing w:before="600" w:after="120"/>'
+
+  p_block_text <- '<w:pBdr><w:left w:val="single" w:sz="12" w:space="12" w:color="B0B0B0"/></w:pBdr><w:spacing w:before="120" w:after="240" w:line="260" w:lineRule="auto"/><w:ind w:left="720" w:right="360"/><w:jc w:val="both"/>'
+  r_block_text <- '<w:rFonts w:ascii="Greycliff CF Light" w:hAnsi="Greycliff CF Light"/><w:color w:val="404040"/><w:sz w:val="21"/><w:szCs w:val="21"/><w:lang w:val="pt-PT"/>' # <w:i/><w:iCs/> itálico
 
   # Headings oficiais TML (Greycliff CF, preto, numeração do Word)
   # Heading 1: 14 pt (sz="28"), negrito, espaçamento antes 431, depois 120
@@ -125,7 +128,7 @@ build_reference_doc <- function(
     '<w:style w:type="table" w:default="1" w:styleId="Table"><w:name w:val="Table"/><w:basedOn w:val="Tabelanormal"/><w:uiPriority w:val="59"/>',
     '<w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr>',
     '<w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:sz w:val="17"/><w:szCs w:val="17"/><w:lang w:val="pt-PT"/></w:rPr>',
-    '<w:tblPr><w:tblBorders>',
+    '<w:tblPr><w:jc w:val="center"/><w:tblBorders>',
     '<w:top w:val="single" w:sz="8" w:space="0" w:color="000000"/>',
     '<w:bottom w:val="single" w:sz="8" w:space="0" w:color="000000"/>',
     '<w:insideH w:val="none"/>',
@@ -154,6 +157,7 @@ build_reference_doc <- function(
   extra_styles <- list(
     BodyText           = make_style("BodyText", "Body Text", based = "Normal", ppr = p_body, rpr = r_body),
     FirstParagraph     = make_style("FirstParagraph", "First Paragraph", based = "Normal", ppr = p_body, rpr = r_body),
+    BlockText          = make_style("BlockText", "Block Text", based = "Normal", ppr = p_block_text, rpr = r_block_text),
     Compact            = make_style("Compact", "Compact", based = "Normal", ppr = p_compact_list, rpr = r_body),
     TableCaption       = make_style("TableCaption", "Table Caption", based = "Normal", ppr = p_caption, rpr = r_caption),
     ImageCaption       = make_style("ImageCaption", "Image Caption", based = "Normal", ppr = p_caption, rpr = r_caption),

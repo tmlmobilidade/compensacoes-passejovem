@@ -54,11 +54,90 @@ foreach ($f in $files) {
                 # Tabelas normais: TabelaTexto (Calibri 8.5 pt)
                 $tblNew = $tbl.Replace('w:val="Compact"', 'w:val="TabelaTexto"')
             }
+
+            # Centrar tabelas de conteudo (nao cabecalho De/Para)
+            if (-not ($tbl.Contains('De:') -and $tbl.Contains('Para:'))) {
+                $tblNew = [regex]::Replace($tblNew, '(<w:tblPr[^>]*>)(.*?)(</w:tblPr>)', {
+                    param($tm)
+                    $tblPrContent = $tm.Groups[2].Value
+                    if ($tblPrContent.Contains('<w:jc ')) {
+                        $tblPrContent = [regex]::Replace($tblPrContent, '<w:jc [^>]*/>', '<w:jc w:val="center"/>')
+                    } else {
+                        $tblPrContent = '<w:jc w:val="center"/>' + $tblPrContent
+                    }
+                    return $tm.Groups[1].Value + $tblPrContent + $tm.Groups[3].Value
+                }, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+            }
             
             if ($tblNew -ne $tbl) {
                 $xml = $xml.Substring(0, $matches[$i].Index) + $tblNew + $xml.Substring($matches[$i].Index + $matches[$i].Length)
                 $modified = $true
             }
+        }
+
+        # Centrar paragrafos que contem imagens/desenhos (<w:drawing>)
+        $xmlNew = [regex]::Replace($xml, '(<w:p[ >].*?</w:p>)', {
+            param($m)
+            $p = $m.Groups[1].Value
+            if ($p.Contains('<w:drawing>') -or $p.Contains('<w:drawing ')) {
+                if ($p.Contains('<w:jc ')) {
+                    return [regex]::Replace($p, '<w:jc [^>]*/>', '<w:jc w:val="center"/>')
+                } elseif ($p.Contains('<w:pPr>')) {
+                    return $p.Replace('<w:pPr>', '<w:pPr><w:jc w:val="center"/>')
+                } elseif ($p.Contains('<w:pPr ')) {
+                    return [regex]::Replace($p, '(<w:pPr [^>]*>)', '$1<w:jc w:val="center"/>')
+                } else {
+                    return [regex]::Replace($p, '(<w:p[ >])', '$1<w:pPr><w:jc w:val="center"/></w:pPr>')
+                }
+            }
+            return $p
+        }, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        if ($xmlNew -ne $xml) {
+            $xml = $xmlNew
+            $modified = $true
+        }
+
+        # Redimensionar fig-1 para a largura da pagina landscape (~9.5 pol = 8686800 EMU, 3.8 pol = 3474720 EMU)
+        $xmlBeforeFig = $xml
+        $xml = [regex]::Replace($xml, '(<w:drawing[ >](?:(?!</w:drawing>).)*?fig-1(?:(?!</w:drawing>).)*?</w:drawing>)', {
+            param($m)
+            return [regex]::Replace($m.Groups[1].Value, 'cx="\d+" cy="\d+"', 'cx="8686800" cy="3474720"')
+        }, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        if ($xml -ne $xmlBeforeFig) {
+            $modified = $true
+        }
+
+        # Espacamento vertical apos tabelas (no primeiro paragrafo a seguir a </w:tbl>)
+        $xmlBeforeTblSpace = $xml
+        $xml = [regex]::Replace($xml, '(</w:tbl>(?:\s*<w:bookmarkEnd[^>]*>)*\s*(?:<w:bookmarkStart[^>]*>)*\s*<w:p[ >][^>]*?<w:pPr[^>]*>)(.*?)(</w:pPr>)', {
+            param($m)
+            $pPr = $m.Groups[2].Value
+            if ($pPr.Contains('BlocoPequeno')) {
+                return $m.Value
+            }
+            if ($pPr.Contains('TabelaNota')) {
+                if ($pPr.Contains('w:after="')) {
+                    $pPr = [regex]::Replace($pPr, 'w:after="\d+"', 'w:after="200"')
+                } else {
+                    $pPr = $pPr + '<w:spacing w:before="60" w:after="200" w:line="240" w:lineRule="auto"/>'
+                }
+            } else {
+                if ($pPr.Contains('w:before="')) {
+                    $pPr = [regex]::Replace($pPr, 'w:before="\d+"', 'w:before="240"')
+                } else {
+                    $pPr = $pPr + '<w:spacing w:before="240" w:after="240" w:line="288" w:lineRule="auto"/>'
+                }
+            }
+            return $m.Groups[1].Value + $pPr + $m.Groups[3].Value
+        }, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+        if ($xml -ne $xmlBeforeTblSpace) {
+            $modified = $true
+        }
+
+        # Limpar w:pPr duplicados em paragrafos que receberam pPr customizado via Lua
+        if ($xml -match '<w:p[ >][^>]*?<w:pPr>.*?</w:pPr><w:pPr>') {
+            $xml = [regex]::Replace($xml, '(<w:p[ >][^>]*?)<w:pPr>.*?</w:pPr><w:pPr>', '$1<w:pPr>')
+            $modified = $true
         }
         
         if ($modified) {
@@ -71,7 +150,7 @@ foreach ($f in $files) {
         }
         $zip.Dispose()
     } catch {
-        Write-Warning ("Aviso ao processar " + $f.Name + ": " + $_.Exception.Message)
+        Write-Warning ("Aviso ao processar " + $f.Name + ": " + $_.Exception.ToString())
     }
 }
 

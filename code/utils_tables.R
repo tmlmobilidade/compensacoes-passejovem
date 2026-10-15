@@ -148,7 +148,13 @@ tml_table_docx <- function(x, align = NULL, notes = NULL, bold_total = TRUE) {
     for (key in names(notes)) {
       n <- notes[[key]]
       mk <- paste0("^", key, "^")
-      if (n$i == 0) header[n$j] <- paste0(header[n$j], mk) else cells[n$i, n$j] <- paste0(cells[n$i, n$j], mk)
+      if (0 %in% n$i) header[n$j] <- paste0(header[n$j], mk)
+      rows <- n$i[n$i > 0]
+      if (length(rows) > 0) {
+        for (r in rows) {
+          cells[r, n$j] <- paste0(cells[r, n$j], mk)
+        }
+      }
       note_lines <- c(note_lines, paste0(mk, " ", n$text))
     }
   }
