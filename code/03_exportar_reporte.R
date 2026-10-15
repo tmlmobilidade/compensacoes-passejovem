@@ -236,7 +236,9 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
   # ── Copiar template e abrir com openxlsx ─────────────────────────────────
   # Usamos loadWorkbook (que preserva todos os estilos do template)
   # em vez de createWorkbook (que criaria um ficheiro vazio).
-  out_xlsx <- file.path(paths$output,
+  docs_dir <- if (!is.null(paths$docs)) paths$docs else file.path(paths$output, "docs")
+  dir.create(docs_dir, showWarnings = FALSE, recursive = TRUE)
+  out_xlsx <- file.path(docs_dir,
                         output_filename(ano, mes, "reporte_AML_IMT", ext = "xlsx"))
   file.copy(template_path, out_xlsx, overwrite = TRUE)
   wb <- loadWorkbook(out_xlsx)

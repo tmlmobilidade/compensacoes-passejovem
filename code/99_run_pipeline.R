@@ -2,10 +2,11 @@
 # 99_run_pipeline.R
 # Orquestrador principal do pipeline PasseJovem.
 #
-# Executa os 3 passos do pipeline para um ou mais meses:
-#   1. Preparar dados   (01_preparar_dados.R)
+# Executa os 4 passos do pipeline para um ou mais meses:
+#   1. Preparar dados        (01_preparar_dados.R)
 #   2. Calcular compensações (02_calcular_compensacoes.R)
 #   3. Exportar reporte Excel (03_exportar_reporte.R)
+#   4. Renderizar documentos (10_documentos.R)
 #
 # Uso (linha de comandos):
 #   Rscript 99_run_pipeline.R              # processa todos os meses em data/
@@ -37,10 +38,11 @@ code_dir <- tryCatch({
   }
 }, error = function(e) file.path(getwd(), "code"))
 
-# Carregar os 3 scripts do pipeline (cada um faz source() de 00_config.R internamente)
+# Carregar os scripts do pipeline (cada um faz source() de 00_config.R internamente)
 source(file.path(code_dir, "01_preparar_dados.R"),        local = TRUE)
 source(file.path(code_dir, "02_calcular_compensacoes.R"), local = TRUE)
 source(file.path(code_dir, "03_exportar_reporte.R"),      local = TRUE)
+source(file.path(code_dir, "10_documentos.R"),            local = TRUE)
 
 
 # =============================================================================
@@ -49,10 +51,11 @@ source(file.path(code_dir, "03_exportar_reporte.R"),      local = TRUE)
 
 #' Corre o pipeline completo para o ano e meses indicados.
 #'
-#' @param ano    Ano de referência (ex: 2026)
-#' @param meses  Vector de meses a processar (ex: c(5, 6, 7))
-#'               Se NULL, detecta automaticamente os meses disponíveis em data/
-run_pipeline <- function(ano, meses = NULL) {
+#' @param ano         Ano de referência (ex: 2026)
+#' @param meses       Vector de meses a processar (ex: c(5, 6, 7))
+#'                    Se NULL, detecta automaticamente os meses disponíveis em data/
+#' @param render_docs Lógico; se TRUE renderiza os documentos oficiais (PDF/Word).
+run_pipeline <- function(ano, meses = NULL, render_docs = TRUE) {
   t0_pipe <- proc.time()
 
   raiz <- here_root()
@@ -80,11 +83,14 @@ run_pipeline <- function(ano, meses = NULL) {
     message(sprintf(" Ano: %d | Mes: %02d (%s)", ano, mes, MESES_PT_UPPER[mes]))
     message("============================================================")
 
-    # Correr os 3 passos do pipeline; continuar para o próximo mês se houver erro
+    # Correr os passos do pipeline; continuar para o próximo mês se houver erro
     tryCatch({
       preparar_dados(ano, mes, raiz)
       calcular_compensacoes(ano, mes, raiz)
       exportar_reporte(ano, mes, raiz)
+      if (isTRUE(render_docs)) {
+        render_documentos(ano = ano, mes = mes, raiz = raiz)
+      }
     }, error = function(e) {
       message(sprintf("ERRO ao processar %d/%02d: %s", ano, mes, conditionMessage(e)))
     })

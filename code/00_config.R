@@ -115,11 +115,13 @@ mes_folder <- function(ano, mes) {
 
 #' Devolve os caminhos input/output para um dado mês
 month_paths <- function(ano, mes, raiz = here_root()) {
-  base <- file.path(raiz, "data", mes_folder(ano, mes))
+  base   <- file.path(raiz, "data", mes_folder(ano, mes))
+  output <- file.path(base, "output")
   list(
-    base   = base,
-    input  = file.path(base, "input"),
-    output = file.path(base, "output"),
+    base     = base,
+    input    = file.path(base, "input"),
+    output   = output,
+    docs     = file.path(output, "docs"),
     auxiliar = file.path(raiz, "data", "auxiliar")
   )
 }
