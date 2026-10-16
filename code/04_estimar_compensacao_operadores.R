@@ -20,8 +20,9 @@
 #      Compensacoes/code/05_reparticao_B.R) sobre a parte Navegante.
 #
 # Produz em data/<ano>_<mm>_<mes>/output/:
-#   <ano>_<mm>_comp_por_titulo.csv      (agregado por título + valores)
-#   <ano>_<mm>_comp_por_operador.csv    (compensação e congelamento por operador)
+#   <ano>_<mm>_comp_por_titulo.csv          (agregado por nome_dist + valores)
+#   <ano>_<mm>_passejovem_resumo.csv        (compensação por título e operador, s/ TOTAL*)
+#   <ano>_<mm>_passejovem_congelamento.csv  (congelamento por operador)
 #
 # Uso:
 #   source("code/04_estimar_compensacao_operadores.R")
@@ -277,26 +278,38 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   # Saídas -------------------------------------------------------------------
   titulos_out <- tit[, c("ticket_code", "titulo", "passes", "validacoes",
                          "compensacao_total", ops), with = FALSE]
+
+  # _resumo.csv: apenas títulos individuais + Complemento CM + Viver Cascais (sem TOTAL*)
   resumo <- rbindlist(list(
     cbind(data.table(linha = as.character(titulos_out$titulo)),
           titulos_out[, c("passes", "validacoes", "compensacao_total", ops), with = FALSE]),
-    r_nav, r_cm, r_ca, r_out, r_tot, r_c1, r_c2, r_c3
+    r_cm, r_ca
   ), use.names = TRUE)
   resumo <- cbind(ano = ano, mes = mes, resumo)
+
+  # _congelamento.csv: linhas de congelamento num CSV separado
+  congelamento <- rbindlist(list(r_c1, r_c2, r_c3), use.names = TRUE)
+  congelamento[, c("passes", "validacoes") := NULL]
+  congelamento <- cbind(ano = ano, mes = mes, congelamento)
 
   agg_out <- agg[order(-compensacao),
                  .(nome_dist, ticket_name_reduzido, complemento_CM, base_weight,
                    ticket_code, preco_base, passes, numval, compensacao,
                    comp_navegante, comp_complemento, comp_cascais)]
-  fwrite(agg_out, file.path(paths$output, output_filename(ano, mes, "comp_por_titulo")),
-         sep = ";", dec = ",")
-  f_res <- file.path(paths$output, output_filename(ano, mes, "passejovem_resumo", "xlsx"))
-  openxlsx::write.xlsx(list(Resumo = as.data.frame(resumo),
-                            Por_nome_dist = as.data.frame(agg_out)), f_res)
-  fwrite(resumo, file.path(paths$output, output_filename(ano, mes, "passejovem_resumo")),
-         sep = ";", dec = ",")
-  message("  Gravado: ", basename(f_res))
+
+  f_tit  <- file.path(paths$output, output_filename(ano, mes, "comp_por_titulo"))
+  f_res  <- file.path(paths$output, output_filename(ano, mes, "passejovem_resumo"))
+  f_cong <- file.path(paths$output, output_filename(ano, mes, "passejovem_congelamento"))
+
+  fwrite(agg_out,      f_tit,  sep = ";", dec = ",")
+  fwrite(resumo,       f_res,  sep = ";", dec = ",")
+  fwrite(congelamento, f_cong, sep = ";", dec = ",")
+
+  message(sprintf("  Gravados: %s, %s, %s",
+                  basename(f_tit), basename(f_res), basename(f_cong)))
 
   print(resumo[, .(linha, passes, validacoes, compensacao_total)])
-  invisible(list(resumo = resumo, titulos = agg_out, fatores = fc))
+  print(congelamento[, .(linha, compensacao_total)])
+  invisible(list(resumo = resumo, congelamento = congelamento,
+                 titulos = agg_out, fatores = fc))
 }
