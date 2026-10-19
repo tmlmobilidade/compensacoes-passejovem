@@ -206,25 +206,30 @@ fator_tat <- function(ano_ref) {
     pull(ft)
 }
 
-#' 4. Factores de congelamento (fórmulas do Excel de referência):
-#'   Navegante:     (1+t2024)(1+t2025)(1+t2026) - 1
-#'   Outros passes: factor Navegante - t(ano)   [a+b+ab+ac+bc+abc]
+#' 4. Factores de congelamento:
+#'   Navegante:     (1 + tat2024)(1 + tat2025)(1 + tat2026) - 1
+#'   Outros passes: tat2024 * (1 + tat2025)(1 + tat2026)
 fatores_congelamento <- function(ano_ref) {
   tat_df <- ler_lista_compensacoes("tat.csv") |>
-    mutate(tat = as.numeric(str_replace(tat, ",", ".")))
+    mutate(tat = as.numeric(str_replace(tat, ",", "."))) |>
+    filter(ano <= ano_ref)
 
   ft_nav <- tat_df |>
-    filter(ano <= ano_ref) |>
     summarise(ft = prod(1 + tat) - 1) |>
     pull(ft)
 
-  tat_ano <- tat_df |>
-    filter(ano == ano_ref) |>
+  tat_2024 <- tat_df |>
+    filter(ano == 2024) |>
     pull(tat)
+
+  ft_apos_2024 <- tat_df |>
+    filter(ano > 2024) |>
+    summarise(ft = prod(1 + tat)) |>
+    pull(ft)
 
   list(
     navegante = ft_nav,
-    outros    = ft_nav - tat_ano # why??
+    outros    = tat_2024 * ft_apos_2024
   )
 }
 
