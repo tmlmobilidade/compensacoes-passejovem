@@ -170,7 +170,8 @@ enriquecer_titulos <- function(agg) {
     distinct(nome_ref, .keep_all = TRUE)
 
   info_tit <- tit |>
-    select(ticket_code, preco_base, ticket_operator_code, ticket_modalidade_operador) |>
+    select(ticket_code, pvp, titulo_nome_base, preco_base,
+           ticket_operator_code, ticket_modalidade_operador) |>
     distinct(ticket_code, .keep_all = TRUE)
 
   ops_domain <- ler_lista_compensacoes("operadores.csv") |>
@@ -255,6 +256,352 @@ fatores_congelamento <- function(ano_ref) {
 
 
 # =============================================================================
+# Exportação Excel (estrutura AnexoII_reparticao + estilo Anexo_Calculos)
+# =============================================================================
+
+#' Exporta o ficheiro <ano>_<mm>_AnexoII_reparticao.xlsx com 2 folhas:
+#'   1. <mes><aa>                      (repartição por título e operador + quotas)
+#'   2. <mes><aa>_resumo_congelamento  (resumo por operador e congelamento)
+exportar_anexo_reparticao_xlsx <- function(ano, mes, path_xlsx,
+                                           tit_dist, quotas_wide,
+                                           r_cm, r_ca,
+                                           tot_nav, tot_out,
+                                           cong_nav, cong_out, cong_tot) {
+  ops      <- names(OPERADORES_RESUMO)
+  sufixo   <- sprintf("%s%02d", MESES_ABREV[mes], ano %% 100)
+  mes_nome <- stringr::str_to_title(MESES_PT[mes])
+
+  # Paleta e estilos (idênticos a Compensacoes/code/08_tables.R)
+  cor_gold_dark   <- "#FFC000"
+  cor_gold_sub    <- "#FFE699"
+  cor_gold_light  <- "#FFF2CC"
+  cor_alt_row     <- "#FCFBF7"
+  cor_white       <- "#FFFFFF"
+  cor_darkgray    <- "#2c2c2c"
+  cor_border      <- "#e5b32b"
+  cor_border_soft <- "#D9D9D9"
+  cor_gray_text   <- "#A6A6A6"
+
+  st_title <- createStyle(
+    fontSize = 13, textDecoration = "bold",
+    halign = "left", valign = "center",
+    fgFill = cor_gold_dark, fontColour = cor_darkgray
+  )
+  st_sub_header <- createStyle(
+    fgFill = cor_gold_sub, fontColour = cor_darkgray,
+    halign = "center", valign = "center",
+    textDecoration = "bold", border = "TopBottomLeftRight",
+    borderColour = cor_border, fontSize = 9
+  )
+  st_header_gold <- createStyle(
+    fgFill = cor_gold_dark, fontColour = cor_darkgray,
+    halign = "center", valign = "center",
+    textDecoration = "bold", border = "TopBottomLeftRight",
+    borderColour = cor_border, wrapText = TRUE, fontSize = 9
+  )
+  st_total_lbl <- createStyle(
+    fgFill = cor_gold_light, fontColour = cor_darkgray, textDecoration = "bold",
+    halign = "left", valign = "center",
+    border = "TopBottomLeftRight", borderColour = cor_border, fontSize = 9
+  )
+  st_total_cod <- createStyle(
+    fgFill = cor_gold_light, fontColour = cor_darkgray, textDecoration = "bold",
+    halign = "center", valign = "center",
+    border = "TopBottomLeftRight", borderColour = cor_border, fontSize = 9
+  )
+  st_total_int <- createStyle(
+    fgFill = cor_gold_light, fontColour = cor_darkgray, textDecoration = "bold",
+    numFmt = "#,##0", halign = "right", valign = "center",
+    border = "TopBottomLeftRight", borderColour = cor_border, fontSize = 9
+  )
+  st_total_num <- createStyle(
+    fgFill = cor_gold_light, fontColour = cor_darkgray, textDecoration = "bold",
+    numFmt = "#,##0.00", halign = "right", valign = "center",
+    border = "TopBottomLeftRight", borderColour = cor_border, fontSize = 9
+  )
+  st_cod <- createStyle(
+    fgFill = cor_white, fontColour = cor_darkgray, halign = "center",
+    border = "LeftRight", borderColour = cor_border_soft, fontSize = 9
+  )
+  st_desig <- createStyle(
+    fgFill = cor_white, fontColour = cor_darkgray, halign = "left",
+    border = "LeftRight", borderColour = cor_border_soft, fontSize = 9
+  )
+  st_int <- createStyle(
+    fgFill = cor_white, fontColour = cor_darkgray, numFmt = "#,##0", halign = "right",
+    border = "LeftRight", borderColour = cor_border_soft, fontSize = 9
+  )
+  st_curr <- createStyle(
+    fgFill = cor_white, fontColour = cor_darkgray, numFmt = "#,##0.00", halign = "right",
+    border = "LeftRight", borderColour = cor_border_soft, fontSize = 9
+  )
+  st_pct <- createStyle(
+    fgFill = cor_white, fontColour = cor_darkgray, numFmt = "0.0000%", halign = "right",
+    border = "LeftRight", borderColour = cor_border_soft, fontSize = 9
+  )
+  st_alt  <- createStyle(fgFill = cor_alt_row)
+  st_zero <- createStyle(fontColour = cor_gray_text, fontSize = 9)
+
+  wb <- createWorkbook()
+
+  # ===========================================================================
+  # FOLHA 1: <mes><aa> (Distribuição por título e operador + Quotas)
+  # ===========================================================================
+  ws1 <- sufixo
+  addWorksheet(wb, ws1, tabColour = cor_gold_dark)
+
+  # Quotas não arredondadas para cada linha de título
+  q_nav <- tit_dist |>
+    select(ticket_code) |>
+    left_join(quotas_wide, by = "ticket_code") |>
+    select(all_of(ops))
+
+  zeros_q <- as_tibble(setNames(as.list(rep(0, length(ops))), ops))
+  q_cm    <- zeros_q |> mutate(`AT TML - CM` = 1)
+  q_ca    <- zeros_q |> mutate(`AT Cascais`  = 1)
+  q_tot   <- as_tibble(setNames(as.list(rep(NA_real_, length(ops))), ops))
+
+  # Linhas de dados (sem arredondamento intermédio)
+  base_cols <- c("ticket_operator_code", "ticket_code", "linha",
+                 "ticket_modalidade_operador", "pvp", "titulo_nome_base",
+                 "preco_base", "passes", "validacoes", "compensacao_total", ops)
+
+  df_rows <- bind_rows(
+    tit_dist |> select(all_of(base_cols)),
+    r_cm     |> select(all_of(base_cols)),
+    r_ca     |> select(all_of(base_cols))
+  ) |>
+    mutate(ano = as.integer(ano), mes = as.integer(mes), .before = 1)
+
+  df_quotas <- bind_rows(q_nav, q_cm, q_ca)
+
+  # Linhas de Total (arredondadas apenas nas linhas de total)
+  tot_nav_ops <- tot_nav |> mutate(across(all_of(ops), ~ round(.x, 2)))
+  tot_out_ops <- tot_out |> mutate(across(all_of(ops), ~ round(.x, 2)))
+  tot_all_ops <- bind_rows(tot_nav, tot_out) |>
+    summarise(across(all_of(ops), ~ round(sum(.x, na.rm = TRUE), 2)))
+
+  linha_tot_s1 <- function(rotulo, passes_v, valid_v, comp_v, ops_df) {
+    tibble(
+      ano                        = as.integer(ano),
+      mes                        = as.integer(mes),
+      ticket_operator_code       = NA_integer_,
+      ticket_code                = NA_integer_,
+      linha                      = rotulo,
+      ticket_modalidade_operador = NA_character_,
+      pvp                        = NA_real_,
+      titulo_nome_base           = NA_character_,
+      preco_base                 = NA_real_,
+      passes                     = as.integer(passes_v),
+      validacoes                 = as.integer(valid_v),
+      compensacao_total          = round(comp_v, 2)
+    ) |>
+      bind_cols(ops_df)
+  }
+
+  r_tot_nav <- linha_tot_s1(
+    "Total Passes Navegante",
+    sum(tit_dist$passes, na.rm = TRUE),
+    sum(tit_dist$validacoes, na.rm = TRUE),
+    sum(tit_dist$compensacao_total, na.rm = TRUE),
+    tot_nav_ops
+  )
+  r_tot_out <- linha_tot_s1(
+    "Total Outros Passes",
+    sum(r_cm$passes, r_ca$passes, na.rm = TRUE),
+    sum(r_cm$validacoes, r_ca$validacoes, na.rm = TRUE),
+    sum(r_cm$compensacao_total, r_ca$compensacao_total, na.rm = TRUE),
+    tot_out_ops
+  )
+  r_tot_all <- linha_tot_s1(
+    "Total",
+    r_tot_nav$passes + r_tot_out$passes,
+    r_tot_nav$validacoes + r_tot_out$validacoes,
+    r_tot_nav$compensacao_total + r_tot_out$compensacao_total,
+    tot_all_ops
+  )
+
+  df_s1_left  <- bind_rows(df_rows, r_tot_nav, r_tot_out, r_tot_all)
+  df_s1_right <- bind_rows(df_quotas, q_tot, q_tot, q_tot)
+
+  # Título e sub-cabeçalhos da Folha 1
+  mergeCells(wb, ws1, rows = 1, cols = 1:35)
+  writeData(wb, ws1,
+            x = sprintf("     Distribuição das compensações Passe Jovem pelos Operadores — %s %d", mes_nome, ano),
+            startRow = 1, startCol = 1)
+  addStyle(wb, ws1, st_title, rows = 1, cols = 1:35, gridExpand = TRUE)
+  setRowHeights(wb, ws1, rows = 1, heights = 26)
+  setRowHeights(wb, ws1, rows = 2, heights = 8)
+
+  mergeCells(wb, ws1, rows = 3, cols = 13:23)
+  writeData(wb, ws1, x = "Distribuição da compensação Passe Jovem por título e operador (€)",
+            startRow = 3, startCol = 13)
+  addStyle(wb, ws1, st_sub_header, rows = 3, cols = 13:23, gridExpand = TRUE)
+
+  mergeCells(wb, ws1, rows = 3, cols = 25:35)
+  writeData(wb, ws1, x = "Quota (%) por título e operador",
+            startRow = 3, startCol = 25)
+  addStyle(wb, ws1, st_sub_header, rows = 3, cols = 25:35, gridExpand = TRUE)
+  setRowHeights(wb, ws1, rows = 3, heights = 22)
+
+  headers_left <- c(
+    "ano", "mês", "ticket_operator_code", "ticket_code", "titulo",
+    "Modalidade título", "pvp", "Título Base", "Preço do título base",
+    "Nº passes com validações", "Validações", "Compensação total", ops
+  )
+  writeData(wb, ws1, x = as.data.frame(t(headers_left)), startRow = 4, startCol = 1, colNames = FALSE)
+  addStyle(wb, ws1, st_header_gold, rows = 4, cols = 1:23, gridExpand = TRUE)
+
+  writeData(wb, ws1, x = as.data.frame(t(ops)), startRow = 4, startCol = 25, colNames = FALSE)
+  addStyle(wb, ws1, st_header_gold, rows = 4, cols = 25:35, gridExpand = TRUE)
+  setRowHeights(wb, ws1, rows = 4, heights = 32)
+
+  # Escrever dados da Folha 1 (a partir da linha 5)
+  writeData(wb, ws1, x = df_s1_left,  startRow = 5, startCol = 1,  colNames = FALSE)
+  writeData(wb, ws1, x = df_s1_right, startRow = 5, startCol = 25, colNames = FALSE)
+
+  n_data_s1 <- nrow(df_rows)
+  r_data_s1 <- 5:(4 + n_data_s1)
+  even_s1   <- r_data_s1[seq_len(n_data_s1) %% 2 == 0]
+  r_tots_s1 <- (5 + n_data_s1):(4 + nrow(df_s1_left))
+
+  # Estilos das linhas de dados (Folha 1)
+  addStyle(wb, ws1, st_cod,   rows = r_data_s1, cols = c(1:4, 6),  gridExpand = TRUE)
+  addStyle(wb, ws1, st_desig, rows = r_data_s1, cols = c(5, 8),    gridExpand = TRUE)
+  addStyle(wb, ws1, st_curr,  rows = r_data_s1, cols = c(7, 9, 12:23), gridExpand = TRUE)
+  addStyle(wb, ws1, st_int,   rows = r_data_s1, cols = 10:11,      gridExpand = TRUE)
+  addStyle(wb, ws1, st_pct,   rows = r_data_s1, cols = 25:35,      gridExpand = TRUE)
+  addStyle(wb, ws1, st_alt,   rows = even_s1,   cols = c(1:23, 25:35), gridExpand = TRUE, stack = TRUE)
+
+  conditionalFormatting(wb, ws1, cols = c(7, 12:23, 25:35), rows = r_data_s1, rule = "==0", style = st_zero)
+
+  # Estilos das linhas de Total (Folha 1)
+  addStyle(wb, ws1, st_total_cod, rows = r_tots_s1, cols = 1:4,   gridExpand = TRUE)
+  addStyle(wb, ws1, st_total_lbl, rows = r_tots_s1, cols = 5:9,   gridExpand = TRUE)
+  addStyle(wb, ws1, st_total_int, rows = r_tots_s1, cols = 10:11, gridExpand = TRUE)
+  addStyle(wb, ws1, st_total_num, rows = r_tots_s1, cols = 12:23, gridExpand = TRUE)
+  conditionalFormatting(wb, ws1, cols = 12:23, rows = r_tots_s1, rule = "==0", style = st_zero)
+
+  setColWidths(wb, ws1, cols = 1:2,   widths = 6)
+  setColWidths(wb, ws1, cols = 3:4,   widths = 11)
+  setColWidths(wb, ws1, cols = 5,     widths = 36)
+  setColWidths(wb, ws1, cols = 6,     widths = 14)
+  setColWidths(wb, ws1, cols = 7,     widths = 8)
+  setColWidths(wb, ws1, cols = 8,     widths = 24)
+  setColWidths(wb, ws1, cols = 9:11,  widths = 14)
+  setColWidths(wb, ws1, cols = 12:23, widths = 15)
+  setColWidths(wb, ws1, cols = 24,    widths = 4)
+  setColWidths(wb, ws1, cols = 25:35, widths = 13)
+  freezePane(wb, ws1, firstActiveRow = 5, firstActiveCol = 6)
+
+  # ===========================================================================
+  # FOLHA 2: <mes><aa>_resumo_congelamento (Resumo por Operador e Congelamento)
+  # ===========================================================================
+  ws2 <- paste0(sufixo, "_resumo_congelamento")
+  addWorksheet(wb, ws2, tabColour = cor_gold_sub)
+
+  v_nav      <- as.numeric(tot_nav[1, ops])
+  v_out      <- as.numeric(tot_out[1, ops])
+  v_cong_nav <- as.numeric(cong_nav[1, ops])
+  v_cong_out <- as.numeric(cong_out[1, ops])
+  v_cong_tot <- as.numeric(cong_tot[1, ops])
+
+  df_s2_ops <- tibble(
+    ano                             = as.integer(ano),
+    mes                             = as.integer(mes),
+    operador                        = ops,
+    `Passes Navegante`              = v_nav,
+    `Outros Passes`                 = v_out,
+    `TOTAL`                         = v_nav + v_out,
+    `Congelamento Passes Navegante` = v_cong_nav,
+    `Congelamento Outros Passes`    = v_cong_out,
+    `Congelamento TOTAL`            = v_cong_tot
+  )
+
+  # Linha de TOTAL (arredondada a 2 casas decimais)
+  df_s2_tot <- tibble(
+    ano                             = as.integer(ano),
+    mes                             = as.integer(mes),
+    operador                        = "TOTAL",
+    `Passes Navegante`              = round(sum(v_nav, na.rm = TRUE), 2),
+    `Outros Passes`                 = round(sum(v_out, na.rm = TRUE), 2),
+    `TOTAL`                         = round(sum(v_nav + v_out, na.rm = TRUE), 2),
+    `Congelamento Passes Navegante` = round(sum(v_cong_nav, na.rm = TRUE), 2),
+    `Congelamento Outros Passes`    = round(sum(v_cong_out, na.rm = TRUE), 2),
+    `Congelamento TOTAL`            = round(sum(v_cong_tot, na.rm = TRUE), 2)
+  )
+
+  df_s2 <- bind_rows(df_s2_ops, df_s2_tot)
+
+  # Títulos e sub-cabeçalhos da Folha 2
+  mergeCells(wb, ws2, rows = 1, cols = 1:9)
+  writeData(wb, ws2,
+            x = sprintf("     Distribuição das compensações Passe Jovem pelos Operadores — %s %d", mes_nome, ano),
+            startRow = 1, startCol = 1)
+  addStyle(wb, ws2, st_title, rows = 1, cols = 1:9, gridExpand = TRUE)
+  setRowHeights(wb, ws2, rows = 1, heights = 26)
+
+  mergeCells(wb, ws2, rows = 2, cols = 1:9)
+  writeData(wb, ws2, x = "     Resumo por Operador e Congelamento (€)",
+            startRow = 2, startCol = 1)
+  addStyle(wb, ws2, st_sub_header, rows = 2, cols = 1:9, gridExpand = TRUE)
+  setRowHeights(wb, ws2, rows = 2, heights = 20)
+
+  mergeCells(wb, ws2, rows = 3, cols = 4:6)
+  writeData(wb, ws2, x = "Compensação Passe Jovem (€)", startRow = 3, startCol = 4)
+  addStyle(wb, ws2, st_sub_header, rows = 3, cols = 4:6, gridExpand = TRUE)
+
+  mergeCells(wb, ws2, rows = 3, cols = 7:9)
+  writeData(wb, ws2, x = "Compensação por Congelamento Tarifário — TAT (€)", startRow = 3, startCol = 7)
+  addStyle(wb, ws2, st_sub_header, rows = 3, cols = 7:9, gridExpand = TRUE)
+  setRowHeights(wb, ws2, rows = 3, heights = 20)
+
+  headers_s2 <- c("ano", "mês", "operador", "Passes Navegante", "Outros Passes",
+                  "TOTAL", "Congelamento Passes Navegante", "Congelamento Outros Passes",
+                  "Congelamento TOTAL")
+  writeData(wb, ws2, x = as.data.frame(t(headers_s2)), startRow = 4, startCol = 1, colNames = FALSE)
+  addStyle(wb, ws2, st_header_gold, rows = 4, cols = 1:9, gridExpand = TRUE)
+  setRowHeights(wb, ws2, rows = 4, heights = 32)
+
+  writeData(wb, ws2, x = df_s2, startRow = 5, startCol = 1, colNames = FALSE)
+
+  n_ops_s2  <- nrow(df_s2_ops)
+  r_data_s2 <- 5:(4 + n_ops_s2)
+  even_s2   <- r_data_s2[seq_len(n_ops_s2) %% 2 == 0]
+  rw_tot_s2 <- 5 + n_ops_s2
+
+  st_op_bold <- createStyle(
+    fgFill = cor_white, fontColour = cor_darkgray, textDecoration = "bold",
+    halign = "left", border = "LeftRight", borderColour = cor_border_soft, fontSize = 9
+  )
+
+  addStyle(wb, ws2, st_cod,     rows = r_data_s2, cols = 1:2, gridExpand = TRUE)
+  addStyle(wb, ws2, st_op_bold, rows = r_data_s2, cols = 3,   gridExpand = TRUE)
+  addStyle(wb, ws2, st_curr,    rows = r_data_s2, cols = 4:9, gridExpand = TRUE)
+  addStyle(wb, ws2, st_alt,     rows = even_s2,   cols = 1:9, gridExpand = TRUE, stack = TRUE)
+
+  addStyle(wb, ws2, st_total_cod, rows = rw_tot_s2, cols = 1:2, gridExpand = TRUE)
+  addStyle(wb, ws2, st_total_lbl, rows = rw_tot_s2, cols = 3,   gridExpand = TRUE)
+  addStyle(wb, ws2, st_total_num, rows = rw_tot_s2, cols = 4:9, gridExpand = TRUE)
+
+  conditionalFormatting(wb, ws2, cols = 4:9, rows = c(r_data_s2, rw_tot_s2), rule = "==0", style = st_zero)
+
+  setColWidths(wb, ws2, cols = 1:2, widths = 6)
+  setColWidths(wb, ws2, cols = 3,   widths = 15)
+  setColWidths(wb, ws2, cols = 4:9, widths = 18)
+  freezePane(wb, ws2, firstActiveRow = 5, firstActiveCol = 4)
+
+  tryCatch(
+    saveWorkbook(wb, path_xlsx, overwrite = TRUE),
+    error = function(e) {
+      warning(sprintf("Não foi possível gravar '%s' (estará aberto no Excel?): %s",
+                      basename(path_xlsx), conditionMessage(e)), call. = FALSE)
+    }
+  )
+}
+
+
+# =============================================================================
 # Função principal
 # =============================================================================
 
@@ -295,7 +642,8 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   # contam por inteiro; a compensação é só a parte Navegante).
   tit <- agg |>
     filter(!viver_cascais) |>
-    group_by(ticket_operator_code, ticket_code, ticket_modalidade_operador) |>
+    group_by(ticket_operator_code, ticket_code, ticket_modalidade_operador,
+             pvp, titulo_nome_base, preco_base) |>
     summarise(
       linha             = nome_dist[which.max(passes)],
       passes            = sum(passes, na.rm = TRUE),
@@ -335,7 +683,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
     warning("Sem quotas para ticket_code: ", paste(falta, collapse = ", "))
   }
 
-  # Multiplicar cada quota pela compensação total do título
+  # Multiplicar cada quota pela compensação total do título (sem arredondar)
   tit_dist <- tit_dist |>
     mutate(across(all_of(ops), ~ compensacao_total * coalesce(.x, 0)))
 
@@ -354,6 +702,9 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
       ticket_operator_code       = first(na.omit(ticket_operator_code)),
       linha                      = "Complemento CM",
       ticket_modalidade_operador = NA_character_,
+      pvp                        = 0,
+      titulo_nome_base           = NA_character_,
+      preco_base                 = first(na.omit(preco_base * (1 - base_weight) / base_weight)),
       passes                     = sum(passes, na.rm = TRUE),
       validacoes                 = sum(numval, na.rm = TRUE),
       compensacao_total          = sum(comp_complemento, na.rm = TRUE)
@@ -368,6 +719,9 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
       ticket_operator_code       = first(na.omit(ticket_operator_code)),
       linha                      = "Viver Cascais",
       ticket_modalidade_operador = NA_character_,
+      pvp                        = 0,
+      titulo_nome_base           = NA_character_,
+      preco_base                 = PRECO_CASCAIS,
       passes                     = sum(passes, na.rm = TRUE),
       validacoes                 = sum(numval, na.rm = TRUE),
       compensacao_total          = sum(comp_cascais, na.rm = TRUE)
@@ -382,6 +736,11 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
 
   tot_out <- bind_rows(r_cm, r_ca) |>
     summarise(across(all_of(ops), ~ sum(.x, na.rm = TRUE)))
+
+  # Totais gerais (para conferência) arredondados a 2 casas decimais
+  total_geral <- bind_rows(tot_nav, tot_out) |>
+    summarise(across(all_of(ops), ~ sum(.x, na.rm = TRUE))) |>
+    mutate(compensacao_total = round(rowSums(across(all_of(ops))), 2))
 
   # 6. Congelamento -----------------------------------------------------------
   fc <- fatores_congelamento(ano)
@@ -403,7 +762,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
     select(linha, compensacao_total, all_of(ops))
 
   cong_tot <- bind_rows(cong_nav, cong_out) |>
-    summarise(across(all_of(ops), ~ round(sum(.x, na.rm = TRUE), 2))) |>
+    summarise(across(all_of(ops), ~ round(sum(.x, na.rm = TRUE), 2))) |> # arredondado apenas na linha de total
     mutate(
       linha             = "Congelamento TOTAL",
       compensacao_total = rowSums(across(all_of(ops)))
@@ -440,6 +799,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   f_tit  <- file.path(paths$output, output_filename(ano, mes, "comp_por_titulo"))
   f_res  <- file.path(paths$output, output_filename(ano, mes, "passejovem_resumo"))
   f_cong <- file.path(paths$output, output_filename(ano, mes, "passejovem_congelamento"))
+  f_xlsx <- file.path(paths$output, output_filename(ano, mes, "AnexoII_reparticao", "xlsx"))
 
   gravar_csv <- function(dt, path) {
     tryCatch(
@@ -456,12 +816,20 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   gravar_csv(resumo,       f_res)
   gravar_csv(congelamento, f_cong)
 
-  message(sprintf("  Gravados: %s, %s, %s",
-                  basename(f_tit), basename(f_res), basename(f_cong)))
+  exportar_anexo_reparticao_xlsx(
+    ano = ano, mes = mes, path_xlsx = f_xlsx,
+    tit_dist = tit_dist, quotas_wide = quotas_wide,
+    r_cm = r_cm, r_ca = r_ca,
+    tot_nav = tot_nav, tot_out = tot_out,
+    cong_nav = cong_nav, cong_out = cong_out, cong_tot = cong_tot
+  )
+
+  message(sprintf("  Gravados: %s, %s, %s, %s",
+                  basename(f_tit), basename(f_res), basename(f_cong), basename(f_xlsx)))
 
   print(resumo |> select(ticket_operator_code, ticket_code, linha,
                          ticket_modalidade_operador, passes, validacoes, compensacao_total))
   print(congelamento |> select(linha, compensacao_total))
   invisible(list(resumo = resumo, congelamento = congelamento,
-                 titulos = agg_out, fatores = fc))
+                 titulos = agg_out, fatores = fc, xlsx = f_xlsx))
 }
