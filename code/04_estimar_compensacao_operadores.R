@@ -138,11 +138,13 @@ agregar_por_titulo <- function(paths, ano, mes) {
 enriquecer_titulos <- function(agg) {
   tn <- ler_lista_compensacoes("titulos_nomes.csv") |>
     mutate(
+      ticket_code     = suppressWarnings(as.integer(ticket_code)),
       base_weight_num = parse_peso(base_weight),
       complemento_CM  = as.logical(complemento_CM)
     )
 
-  tit <- ler_lista_compensacoes("titulos.csv")
+  tit <- ler_lista_compensacoes("titulos.csv") |>
+    mutate(ticket_code = suppressWarnings(as.integer(ticket_code)))
 
   # Linhas "mestre" de complemento (complemento_CM == TRUE), indexadas por
   # ticket_name_completo (que coincide com ticket_name_short das variantes
@@ -167,18 +169,26 @@ enriquecer_titulos <- function(agg) {
     select(nome_ref = titulo_nome, code_tit = ticket_code) |>
     distinct(nome_ref, .keep_all = TRUE)
 
-  precos_tit <- tit |>
-    select(ticket_code, preco_base) |>
+  info_tit <- tit |>
+    select(ticket_code, preco_base, ticket_operator_code, ticket_modalidade_operador) |>
     distinct(ticket_code, .keep_all = TRUE)
+
+  ops_domain <- ler_lista_compensacoes("operadores.csv") |>
+    filter(!is.na(OPERATOR_NAME_NAVEGANTE)) |>
+    select(ticket_domain = OPERATOR_NAME_NAVEGANTE, op_code_domain = ENTITY_CODE) |>
+    mutate(op_code_domain = as.integer(op_code_domain)) |>
+    distinct(ticket_domain, .keep_all = TRUE)
 
   agg |>
     left_join(
       tn |>
-        select(ticket_name_completo, ticket_name_short, ticket_code,
-               ticket_name_reduzido, complemento_CM, base_weight_num) |>
+        select(ticket_name_completo, ticket_name_short, ticket_domain,
+               code_proprio = ticket_code, ticket_name_reduzido,
+               complemento_CM, base_weight_num) |>
         distinct(ticket_name_completo, .keep_all = TRUE),
       by = c("nome_dist" = "ticket_name_completo")
     ) |>
+    left_join(ops_domain, by = "ticket_domain") |>
     mutate(chave_comp = coalesce(ticket_name_short, nome_dist)) |>
     left_join(mestre_comp, by = "chave_comp") |>
     mutate(
@@ -191,10 +201,20 @@ enriquecer_titulos <- function(agg) {
     ) |>
     left_join(codigos_tn,  by = c("ticket_name_reduzido" = "nome_ref")) |>
     left_join(codigos_tit, by = c("ticket_name_reduzido" = "nome_ref")) |>
-    mutate(ticket_code = coalesce(ticket_code, code_tn, code_tit)) |>
-    left_join(precos_tit, by = "ticket_code") |>
-    select(-ticket_name_short, -base_weight_num, -chave_comp,
-           -reduzido_comp, -peso_comp, -code_tn, -code_tit)
+    mutate(
+      # Código Navegante de referência (para quotas e preco_base)
+      ticket_code = case_when(
+        viver_cascais  ~ code_proprio,
+        complemento_CM ~ coalesce(code_tn, code_tit, code_proprio),
+        TRUE           ~ coalesce(code_proprio, code_tn, code_tit)
+      )
+    ) |>
+    left_join(info_tit, by = "ticket_code") |>
+    mutate(
+      ticket_operator_code = coalesce(as.integer(ticket_operator_code), op_code_domain)
+    ) |>
+    select(-ticket_name_short, -ticket_domain, -op_code_domain, -base_weight_num,
+           -chave_comp, -reduzido_comp, -peso_comp, -code_proprio, -code_tn, -code_tit)
 }
 
 #' 3. Factor TAT cumulativo desde 2024 até ao ano (igual a Compensacoes/05_reparticao_B.R).
@@ -275,7 +295,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   # contam por inteiro; a compensação é só a parte Navegante).
   tit <- agg |>
     filter(!viver_cascais) |>
-    group_by(ticket_code) |>
+    group_by(ticket_operator_code, ticket_code, ticket_modalidade_operador) |>
     summarise(
       linha             = nome_dist[which.max(passes)],
       passes            = sum(passes, na.rm = TRUE),
@@ -322,25 +342,37 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   # 5. Outros passes (Complemento CM e Viver Cascais) -------------------------
   zeros_ops <- as_tibble(setNames(as.list(rep(0, length(ops))), ops))
 
+  codigos_outros <- ler_lista_compensacoes("titulos_nomes.csv") |>
+    mutate(ticket_code = suppressWarnings(as.integer(ticket_code))) |>
+    filter(!is.na(ticket_name_reduzido), !is.na(ticket_code)) |>
+    select(linha = ticket_name_reduzido, ticket_code) |>
+    distinct(linha, .keep_all = TRUE)
+
   r_cm <- agg |>
     filter(complemento_CM) |>
     summarise(
-      linha             = "Complemento CM",
-      passes            = sum(passes, na.rm = TRUE),
-      validacoes        = sum(numval, na.rm = TRUE),
-      compensacao_total = sum(comp_complemento, na.rm = TRUE)
+      ticket_operator_code       = first(na.omit(ticket_operator_code)),
+      linha                      = "Complemento CM",
+      ticket_modalidade_operador = NA_character_,
+      passes                     = sum(passes, na.rm = TRUE),
+      validacoes                 = sum(numval, na.rm = TRUE),
+      compensacao_total          = sum(comp_complemento, na.rm = TRUE)
     ) |>
+    left_join(codigos_outros, by = "linha") |>
     bind_cols(zeros_ops) |>
     mutate(`AT TML - CM` = compensacao_total)
 
   r_ca <- agg |>
     filter(viver_cascais) |>
     summarise(
-      linha             = "Viver Cascais",
-      passes            = sum(passes, na.rm = TRUE),
-      validacoes        = sum(numval, na.rm = TRUE),
-      compensacao_total = sum(comp_cascais, na.rm = TRUE)
+      ticket_operator_code       = first(na.omit(ticket_operator_code)),
+      linha                      = "Viver Cascais",
+      ticket_modalidade_operador = NA_character_,
+      passes                     = sum(passes, na.rm = TRUE),
+      validacoes                 = sum(numval, na.rm = TRUE),
+      compensacao_total          = sum(comp_cascais, na.rm = TRUE)
     ) |>
+    left_join(codigos_outros, by = "linha") |>
     bind_cols(zeros_ops) |>
     mutate(`AT Cascais` = compensacao_total)
 
@@ -382,11 +414,15 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
                   fc$navegante, fc$outros))
 
   # Saídas -------------------------------------------------------------------
+  cols_resumo <- c("ticket_operator_code", "ticket_code", "linha",
+                   "ticket_modalidade_operador", "passes", "validacoes",
+                   "compensacao_total", ops)
+
   # _resumo.csv: apenas títulos individuais + Complemento CM + Viver Cascais (sem TOTAL*)
   resumo <- bind_rows(
-    tit_dist |> select(linha, passes, validacoes, compensacao_total, all_of(ops)),
-    r_cm     |> select(linha, passes, validacoes, compensacao_total, all_of(ops)),
-    r_ca     |> select(linha, passes, validacoes, compensacao_total, all_of(ops))
+    tit_dist |> select(all_of(cols_resumo)),
+    r_cm     |> select(all_of(cols_resumo)),
+    r_ca     |> select(all_of(cols_resumo))
   ) |>
     mutate(ano = ano, mes = mes, .before = 1)
 
@@ -397,21 +433,34 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   agg_out <- agg |>
     arrange(desc(compensacao)) |>
     select(nome_dist, ticket_name_reduzido, complemento_CM, base_weight,
-           ticket_code, preco_base, passes, numval, compensacao,
+           ticket_operator_code, ticket_code, ticket_modalidade_operador,
+           preco_base, passes, numval, compensacao,
            comp_navegante, comp_complemento, comp_cascais)
 
   f_tit  <- file.path(paths$output, output_filename(ano, mes, "comp_por_titulo"))
   f_res  <- file.path(paths$output, output_filename(ano, mes, "passejovem_resumo"))
   f_cong <- file.path(paths$output, output_filename(ano, mes, "passejovem_congelamento"))
 
-  fwrite(agg_out,      f_tit,  sep = ";", dec = ",")
-  fwrite(resumo,       f_res,  sep = ";", dec = ",")
-  fwrite(congelamento, f_cong, sep = ";", dec = ",")
+  gravar_csv <- function(dt, path) {
+    tryCatch(
+      # bom = TRUE garante que o Excel no Windows lê correctamente caracteres UTF-8 (ex.: CRIANÇA)
+      fwrite(dt, path, sep = ";", dec = ",", bom = TRUE),
+      error = function(e) {
+        warning(sprintf("Não foi possível gravar '%s' (estará aberto no Excel?): %s",
+                        basename(path), conditionMessage(e)), call. = FALSE)
+      }
+    )
+  }
+
+  gravar_csv(agg_out,      f_tit)
+  gravar_csv(resumo,       f_res)
+  gravar_csv(congelamento, f_cong)
 
   message(sprintf("  Gravados: %s, %s, %s",
                   basename(f_tit), basename(f_res), basename(f_cong)))
 
-  print(resumo |> select(linha, passes, validacoes, compensacao_total))
+  print(resumo |> select(ticket_operator_code, ticket_code, linha,
+                         ticket_modalidade_operador, passes, validacoes, compensacao_total))
   print(congelamento |> select(linha, compensacao_total))
   invisible(list(resumo = resumo, congelamento = congelamento,
                  titulos = agg_out, fatores = fc))
