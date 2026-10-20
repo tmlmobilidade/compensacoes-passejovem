@@ -277,6 +277,25 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
             startRow = TEMPLATE_DATA_START_ROW, startCol = 1,
             colNames = FALSE)
 
+  # Inserir fórmula de verificação na primeira linha da coluna Compensação
+  # Nota: openxlsx requer sintaxe interna em inglês (IF e vírgulas), que o Excel
+  # apresenta automaticamente como =SE(...;...;...) em português.
+  if (nrow(df_com) >= 1L) {
+    col_comp_com <- match("compensacao", names(df_com))
+    writeFormula(wb, sheet_com,
+                 x = "IF((I13+J13)>20,H13,H13*5%*(I13+J13))",
+                 startRow = TEMPLATE_DATA_START_ROW,
+                 startCol = col_comp_com)
+  }
+
+  if (nrow(df_sem) >= 1L) {
+    col_comp_sem <- match("compensacao", names(df_sem))
+    writeFormula(wb, sheet_sem,
+                 x = "IF((J13+K13)>20,I13,I13*5%*(J13+K13))",
+                 startRow = TEMPLATE_DATA_START_ROW,
+                 startCol = col_comp_sem)
+  }
+
 
   # ── Estilos e colunas adicionais para comNIF e semNIF ───────────────────
   header_style <- createStyle(
@@ -371,6 +390,15 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
   writeData(wb, sheet_resumo, df_resumo,
             startRow = TEMPLATE_DATA_START_ROW, startCol = 1,
             colNames = FALSE)
+
+  # Atualizar o texto da célula E8 (fórmula indicativa em texto) com os nomes reais das abas
+  texto_e8 <- sprintf(
+    paste0("=SOMA.SE.S('%s'!$K$13:$K$1048576;'%s'!$A$13:$A$1048576;'%s'!$B$13:$B$1048576)",
+           "+SOMA.SE.S('%s'!$L$13:$L$1048576;'%s'!$A$13:$A$1048576;'%s'!A13;'%s'!$B$13:$B$1048576;'%s'!B13)"),
+    sheet_com, sheet_com, sheet_com,
+    sheet_sem, sheet_sem, sheet_resumo, sheet_sem, sheet_resumo
+  )
+  writeData(wb, sheet_resumo, x = texto_e8, startRow = 8, startCol = 5, colNames = FALSE)
 
   # Limpar eventuais zeros/fórmulas residuais das linhas 16 a 25 da coluna 5 do template
   for (r in 16:25) {
