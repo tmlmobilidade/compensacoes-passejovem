@@ -47,7 +47,8 @@ THRESHOLD_VAL <- 20L    # mínimo de validações para compensação total
 PCT_VAL       <- 0.05   # percentagem por validação abaixo do threshold
 
 # Códigos de bilhete para o "Complemento Metropolitano"
-CODES_COMP <- c(6170L, 7670L)
+CODES_COMP       <- c(6170L, 7670L) # para detectar os complementos nos ticket_code_new
+CODE_COMP_RESUMO <- 1070L   # código do Complemento CM na tabela de resumo/repartição
 
 # Preço fixo do Cascais quando o ficheiro xlsx não tem preço
 PRECO_CASCAIS <- 20

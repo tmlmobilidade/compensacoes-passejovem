@@ -3,11 +3,13 @@
 # 2.ª fase: estimativa da compensação por operador e do congelamento.
 #
 # Passos:
-#   1. Junta comNIF + semNIF (apenas registos OK) e agrega por nome_dist:
+#   1. Junta comNIF + semNIF (apenas registos OK) e agrega por nome_dist e
+#      código de título base (extraído de ticket_code_new):
 #        numval, compensacao (somas) e passes (n()).
-#   2. Cruza com lists/titulos_nomes.csv (ticket_name_reduzido,
-#      complemento_CM, base_weight) e lists/titulos.csv (preco_base) do
-#      repositório Compensacoes.
+#   2. Cruza directamente por ticket_code com lists/titulos.csv (preco_base,
+#      modalidade, título base) do repositório Compensacoes, calculando
+#      base_weight = preco_base / price_ticket_base_new (sem depender de
+#      lists/titulos_nomes.csv).
 #   3. Separa a compensação de cada título em:
 #        - Navegante   = compensacao * base_weight
 #        - Complemento = compensacao * (1 - base_weight)   -> 100% "AT TML - CM"
@@ -37,20 +39,14 @@ source(file.path(dirname(sys.frame(1)$ofile), "00_config.R"),
 # Funções auxiliares
 # =============================================================================
 
-#' Converte "2/3", "3/5" ou "1" em número.
-parse_peso <- function(x) {
-  partes <- str_split_fixed(as.character(x), "/", 2)
-  num    <- suppressWarnings(as.numeric(partes[, 1]))
-  den    <- suppressWarnings(as.numeric(partes[, 2]))
-  peso   <- if_else(!is.na(den) & den != 0, num / den, num)
-  coalesce(peso, 1)
-}
-
-#' 1. Lê comNIF + semNIF, mantém só registos OK e agrega por nome_dist.
+#' 1. Lê comNIF + semNIF, mantém só registos OK e agrega por nome_dist e
+#' código de bilhete principal (primeiro código de ticket_code_new, que já vem
+#' ordenado por prioridade em 02_calcular_compensacoes.R).
 #' "OK" = registos com compensação calculada e idade elegível
 #' (os fora da faixa etária já foram removidos em 02_calcular_compensacoes.R).
 agregar_por_titulo <- function(paths, ano, mes) {
-  cols  <- c("numval", "compensacao", "nome_dist", "age_new")
+  cols  <- c("numval", "compensacao", "nome_dist", "age_new",
+             "ticket_code_new", "ticket_operator_code_new", "price_ticket_base_new")
   f_com <- file.path(paths$output, output_filename(ano, mes, "comNIF"))
   f_sem <- file.path(paths$output, output_filename(ano, mes, "semNIF"))
 
@@ -66,6 +62,17 @@ agregar_por_titulo <- function(paths, ano, mes) {
       !is.na(nome_dist),
       !(age_new %in% 3L),
       !(age_new >= 25L)
+    ) |>
+    mutate(
+      # O primeiro código em ticket_code_new / ticket_operator_code_new é o título principal
+      ticket_code          = suppressWarnings(as.integer(sub("_.*", "", as.character(ticket_code_new)))),
+      ticket_operator_code = suppressWarnings(as.integer(sub("_.*", "", as.character(ticket_operator_code_new)))),
+      ptb_new              = suppressWarnings(as.numeric(price_ticket_base_new)),
+      # Deteta Complemento CM pelos códigos CODES_COMP (6170/7670) ou pelo nome_dist
+      tem_comp_code        = str_detect(
+        as.character(ticket_code_new),
+        paste0("(^|_)(", paste(CODES_COMP, collapse = "|"), ")($|_)")
+      )
     )
 
   message(sprintf("  Registos OK: %s de %s",
@@ -73,98 +80,51 @@ agregar_por_titulo <- function(paths, ano, mes) {
                   format(n0, big.mark = " ")))
 
   dt_ok |>
-    group_by(nome_dist) |>
+    group_by(nome_dist, ticket_code, ticket_operator_code, ptb_new) |>
     summarise(
-      numval      = sum(numval, na.rm = TRUE),
-      compensacao = sum(compensacao, na.rm = TRUE),
-      passes      = n(),
-      .groups     = "drop"
+      tem_comp_code = any(tem_comp_code, na.rm = TRUE),
+      numval        = sum(numval, na.rm = TRUE),
+      compensacao   = sum(compensacao, na.rm = TRUE),
+      passes        = n(),
+      .groups       = "drop"
     )
 }
 
-#' 2. Associa a cada nome_dist: ticket_name_reduzido, complemento_CM, base_weight,
-#' ticket_code de referência (para as quotas) e preco_base.
+#' 2. Cruza directamente por ticket_code com lists/titulos.csv e calcula
+#' complemento_CM e base_weight a partir dos preços (sem titulos_nomes.csv).
 enriquecer_titulos <- function(agg) {
-  tn <- ler_lista_compensacoes("titulos_nomes.csv") |>
+  info_tit <- ler_lista_compensacoes("titulos.csv") |>
     mutate(
-      ticket_code     = suppressWarnings(as.integer(ticket_code)),
-      base_weight_num = parse_peso(base_weight),
-      complemento_CM  = as.logical(complemento_CM)
-    )
-
-  tit <- ler_lista_compensacoes("titulos.csv") |>
-    mutate(ticket_code = suppressWarnings(as.integer(ticket_code)))
-
-  # Linhas "mestre" de complemento (complemento_CM == TRUE), indexadas por
-  # ticket_name_completo (que coincide com ticket_name_short das variantes
-  # "X+Navegante Complemento 418/sub23").
-  mestre_comp <- tn |>
-    filter(complemento_CM) |>
-    select(
-      chave_comp    = ticket_name_completo,
-      reduzido_comp = ticket_name_reduzido,
-      peso_comp     = base_weight_num
+      ticket_code          = suppressWarnings(as.integer(ticket_code)),
+      pvp                  = suppressWarnings(as.numeric(str_replace(as.character(pvp), ",", "."))),
+      preco_base           = suppressWarnings(as.numeric(str_replace(as.character(preco_base), ",", "."))),
+      op_tit               = suppressWarnings(as.integer(ticket_operator_code))
     ) |>
-    distinct(chave_comp, .keep_all = TRUE)
-
-  # Códigos de bilhete a partir de titulos_nomes.csv e de titulos.csv (418_sub23 / Criança)
-  codigos_tn <- tn |>
-    filter(!is.na(ticket_code)) |>
-    select(nome_ref = ticket_name_completo, code_tn = ticket_code) |>
-    distinct(nome_ref, .keep_all = TRUE)
-
-  codigos_tit <- tit |>
-    filter(modalidade %in% c("418_sub23", "Criança", "crianca")) |>
-    select(nome_ref = titulo_nome, code_tit = ticket_code) |>
-    distinct(nome_ref, .keep_all = TRUE)
-
-  info_tit <- tit |>
-    select(ticket_code, pvp, titulo_nome_base, preco_base,
-           ticket_operator_code, ticket_modalidade_operador) |>
+    select(ticket_code, titulo_nome, pvp, titulo_nome_base, preco_base,
+           op_tit, ticket_modalidade_operador) |>
     distinct(ticket_code, .keep_all = TRUE)
 
-  ops_domain <- ler_lista_compensacoes("operadores.csv") |>
-    filter(!is.na(OPERATOR_NAME_NAVEGANTE)) |>
-    select(ticket_domain = OPERATOR_NAME_NAVEGANTE, op_code_domain = ENTITY_CODE) |>
-    mutate(op_code_domain = as.integer(op_code_domain)) |>
-    distinct(ticket_domain, .keep_all = TRUE)
-
   agg |>
-    left_join(
-      tn |>
-        select(ticket_name_completo, ticket_name_short, ticket_domain,
-               code_proprio = ticket_code, ticket_name_reduzido,
-               complemento_CM, base_weight_num) |>
-        distinct(ticket_name_completo, .keep_all = TRUE),
-      by = c("nome_dist" = "ticket_name_completo")
-    ) |>
-    left_join(ops_domain, by = "ticket_domain") |>
-    mutate(chave_comp = coalesce(ticket_name_short, nome_dist)) |>
-    left_join(mestre_comp, by = "chave_comp") |>
-    mutate(
-      viver_cascais        = str_detect(nome_dist, "^Viver Cascais"),
-      complemento_CM       = if_else(viver_cascais, FALSE,
-                                     coalesce(!is.na(reduzido_comp), complemento_CM, FALSE)),
-      ticket_name_reduzido = coalesce(reduzido_comp, ticket_name_reduzido),
-      base_weight          = if_else(viver_cascais, 1,
-                                     coalesce(peso_comp, base_weight_num, 1))
-    ) |>
-    left_join(codigos_tn,  by = c("ticket_name_reduzido" = "nome_ref")) |>
-    left_join(codigos_tit, by = c("ticket_name_reduzido" = "nome_ref")) |>
-    mutate(
-      # Código Navegante de referência (para quotas e preco_base)
-      ticket_code = case_when(
-        viver_cascais  ~ code_proprio,
-        complemento_CM ~ coalesce(code_tn, code_tit, code_proprio),
-        TRUE           ~ coalesce(code_proprio, code_tn, code_tit)
-      )
-    ) |>
     left_join(info_tit, by = "ticket_code") |>
     mutate(
-      ticket_operator_code = coalesce(as.integer(ticket_operator_code), op_code_domain)
+      viver_cascais        = coalesce(ticket_operator_code == 21L, FALSE) | str_detect(nome_dist, "^Viver Cascais"),
+      complemento_CM       = !viver_cascais & (tem_comp_code | str_detect(nome_dist, "Complemento")),
+      ticket_operator_code = coalesce(op_tit, ticket_operator_code),
+      # Se um título novo ainda não constar em titulos.csv, usa o preço base do registo
+      preco_base           = if_else(
+        viver_cascais,
+        NA_real_,
+        coalesce(preco_base, if_else(complemento_CM, ptb_new - 20, ptb_new))
+      ),
+      # Peso da componente Navegante: ex. 40/60 = 2/3 (Metropolitano+Comp) ou 30/50 = 3/5 (Municipal+Comp)
+      base_weight          = if_else(
+        !viver_cascais & complemento_CM & !is.na(ptb_new) & ptb_new > 0,
+        preco_base / ptb_new,
+        1
+      ),
+      ticket_name_reduzido = titulo_nome
     ) |>
-    select(-ticket_name_short, -ticket_domain, -op_code_domain, -base_weight_num,
-           -chave_comp, -reduzido_comp, -peso_comp, -code_proprio, -code_tn, -code_tit)
+    select(-ptb_new, -tem_comp_code, -titulo_nome, -op_tit)
 }
 
 #' 3. Factor TAT cumulativo desde 2024 até ao ano (igual a Compensacoes/05_reparticao_B.R).
@@ -293,16 +253,11 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   # 5. Outros passes (Complemento CM e Viver Cascais) -------------------------
   zeros_ops <- as_tibble(setNames(as.list(rep(0, length(ops))), ops))
 
-  codigos_outros <- ler_lista_compensacoes("titulos_nomes.csv") |>
-    mutate(ticket_code = suppressWarnings(as.integer(ticket_code))) |>
-    filter(!is.na(ticket_name_reduzido), !is.na(ticket_code)) |>
-    select(linha = ticket_name_reduzido, ticket_code) |>
-    distinct(linha, .keep_all = TRUE)
-
   r_cm <- agg |>
     filter(complemento_CM) |>
     summarise(
       ticket_operator_code       = first(na.omit(ticket_operator_code)),
+      ticket_code                = as.character(CODE_COMP_RESUMO),
       linha                      = "Complemento CM",
       ticket_modalidade_operador = NA_character_,
       pvp                        = 0,
@@ -312,7 +267,6 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
       validacoes                 = sum(numval, na.rm = TRUE),
       compensacao_total          = sum(comp_complemento, na.rm = TRUE)
     ) |>
-    left_join(codigos_outros, by = "linha") |>
     bind_cols(zeros_ops) |>
     mutate(`AT TML - CM` = compensacao_total)
 
@@ -320,6 +274,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
     filter(viver_cascais) |>
     summarise(
       ticket_operator_code       = first(na.omit(ticket_operator_code)),
+      ticket_code                = paste(sort(unique(na.omit(ticket_code))), collapse = "_"),
       linha                      = "Viver Cascais",
       ticket_modalidade_operador = NA_character_,
       pvp                        = 0,
@@ -329,7 +284,6 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
       validacoes                 = sum(numval, na.rm = TRUE),
       compensacao_total          = sum(comp_cascais, na.rm = TRUE)
     ) |>
-    left_join(codigos_outros, by = "linha") |>
     bind_cols(zeros_ops) |>
     mutate(`AT Cascais` = compensacao_total)
 
@@ -382,7 +336,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
 
   # _resumo.csv: apenas títulos individuais + Complemento CM + Viver Cascais (sem TOTAL*)
   resumo <- bind_rows(
-    tit_dist |> select(all_of(cols_resumo)),
+    tit_dist |> mutate(ticket_code = as.character(ticket_code)) |> select(all_of(cols_resumo)),
     r_cm     |> select(all_of(cols_resumo)),
     r_ca     |> select(all_of(cols_resumo))
   ) |>

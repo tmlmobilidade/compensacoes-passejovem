@@ -39,11 +39,12 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   }
 
   resumo <- fread(f_res, sep = ";", dec = ",", encoding = "UTF-8", na.strings = c("", "NA")) |>
-    as_tibble()
+    as_tibble() |>
+    mutate(ticket_code = as.character(ticket_code))
 
   info_tit <- ler_lista_compensacoes("titulos.csv") |>
     mutate(
-      ticket_code = as.integer(ticket_code),
+      ticket_code = as.character(as.integer(ticket_code)),
       pvp         = suppressWarnings(as.numeric(str_replace(pvp, ",", "."))),
       preco_base  = suppressWarnings(as.numeric(str_replace(preco_base, ",", ".")))
     ) |>
@@ -66,6 +67,7 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
     as.data.table() |>
     dcast(ticket_code ~ nome_operador, value.var = "quota", fill = 0) |>
     as_tibble() |>
+    mutate(ticket_code = as.character(ticket_code)) |>
     select(ticket_code, all_of(ops))
 
   tat_df <- ler_lista_compensacoes("tat.csv") |>
@@ -126,7 +128,7 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
       ano                        = as.integer(ano),
       mes                        = as.integer(mes),
       ticket_operator_code       = NA_integer_,
-      ticket_code                = NA_integer_,
+      ticket_code                = NA_character_,
       linha                      = rotulo,
       ticket_modalidade_operador = NA_character_,
       pvp                        = NA_real_,
