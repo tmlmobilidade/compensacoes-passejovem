@@ -310,42 +310,46 @@ A @tbl-3 apresenta o valor apurado de compensação por Operador/Autoridade de T
 #| label: tbl-2
 #| tbl-cap: !expr paste0("Compensação apurada de Passes gratuitos para jovens por título em ", mes_nome, " de ", ANO)
 
-all_p[, titulo := fifelse(
-  nome_imt == "Navegante Metropolitano", "Navegante Metropolitano Sub18+TP/Sub23+TP",
-  fifelse(nome_imt == "Navegante Metropolitano + Complemento", "Navegante Metropolitano Sub18+TP/Sub23+TP + Complemento CM",
-  fifelse(nome_imt == "Viver Cascais", "Viver Cascais Estudante/Residente", nome_imt))
-)]
-
 ordem_titulos <- c(
   "Navegante Metropolitano Sub18+TP/Sub23+TP",
   "Navegante Metropolitano Sub18+TP/Sub23+TP + Complemento CM",
   "Viver Cascais Estudante/Residente"
 )
 
-t2_res <- all_p[, .(
-  n_passes    = .N,
-  validações  = sum(numval, na.rm = TRUE),
-  compensacao = sum(compensacao, na.rm = TRUE)
-), by = .(titulo)]
+t2_res <- all_p |>
+  mutate(
+    titulo = case_when(
+      nome_imt == "Navegante Metropolitano"               ~ "Navegante Metropolitano Sub18+TP/Sub23+TP",
+      nome_imt == "Navegante Metropolitano + Complemento" ~ "Navegante Metropolitano Sub18+TP/Sub23+TP + Complemento CM",
+      nome_imt == "Viver Cascais"                         ~ "Viver Cascais Estudante/Residente",
+      TRUE                                                ~ nome_imt
+    )
+  ) |>
+  summarise(
+    n_passes    = n(),
+    validacoes  = sum(numval, na.rm = TRUE),
+    compensacao = sum(compensacao, na.rm = TRUE),
+    .by = titulo
+  )
 
-t2_res <- t2_res[match(ordem_titulos, titulo)]
+t2_res <- tibble(titulo = ordem_titulos) |>
+  left_join(t2_res, by = "titulo")
 
-t2_total <- data.table(
-  titulo      = "TOTAL",
-  n_passes    = sum(t2_res$n_passes),
-  validações  = sum(t2_res$validações),
-  compensacao = sum(t2_res$compensacao)
-)
-t2_final <- rbind(t2_res, t2_total)
+t2_total <- t2_res |>
+  summarise(
+    titulo      = "TOTAL",
+    n_passes    = sum(n_passes, na.rm = TRUE),
+    validacoes  = sum(validacoes, na.rm = TRUE),
+    compensacao = sum(compensacao, na.rm = TRUE)
+  )
 
-t2_display <- data.frame(
-  titulo      = t2_final$titulo,
-  n_passes    = fmt_int(t2_final$n_passes),
-  validações  = fmt_int(t2_final$validações),
-  compensacao = fmt_eur(t2_final$compensacao),
-  stringsAsFactors = FALSE
-)
-colnames(t2_display) <- c("Designação do título", "N.º passes elegíveis\npara compensação", "Nº validações", "Compensação (€)")
+t2_display <- bind_rows(t2_res, t2_total) |>
+  transmute(
+    `Designação do título`                   = titulo,
+    `N.º passes elegíveis\npara compensação` = fmt_int(n_passes),
+    `Nº validações`                          = fmt_int(validacoes),
+    `Compensação (€)`                        = fmt_eur(compensacao)
+  )
 
 tml_table(t2_display,
  align = c("l", "r", "r", "r"),
@@ -358,27 +362,31 @@ tml_table(t2_display,
 #| label: tbl-3
 #| tbl-cap: !expr paste0("Compensação apurada de passes gratuitos para jovens por operador e/ou autoridade de transportes em ", mes_nome, " de ", ANO)
 
-all_p[, autoridade := fifelse(emissor %in% c("AT TML", "AT AML", "MTS", ""), "AT TML", emissor)]
-
-t3_res <- all_p[, .(
-  compensacao = sum(compensacao, na.rm = TRUE)
-), by = .(autoridade)]
-
 ordem_aut <- c("AT TML", "AT Cascais")
-t3_res <- t3_res[match(ordem_aut, autoridade)]
 
-t3_total <- data.table(
-  autoridade  = "TOTAL",
-  compensacao = sum(t3_res$compensacao)
-)
-t3_final <- rbind(t3_res, t3_total)
+t3_res <- all_p |>
+  mutate(
+    autoridade = if_else(emissor %in% c("AT TML", "AT AML", "MTS", ""), "AT TML", emissor)
+  ) |>
+  summarise(
+    compensacao = sum(compensacao, na.rm = TRUE),
+    .by = autoridade
+  )
 
-t3_display <- data.frame(
-  autoridade  = t3_final$autoridade,
-  compensacao = fmt_eur(t3_final$compensacao),
-  stringsAsFactors = FALSE
-)
-colnames(t3_display) <- c("Operador/ Autoridade de transportes", "Compensação (€)")
+t3_res <- tibble(autoridade = ordem_aut) |>
+  left_join(t3_res, by = "autoridade")
+
+t3_total <- t3_res |>
+  summarise(
+    autoridade  = "TOTAL",
+    compensacao = sum(compensacao, na.rm = TRUE)
+  )
+
+t3_display <- bind_rows(t3_res, t3_total) |>
+  transmute(
+    `Operador/ Autoridade de transportes` = autoridade,
+    `Compensação (€)`                     = fmt_eur(compensacao)
+  )
 
 tml_table(t3_display, align = c("l", "r"), bold_total = TRUE, fontsize = 0.85)
 ```
@@ -411,33 +419,22 @@ A @fig-1 apresenta graficamente a evolução mensal do número de passes carrega
 #| label: tbl-4
 #| tbl-cap: !expr paste0("Evolução do número de passes carregados, validações e compensação em ", ANO)
 
-df_2026 <- df_ant[df_ant$ano == ANO & df_ant$mes <= MES, ]
-col_names_t4 <- paste0(meses_abr[df_2026$mes], "/", substr(df_2026$ano, 3, 4))
+df_2026 <- df_ant |>
+  filter(ano == ANO, mes <= MES) |>
+  mutate(col_mes = paste0(meses_abr[mes], "/", substr(ano, 3, 4)))
 
-t4_df <- data.frame(
-  indicador = c(
-    "Nº utilizadores de Passes gratuitos para jovens",
-    "Nº utilizadores sem NIF",
-    "Nº de validações de Passes gratuitos para jovens",
-    "Nº médio de validações por utilizador",
-    "Valor de compensação apurado (€)",
-    "Valor médio de compensação por utilizador (€)"
-  ),
-  stringsAsFactors = FALSE
-)
-
-for (i in seq_len(nrow(df_2026))) {
-  col_nm <- col_names_t4[i]
-  t4_df[[col_nm]] <- c(
-    fmt_int(df_2026$utilizadores_pj[i]),
-    fmt_int(df_2026$utilizadores_pj_semNIF[i]),
-    fmt_int(df_2026$validacoes_pj[i]),
-    scales::number(df_2026$validacoes_utilizador[i], accuracy = 0.01, decimal.mark = ","),
-    scales::number(df_2026$compensacao_valor[i], accuracy = 0.01, big.mark = "\u00a0", decimal.mark = ","),
-    scales::number(df_2026$compensasao_utilizador[i], accuracy = 0.01, decimal.mark = ",")
-  )
-}
-colnames(t4_df)[1] <- ""
+t4_df <- df_2026 |>
+  transmute(
+    col_mes,
+    `Nº utilizadores de Passes gratuitos para jovens`  = fmt_int(utilizadores_pj),
+    `Nº utilizadores sem NIF`                          = fmt_int(utilizadores_pj_semNIF),
+    `Nº de validações de Passes gratuitos para jovens` = fmt_int(validacoes_pj),
+    `Nº médio de validações por utilizador`            = scales::number(validacoes_utilizador, accuracy = 0.01, decimal.mark = ","),
+    `Valor de compensação apurado (€)`                 = scales::number(compensacao_valor, accuracy = 0.01, big.mark = "\u00a0", decimal.mark = ","),
+    `Valor médio de compensação por utilizador (€)`    = scales::number(compensasao_utilizador, accuracy = 0.01, decimal.mark = ",")
+  ) |>
+  pivot_longer(-col_mes, names_to = " ", values_to = "valor") |>
+  pivot_wider(names_from = col_mes, values_from = valor)
 
 tml_table(t4_df, align = c("l", rep("r", nrow(df_2026))), bold_total = FALSE
 # fontsize = 0.85
@@ -452,11 +449,12 @@ tml_table(t4_df, align = c("l", rep("r", nrow(df_2026))), bold_total = FALSE
 #| fig-height: 3.8
 #| dpi: 300
 
-df_plot <- df_ant[df_ant$ano > 2023 & (df_ant$ano < ANO | (df_ant$ano == ANO & df_ant$mes <= MES)), ]
-df_plot$data_label <- factor(
-  paste0(meses_abr[df_plot$mes], "/", substr(df_plot$ano, 3, 4)),
-  levels = paste0(meses_abr[df_plot$mes], "/", substr(df_plot$ano, 3, 4))
-)
+df_plot <- df_ant |>
+  filter(ano > 2023, ano < ANO | (ano == ANO & mes <= MES)) |>
+  mutate(
+    mes_lbl    = paste0(meses_abr[mes], "/", substr(ano, 3, 4)),
+    data_label = factor(mes_lbl, levels = mes_lbl)
+  )
 
 scale_factor <- 40
 
