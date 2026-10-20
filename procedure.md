@@ -114,6 +114,10 @@ source("code/99_run_pipeline.R")
 run_pipeline(ano = 2026, meses = 7)
 ```
 
+> **Controlo da Fase 2 (`RUN_FASE2` em `code/00_config.R`)**:
+> - `RUN_FASE2 <- FALSE`: corre apenas a **Fase 1** (scripts `01` a `03` + documentos `informacao1`, `oficio1`, `metodologia1`).
+> - `RUN_FASE2 <- TRUE`: corre também a **Fase 2** (scripts `04` e `05` + documentos `metodologia2`, `informacao2`, `oficio2`), quando as quotas mensais dos operadores já se encontram disponíveis. Também pode ser passado diretamente em `run_pipeline(ano = 2026, meses = 7, run_fase2 = FALSE)`.
+
 ## Passo 01 — Preparar dados (`01_preparar_dados.R`)
 
 1. **Leitura**: ficheiro `*PasseJovem*` (XLSX; CSV só como legado), `TML_*.xlsx` (Cascais) e Azambuja (ficheiro `*Complemento_Azambuja*` ou folha "Azambuja" do XLSX principal). Os nomes das colunas são normalizados para minúsculas; `ID_DOC_NUMBER → doc_number` e `ID_DOC_NUMBER_DESC → doc_type`.

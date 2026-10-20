@@ -416,7 +416,7 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   addStyle(wb, ws2, st_sub_header, rows = 4, cols = 4:6, gridExpand = TRUE)
 
   mergeCells(wb, ws2, rows = 4, cols = 7:9)
-  writeData(wb, ws2, x = "Compensação por Congelamento Tarifário — TAT (€)", startRow = 4, startCol = 7)
+  writeData(wb, ws2, x = "Compensação por Congelamento Tarifário - TAT (€)", startRow = 4, startCol = 7)
   addStyle(wb, ws2, st_sub_header_gray, rows = 4, cols = 7:9, gridExpand = TRUE)
   setRowHeights(wb, ws2, rows = 4, heights = 20)
 
@@ -486,7 +486,7 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
 
   mergeCells(wb, ws2, rows = rw_meta, cols = 1:9)
   writeData(wb, ws2,
-            x = "     Notas — Taxas de Atualização Tarifária (TAT) e Fatores de Congelamento Aplicados",
+            x = "     Notas - Taxas de Atualização Tarifária (TAT) e Fatores de Congelamento Aplicados",
             startRow = rw_meta, startCol = 1)
   addStyle(wb, ws2, st_sub_header_gray_left, rows = rw_meta, cols = 1:9, gridExpand = TRUE)
   setRowHeights(wb, ws2, rows = rw_meta, heights = 20)

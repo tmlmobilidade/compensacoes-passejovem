@@ -40,7 +40,8 @@ code_dir <- tryCatch({
   }
 }, error = function(e) file.path(getwd(), "code"))
 
-# Carregar os scripts do pipeline (cada um faz source() de 00_config.R internamente)
+# Carregar configuração e scripts do pipeline
+source(file.path(code_dir, "00_config.R"),                         local = TRUE)
 source(file.path(code_dir, "01_preparar_dados.R"),                 local = TRUE)
 source(file.path(code_dir, "02_calcular_compensacoes.R"),          local = TRUE)
 source(file.path(code_dir, "03_exportar_reporte.R"),               local = TRUE)
@@ -59,7 +60,10 @@ source(file.path(code_dir, "10_documentos.R"),                     local = TRUE)
 #' @param meses       Vector de meses a processar (ex: c(5, 6, 7))
 #'                    Se NULL, detecta automaticamente os meses disponíveis em data/
 #' @param render_docs Lógico; se TRUE renderiza os documentos oficiais (PDF/Word).
-run_pipeline <- function(ano, meses = NULL, render_docs = TRUE) {
+#' @param run_fase2   Lógico; se TRUE executa também a Fase 2 (scripts 04 e 05 +
+#'                    documentos metodologia2, informacao2, oficio2). Por omissão
+#'                    usa RUN_FASE2 definido em 00_config.R.
+run_pipeline <- function(ano, meses = NULL, render_docs = TRUE, run_fase2 = RUN_FASE2) {
   t0_pipe <- proc.time()
 
   raiz <- here_root()
@@ -89,13 +93,21 @@ run_pipeline <- function(ano, meses = NULL, render_docs = TRUE) {
 
     # Correr os passos do pipeline; continuar para o próximo mês se houver erro
     tryCatch({
+      # Fase 1: apuramento mensal (IMT)
       preparar_dados(ano, mes, raiz)
       calcular_compensacoes(ano, mes, raiz)
       exportar_reporte(ano, mes, raiz)
-      estimar_compensacao_operadores(ano, mes, raiz)
-      exportar_anexo_reparticao(ano, mes, raiz)
+
+      # Fase 2: repartição pelos operadores e congelamento (opcional via RUN_FASE2)
+      if (isTRUE(run_fase2)) {
+        estimar_compensacao_operadores(ano, mes, raiz)
+        exportar_anexo_reparticao(ano, mes, raiz)
+      } else {
+        message("[Fase 2] Ignorada (RUN_FASE2 = FALSE em 00_config.R)")
+      }
+
       if (isTRUE(render_docs)) {
-        render_documentos(ano = ano, mes = mes, raiz = raiz)
+        render_documentos(ano = ano, mes = mes, raiz = raiz, run_fase2 = run_fase2)
       }
     }, error = function(e) {
       message(sprintf("ERRO ao processar %d/%02d: %s", ano, mes, conditionMessage(e)))

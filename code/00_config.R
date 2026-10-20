@@ -25,6 +25,17 @@ suppressPackageStartupMessages({
 
 
 # -----------------------------------------------------------------------------
+# Controlo de fases do pipeline
+# -----------------------------------------------------------------------------
+
+# Executar a Fase 2 (repartição por operador e congelamento: scripts 04 e 05 +
+# documentos metodologia2, informacao2 e oficio2)?
+#   FALSE -> corre apenas a Fase 1 (apuramento para o IMT: scripts 01 a 03 + docs 1)
+#   TRUE  -> corre também a Fase 2 (quando as quotas mensais já estão disponíveis)
+RUN_FASE2 <- TRUE
+
+
+# -----------------------------------------------------------------------------
 # Constantes de negócio
 # (baseadas na Portaria n.º 7-A/2024, de 5 de janeiro)
 # -----------------------------------------------------------------------------
