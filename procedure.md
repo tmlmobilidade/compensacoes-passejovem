@@ -238,7 +238,7 @@ Estima a repartição mensal das compensações Passe Jovem pelos **11 operadore
 
 ### 2. Cruzamento direto com `Compensacoes/lists/titulos.csv`
 
-- Cada `ticket_code` é cruzado diretamente com `titulos.csv` (sem depender de `titulos_nomes.csv` nem `operadores.csv`) para obter `titulo_nome` (`ticket_name_reduzido`), `pvp`, `titulo_nome_base`, `preco_base` e `ticket_modalidade_operador`.
+- Cada `ticket_code` é cruzado diretamente com `titulos.csv` (sem depender de `titulos_nomes.csv` nem `operadores.csv`) para obter `titulo_nome` (`ticket_name_reduzido`), `modalidade`, `pvp`, `titulo_nome_base` e `preco_base`.
 - Caso seja criado um título novo que ainda não conste em `titulos.csv`, o `preco_base` usa automaticamente o `price_ticket_base_new` do registo (deduzindo `20 €` se tiver complemento).
 - Identificação de **Viver Cascais** e **Complemento CM**:
   - `viver_cascais`: `ticket_operator_code == 21` ou `nome_dist` a começar por `"Viver Cascais"`;

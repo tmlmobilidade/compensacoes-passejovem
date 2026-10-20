@@ -95,13 +95,12 @@ agregar_por_titulo <- function(paths, ano, mes) {
 enriquecer_titulos <- function(agg) {
   info_tit <- ler_lista_compensacoes("titulos.csv") |>
     mutate(
-      ticket_code          = suppressWarnings(as.integer(ticket_code)),
-      pvp                  = suppressWarnings(as.numeric(str_replace(as.character(pvp), ",", "."))),
-      preco_base           = suppressWarnings(as.numeric(str_replace(as.character(preco_base), ",", "."))),
-      op_tit               = suppressWarnings(as.integer(ticket_operator_code))
+      ticket_code = suppressWarnings(as.integer(ticket_code)),
+      pvp         = suppressWarnings(as.numeric(str_replace(as.character(pvp), ",", "."))),
+      preco_base  = suppressWarnings(as.numeric(str_replace(as.character(preco_base), ",", "."))),
+      op_tit      = suppressWarnings(as.integer(ticket_operator_code))
     ) |>
-    select(ticket_code, titulo_nome, pvp, titulo_nome_base, preco_base,
-           op_tit, ticket_modalidade_operador) |>
+    select(ticket_code, titulo_nome, modalidade, pvp, titulo_nome_base, preco_base, op_tit) |>
     distinct(ticket_code, .keep_all = TRUE)
 
   agg |>
@@ -205,10 +204,10 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   # contam por inteiro; a compensação é só a parte Navegante).
   tit <- agg |>
     filter(!viver_cascais) |>
-    group_by(ticket_operator_code, ticket_code, ticket_modalidade_operador,
+    group_by(ticket_operator_code, ticket_code, modalidade,
              pvp, titulo_nome_base, preco_base) |>
     summarise(
-      linha             = nome_dist[which.max(passes)],
+      linha             = coalesce(first(na.omit(ticket_name_reduzido)), nome_dist[which.max(passes)]),
       passes            = sum(passes, na.rm = TRUE),
       validacoes        = sum(numval, na.rm = TRUE),
       compensacao_total = sum(comp_navegante, na.rm = TRUE),
@@ -256,16 +255,16 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   r_cm <- agg |>
     filter(complemento_CM) |>
     summarise(
-      ticket_operator_code       = first(na.omit(ticket_operator_code)),
-      ticket_code                = as.character(CODE_COMP_RESUMO),
-      linha                      = "Complemento CM",
-      ticket_modalidade_operador = NA_character_,
-      pvp                        = 0,
-      titulo_nome_base           = NA_character_,
-      preco_base                 = first(na.omit(preco_base * (1 - base_weight) / base_weight)),
-      passes                     = sum(passes, na.rm = TRUE),
-      validacoes                 = sum(numval, na.rm = TRUE),
-      compensacao_total          = sum(comp_complemento, na.rm = TRUE)
+      ticket_operator_code = first(na.omit(ticket_operator_code)),
+      ticket_code          = as.character(CODE_COMP_RESUMO),
+      linha                = "Complemento CM",
+      modalidade           = NA_character_,
+      pvp                  = 0,
+      titulo_nome_base     = NA_character_,
+      preco_base           = first(na.omit(preco_base * (1 - base_weight) / base_weight)),
+      passes               = sum(passes, na.rm = TRUE),
+      validacoes           = sum(numval, na.rm = TRUE),
+      compensacao_total    = sum(comp_complemento, na.rm = TRUE)
     ) |>
     bind_cols(zeros_ops) |>
     mutate(`AT TML - CM` = compensacao_total)
@@ -273,16 +272,16 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   r_ca <- agg |>
     filter(viver_cascais) |>
     summarise(
-      ticket_operator_code       = first(na.omit(ticket_operator_code)),
-      ticket_code                = paste(sort(unique(na.omit(ticket_code))), collapse = "_"),
-      linha                      = "Viver Cascais",
-      ticket_modalidade_operador = NA_character_,
-      pvp                        = 0,
-      titulo_nome_base           = NA_character_,
-      preco_base                 = PRECO_CASCAIS,
-      passes                     = sum(passes, na.rm = TRUE),
-      validacoes                 = sum(numval, na.rm = TRUE),
-      compensacao_total          = sum(comp_cascais, na.rm = TRUE)
+      ticket_operator_code = first(na.omit(ticket_operator_code)),
+      ticket_code          = paste(sort(unique(na.omit(ticket_code))), collapse = "_"),
+      linha                = "Viver Cascais",
+      modalidade           = NA_character_,
+      pvp                  = 0,
+      titulo_nome_base     = NA_character_,
+      preco_base           = PRECO_CASCAIS,
+      passes               = sum(passes, na.rm = TRUE),
+      validacoes           = sum(numval, na.rm = TRUE),
+      compensacao_total    = sum(comp_cascais, na.rm = TRUE)
     ) |>
     bind_cols(zeros_ops) |>
     mutate(`AT Cascais` = compensacao_total)
@@ -331,7 +330,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
 
   # Saídas -------------------------------------------------------------------
   cols_resumo <- c("ticket_operator_code", "ticket_code", "linha",
-                   "ticket_modalidade_operador", "passes", "validacoes",
+                   "modalidade", "passes", "validacoes",
                    "compensacao_total", ops)
 
   # _resumo.csv: apenas títulos individuais + Complemento CM + Viver Cascais (sem TOTAL*)
@@ -349,7 +348,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   agg_out <- agg |>
     arrange(desc(compensacao)) |>
     select(nome_dist, ticket_name_reduzido, complemento_CM, base_weight,
-           ticket_operator_code, ticket_code, ticket_modalidade_operador,
+           ticket_operator_code, ticket_code, modalidade,
            preco_base, passes, numval, compensacao,
            comp_navegante, comp_complemento, comp_cascais)
 
@@ -376,7 +375,7 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
                   basename(f_tit), basename(f_res), basename(f_cong)))
 
   print(resumo |> select(ticket_operator_code, ticket_code, linha,
-                         ticket_modalidade_operador, passes, validacoes, compensacao_total))
+                         modalidade, passes, validacoes, compensacao_total))
   print(congelamento |> select(linha, compensacao_total))
   invisible(list(resumo = resumo, congelamento = congelamento,
                  titulos = agg_out, fatores = fc))

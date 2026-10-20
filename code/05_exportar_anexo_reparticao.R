@@ -48,7 +48,7 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
       pvp         = suppressWarnings(as.numeric(str_replace(pvp, ",", "."))),
       preco_base  = suppressWarnings(as.numeric(str_replace(preco_base, ",", ".")))
     ) |>
-    select(ticket_code, pvp, titulo_nome_base, preco_base) |>
+    select(ticket_code, titulo_nome, modalidade_tit = modalidade, pvp, titulo_nome_base, preco_base) |>
     distinct(ticket_code, .keep_all = TRUE)
 
   f_quotas <- caminho_quotas(ano, mes)
@@ -79,8 +79,11 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   df_rows <- resumo |>
     left_join(info_tit, by = "ticket_code") |>
     mutate(
-      eh_outro = linha %in% c("Complemento CM", "Viver Cascais"),
-      pvp      = coalesce(pvp, 0),
+      eh_outro   = linha %in% c("Complemento CM", "Viver Cascais"),
+      linha      = coalesce(titulo_nome, linha),
+      modalidade = if ("modalidade" %in% names(resumo)) coalesce(modalidade_tit, modalidade)
+                   else coalesce(modalidade_tit, ticket_modalidade_operador),
+      pvp        = coalesce(pvp, 0),
       preco_base = case_when(
         !is.na(preco_base)          ~ preco_base,
         linha == "Viver Cascais"    ~ PRECO_CASCAIS,
@@ -90,7 +93,7 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
     ) |>
     select(
       ano, mes, ticket_operator_code, ticket_code, linha,
-      ticket_modalidade_operador, pvp, titulo_nome_base,
+      modalidade, pvp, titulo_nome_base,
       preco_base, passes, validacoes, compensacao_total, all_of(ops), eh_outro
     )
 
@@ -125,18 +128,18 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
 
   linha_tot_base <- function(rotulo) {
     tibble(
-      ano                        = as.integer(ano),
-      mes                        = as.integer(mes),
-      ticket_operator_code       = NA_integer_,
-      ticket_code                = NA_character_,
-      linha                      = rotulo,
-      ticket_modalidade_operador = NA_character_,
-      pvp                        = NA_real_,
-      titulo_nome_base           = NA_character_,
-      preco_base                 = NA_real_,
-      passes                     = NA_integer_,
-      validacoes                 = NA_integer_,
-      compensacao_total          = NA_real_
+      ano                  = as.integer(ano),
+      mes                  = as.integer(mes),
+      ticket_operator_code = NA_integer_,
+      ticket_code          = NA_character_,
+      linha                = rotulo,
+      modalidade           = NA_character_,
+      pvp                  = NA_real_,
+      titulo_nome_base     = NA_character_,
+      preco_base           = NA_real_,
+      passes               = NA_integer_,
+      validacoes           = NA_integer_,
+      compensacao_total    = NA_real_
     ) |>
       bind_cols(q_tot)
   }
