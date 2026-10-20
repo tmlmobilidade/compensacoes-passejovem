@@ -114,9 +114,14 @@ source("code/99_run_pipeline.R")
 run_pipeline(ano = 2026, meses = 7)
 ```
 
-> **Controlo da Fase 2 (`RUN_FASE2` em `code/00_config.R`)**:
-> - `RUN_FASE2 <- FALSE`: corre apenas a **Fase 1** (scripts `01` a `03` + documentos `informacao1`, `oficio1`, `metodologia1`).
-> - `RUN_FASE2 <- TRUE`: corre também a **Fase 2** (scripts `04` e `05` + documentos `metodologia2`, `informacao2`, `oficio2`), quando as quotas mensais dos operadores já se encontram disponíveis. Também pode ser passado diretamente em `run_pipeline(ano = 2026, meses = 7, run_fase2 = FALSE)`.
+> **Controlo de execução em `code/00_config.R`**:
+> - `RUN_FASE2`:
+>   - `FALSE`: corre apenas a **Fase 1** (scripts `01` a `03` + documentos `informacao1`, `oficio1`, `metodologia1`).
+>   - `TRUE`: corre também a **Fase 2** (scripts `04` e `05` + documentos `metodologia2`, `informacao2`, `oficio2`), quando as quotas mensais dos operadores já se encontram disponíveis.
+> - `RENDER_DOCS`:
+>   - `TRUE`: executa `10_documentos.R` (`render_documentos()`) no final do pipeline.
+>   - `FALSE`: salta a renderização dos documentos Quarto (PDF/DOCX).
+> - Ambos podem também ser sobrepostos diretamente na chamada `run_pipeline(ano = 2026, meses = 7, render_docs = FALSE, run_fase2 = FALSE)`.
 
 ## Passo 01 — Preparar dados (`01_preparar_dados.R`)
 

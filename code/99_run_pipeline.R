@@ -60,10 +60,11 @@ source(file.path(code_dir, "10_documentos.R"),                     local = TRUE)
 #' @param meses       Vector de meses a processar (ex: c(5, 6, 7))
 #'                    Se NULL, detecta automaticamente os meses disponíveis em data/
 #' @param render_docs Lógico; se TRUE renderiza os documentos oficiais (PDF/Word).
+#'                    Por omissão usa RENDER_DOCS definido em 00_config.R.
 #' @param run_fase2   Lógico; se TRUE executa também a Fase 2 (scripts 04 e 05 +
 #'                    documentos metodologia2, informacao2, oficio2). Por omissão
 #'                    usa RUN_FASE2 definido em 00_config.R.
-run_pipeline <- function(ano, meses = NULL, render_docs = TRUE, run_fase2 = RUN_FASE2) {
+run_pipeline <- function(ano, meses = NULL, render_docs = RENDER_DOCS, run_fase2 = RUN_FASE2) {
   t0_pipe <- proc.time()
 
   raiz <- here_root()
@@ -108,6 +109,8 @@ run_pipeline <- function(ano, meses = NULL, render_docs = TRUE, run_fase2 = RUN_
 
       if (isTRUE(render_docs)) {
         render_documentos(ano = ano, mes = mes, raiz = raiz, run_fase2 = run_fase2)
+      } else {
+        message("[Documentos] Ignorados (RENDER_DOCS = FALSE em 00_config.R)")
       }
     }, error = function(e) {
       message(sprintf("ERRO ao processar %d/%02d: %s", ano, mes, conditionMessage(e)))
