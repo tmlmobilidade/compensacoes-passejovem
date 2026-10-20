@@ -499,3 +499,55 @@ atualizar_compensacao_pj_anteriores <- function(ano, mes, raiz = here_root()) {
 }
 
 
+# -----------------------------------------------------------------------------
+# Integração com o repositório Compensacoes (partilhado por 04 e 05)
+# -----------------------------------------------------------------------------
+
+# Raiz do repositório Compensacoes (pode ser sobreposta por variável de ambiente)
+COMPENSACOES_ROOT <- Sys.getenv("COMPENSACOES_ROOT", unset = "C:/Repos/Compensacoes")
+
+# Fonte alternativa (repositório público) caso os ficheiros locais não existam
+COMPENSACOES_GITHUB <-
+  "https://raw.githubusercontent.com/tmlmobilidade/compensacoes-navegante/main/lists"
+
+# Nomes das entidades que recebem 100% das parcelas "não Navegante"
+OPERADOR_CM      <- "AT TML - CM"
+OPERADOR_CASCAIS <- "AT Cascais"
+
+MESES_ABREV <- c("jan", "fev", "mar", "abr", "mai", "jun",
+                 "jul", "ago", "set", "out", "nov", "dez")
+
+# Colunas de operadores do resumo (ordem do Excel de referência) e respectivos
+# códigos no ficheiro de quotas do Compensacoes.
+OPERADORES_RESUMO <- c(
+  "CP"          = "CP",
+  "FT"          = "FT",
+  "TT"          = "TT",
+  "SL"          = "SL",
+  "ML"          = "ML",
+  "MTS"         = "MS",
+  "Carris"      = "CA",
+  "TCB"         = "TB",
+  "AT Cascais"  = "CAP",
+  "AT TML - CM" = "CM",
+  "BT Oeste"    = "BQ"
+)
+
+#' Lê uma lista do Compensacoes (local; se não existir, do GitHub).
+ler_lista_compensacoes <- function(nome) {
+  local <- file.path(COMPENSACOES_ROOT, "lists", nome)
+  src   <- if (file.exists(local)) local else file.path(COMPENSACOES_GITHUB, nome)
+  # fill = TRUE: algumas linhas de titulos_nomes.csv têm menos colunas
+  fread(src, sep = ";", fill = TRUE, encoding = "UTF-8", na.strings = c("", "NA")) |>
+    as_tibble()
+}
+
+#' Caminho do ficheiro de quotas do Compensacoes para um mês.
+caminho_quotas <- function(ano, mes) {
+  pasta <- sprintf("%02d_%s_%d", mes, MESES_ABREV[mes], ano)
+  file.path(COMPENSACOES_ROOT, "data", pasta, "output",
+            sprintf("1_quotas_%s%02d.csv", MESES_ABREV[mes], ano %% 100))
+}
+
+
+

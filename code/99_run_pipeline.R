@@ -2,11 +2,13 @@
 # 99_run_pipeline.R
 # Orquestrador principal do pipeline PasseJovem.
 #
-# Executa os 4 passos do pipeline para um ou mais meses:
-#   1. Preparar dados        (01_preparar_dados.R)
-#   2. Calcular compensações (02_calcular_compensacoes.R)
-#   3. Exportar reporte Excel (03_exportar_reporte.R)
-#   4. Renderizar documentos (10_documentos.R)
+# Executa os 6 passos do pipeline para um ou mais meses:
+#   1. Preparar dados                  (01_preparar_dados.R)
+#   2. Calcular compensações           (02_calcular_compensacoes.R)
+#   3. Exportar reporte Excel          (03_exportar_reporte.R)
+#   4. Estimar compensação operadores  (04_estimar_compensacao_operadores.R)
+#   5. Exportar Anexo II Repartição    (05_exportar_anexo_reparticao.R)
+#   6. Renderizar documentos           (10_documentos.R)
 #
 # Uso (linha de comandos):
 #   Rscript 99_run_pipeline.R              # processa todos os meses em data/
@@ -39,10 +41,12 @@ code_dir <- tryCatch({
 }, error = function(e) file.path(getwd(), "code"))
 
 # Carregar os scripts do pipeline (cada um faz source() de 00_config.R internamente)
-source(file.path(code_dir, "01_preparar_dados.R"),        local = TRUE)
-source(file.path(code_dir, "02_calcular_compensacoes.R"), local = TRUE)
-source(file.path(code_dir, "03_exportar_reporte.R"),      local = TRUE)
-source(file.path(code_dir, "10_documentos.R"),            local = TRUE)
+source(file.path(code_dir, "01_preparar_dados.R"),                 local = TRUE)
+source(file.path(code_dir, "02_calcular_compensacoes.R"),          local = TRUE)
+source(file.path(code_dir, "03_exportar_reporte.R"),               local = TRUE)
+source(file.path(code_dir, "04_estimar_compensacao_operadores.R"), local = TRUE)
+source(file.path(code_dir, "05_exportar_anexo_reparticao.R"),      local = TRUE)
+source(file.path(code_dir, "10_documentos.R"),                     local = TRUE)
 
 
 # =============================================================================
@@ -88,6 +92,8 @@ run_pipeline <- function(ano, meses = NULL, render_docs = TRUE) {
       preparar_dados(ano, mes, raiz)
       calcular_compensacoes(ano, mes, raiz)
       exportar_reporte(ano, mes, raiz)
+      estimar_compensacao_operadores(ano, mes, raiz)
+      exportar_anexo_reparticao(ano, mes, raiz)
       if (isTRUE(render_docs)) {
         render_documentos(ano = ano, mes = mes, raiz = raiz)
       }
