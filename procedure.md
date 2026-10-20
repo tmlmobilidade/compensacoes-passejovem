@@ -224,23 +224,26 @@ Copia o template oficial **v2** (`Exemplos/Template_PASSE GRATUITO JOVEM - REPOR
 
 Estima a repartição mensal das compensações Passe Jovem pelos **11 operadores** (`CP`, `FT`, `TT`, `SL`, `ML`, `MTS`, `Carris`, `TCB`, `AT Cascais`, `AT TML - CM`, `BT Oeste`) e o respetivo **Congelamento Tarifário (TAT)**, cruzando os outputs do Passo 02 com as listas e quotas do repositório `Compensacoes` (`C:/Repos/Compensacoes`).
 
-### 1. Agregação por título distribuído (`nome_dist`)
+### 1. Agregação por título e código de bilhete (`nome_dist`, `ticket_code`)
 
-- Lê `<ano>_<mm>_comNIF.csv` e `<ano>_<mm>_semNIF.csv`, filtra apenas os registos elegíveis (`status == "OK"`, ou todos se a coluna não existir) e agrega por `nome_dist`:
+- Lê `<ano>_<mm>_comNIF.csv` e `<ano>_<mm>_semNIF.csv`, filtra apenas os registos elegíveis e extrai diretamente de cada registo:
+  - `ticket_code`: primeiro código de `ticket_code_new` (`sub("_.*", "", ticket_code_new)`), que já vem ordenado por prioridade no Passo 02;
+  - `ticket_operator_code`: primeiro código de `ticket_operator_code_new`;
+  - `ptb_new`: preço de referência total do registo (`price_ticket_base_new`);
+  - `tem_comp_code`: presença dos códigos `CODES_COMP` (`6170` ou `7670`) em `ticket_code_new`.
+- Agrega por `(nome_dist, ticket_code, ticket_operator_code, ptb_new)`:
   - `passes = n()` (n.º de passes com validações)
   - `numval = sum(numval)` (total de validações)
   - `compensacao = sum(compensacao)` (compensação apurada em €)
 
-### 2. Cruzamento com as listas de `Compensacoes/lists/`
+### 2. Cruzamento direto com `Compensacoes/lists/titulos.csv`
 
-Cada `nome_dist` é cruzado com `titulos_nomes.csv`, `titulos.csv` e `operadores.csv` para obter:
-
-- `ticket_name_reduzido`: título de referência após separar eventual complemento interregional;
-- `complemento_CM`: indicador lógico de título com Complemento Metropolitano (Azambuja);
-- `base_weight`: proporção do preço base correspondente à parte **Navegante**;
-- `ticket_operator_code`, `ticket_code`, `ticket_modalidade_operador`, `pvp`, `titulo_nome_base` e `preco_base`.
-
-> **Nota sobre títulos compostos (`A + Complemento`)**: quando `nome_dist` tem duas partes separadas por `+` e não consta diretamente com peso próprio em `titulos_nomes.csv`, o `ticket_name_reduzido` e o `base_weight` são herdados do registo-mestre da 1.ª parte em `titulos_nomes.csv`.
+- Cada `ticket_code` é cruzado diretamente com `titulos.csv` (sem depender de `titulos_nomes.csv` nem `operadores.csv`) para obter `titulo_nome` (`ticket_name_reduzido`), `pvp`, `titulo_nome_base`, `preco_base` e `ticket_modalidade_operador`.
+- Caso seja criado um título novo que ainda não conste em `titulos.csv`, o `preco_base` usa automaticamente o `price_ticket_base_new` do registo (deduzindo `20 €` se tiver complemento).
+- Identificação de **Viver Cascais** e **Complemento CM**:
+  - `viver_cascais`: `ticket_operator_code == 21` ou `nome_dist` a começar por `"Viver Cascais"`;
+  - `complemento_CM`: presença de código `CODES_COMP` (`6170`/`7670`) em `ticket_code_new` ou `"Complemento"` em `nome_dist`;
+  - `base_weight`: calculado diretamente a partir dos preços como $\text{preco\_base} / \text{price\_ticket\_base\_new}$ (e `1` quando não tem complemento).
 
 ### 3. Separação da compensação em 3 componentes
 
@@ -250,13 +253,13 @@ Para cada título agregado, a compensação total é decomposta em:
 | Componente           | Regra de cálculo                                                                | Destino / Repartição                                                                             |
 | ---------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **Passes Navegante** | $\text{comp\_navegante} = \text{compensacao} \times \text{base\_weight}$         | Repartido pelos 11 operadores segundo as quotas mensais do título (`ticket_code`)                 |
-| **Complemento CM**   | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | **100 % `AT TML - CM`** (`ticket_operator_code = 31`, `ticket_code = 1070`, `preco_base = 20 €`)  |
-| **Viver Cascais**    | $\text{comp\_cascais} = \text{compensacao}$ (`base_weight = 1`)                  | **100 % `AT Cascais`** (`ticket_operator_code = 21`, `ticket_code = 129131`, `preco_base = 20 €`) |
+| **Complemento CM**   | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | **100 % `AT TML - CM`** (`ticket_operator_code = 31`, `ticket_code = "1070"` (`CODE_COMP_RESUMO`), `preco_base = 20 €`)  |
+| **Viver Cascais**    | $\text{comp\_cascais} = \text{compensacao}$ (`base_weight = 1`)                  | **100 % `AT Cascais`** (`ticket_operator_code = 21`, `ticket_code = "129_131"` — códigos concatenados com `"_"`, `preco_base = 20 €`) |
 
 **Exemplos de `base_weight`:**
 
-- `Navegante Metropolitano + Complemento` (`60 €` = `40 €` Navegante + `20 €` Complemento): $\text{base\_weight} = 2/3 \implies 2/3$ da compensação vai para o título Navegante (`6180` ou `6181`) e $1/3$ para `Complemento CM` (`1070`).
-- `Navegante Municipal (ex.: Montijo) + Complemento` (`50 €` = `30 €` Municipal + `20 €` Complemento): $\text{base\_weight} = 3/5 = 0{,}6 \implies 60\%$ para o título Navegante e $40\%$ para `Complemento CM`.
+- `Navegante Metropolitano + Complemento` (`60 €` = `40 €` Navegante + `20 €` Complemento): $\text{base\_weight} = 40/60 = 2/3 \implies 2/3$ da compensação vai para o título Navegante (`6180` ou `6181`) e $1/3$ para `Complemento CM` (`1070`).
+- `Navegante Municipal (ex.: Montijo) + Complemento` (`50 €` = `30 €` Municipal + `20 €` Complemento): $\text{base\_weight} = 30/50 = 3/5 = 0{,}6 \implies 60\%$ para o título Navegante e $40\%$ para `Complemento CM`.
 - Títulos sem complemento (`Navegante 12`, `Navegante Metropolitano 418/sub23`, `Navegante Municipal 418/sub23`): $\text{base\_weight} = 1 \implies 100\%$ Navegante.
 
 > **Contagem de passes e validações:** nas linhas de `Passes Navegante` (`1020`, `6150`, `6180`, `6181`), `passes` e `validacoes` contam o total de cartões/validações que utilizaram esse título base; na linha `Complemento CM` (`1070`), `passes` e `validacoes` somam os cartões/validações que tinham complemento metropolitano.
@@ -274,7 +277,7 @@ Para cada título agregado, a compensação total é decomposta em:
   sem arredondamento intermédio nas linhas de título.
 - Para os **Outros Passes**:
   - `Complemento CM` (`1070`): quota $= 100\%$ em `AT TML - CM` ($0\%$ nos restantes);
-  - `Viver Cascais` (`129131`): quota $= 100\%$ em `AT Cascais` ($0\%$ nos restantes).
+  - `Viver Cascais` (`129_131`, resultado da fusão de `Viver Cascais Residente` `129` e `Viver Cascais Estudante` `131` com os respetivos códigos concatenados): quota $= 100\%$ em `AT Cascais` ($0\%$ nos restantes).
 
 ### 5. Estimativa do Congelamento Tarifário (TAT)
 
@@ -323,7 +326,7 @@ Aplicam-se dois fatores cumulativos distintos sobre os totais por operador:
 Todos os CSV são gravados com separador `;`, vírgula decimal `,` e UTF-8 BOM (`bom = TRUE`, garantindo leitura correta de caracteres como `CRIANÇA` no Excel em Windows):
 
 1. `<ano>_<mm>_compensacao_por_titulo.csv`: detalhe por `nome_dist` com `ticket_name_reduzido`, `complemento_CM`, `base_weight`, códigos de bilhete/operador/modalidade, `passes`, `numval`, `compensacao` e a decomposição nas 3 parcelas (`comp_navegante`, `comp_complemento`, `comp_cascais`).
-2. `<ano>_<mm>_passejovem_resumo.csv`: tabela por título de referência (`1020`, `6150`, `6180`, `6181`, `1070 Complemento CM`, `129131 Viver Cascais`) com `passes`, `validacoes`, `compensacao_total` e valores por operador (sem linhas `TOTAL*`).
+2. `<ano>_<mm>_passejovem_resumo.csv`: tabela por título de referência (`1020`, `6150`, `6180`, `6181`, `1070 Complemento CM`, `129_131 Viver Cascais`) com `passes`, `validacoes`, `compensacao_total` e valores por operador (sem linhas `TOTAL*`).
 3. `<ano>_<mm>_passejovem_congelamento.csv`: 3 linhas (`Congelamento Navegante`, `Congelamento Outros Passes`, `Congelamento TOTAL`) com o total e a repartição pelos 11 operadores.
 
 ---
