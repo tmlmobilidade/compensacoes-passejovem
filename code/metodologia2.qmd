@@ -35,19 +35,16 @@ source(here::here("code", "doc_params.R"))
 #| label: setup
 
 # =============================================================================
-# CARREGAMENTO DE DADOS E CÁLCULOS DO RELATÓRIO PASSE JOVEM
+# CARREGAMENTO DE DADOS E FUNÇÕES DO RELATÓRIO METODOLOGIA 2
 # =============================================================================
 
 source(here::here("code", "00_config.R"))
+source(here::here("code", "utils_tables.R"))
 
 suppressPackageStartupMessages({
   library(data.table)
-  library(dplyr)
-  library(tidyr)
   library(scales)
-  library(knitr)
   library(ggplot2)
-  library(tinytable)
 })
 
 # ---- Funções Auxiliares de Formatação ----------------------------------------
@@ -59,136 +56,31 @@ fmt_int <- function(x) {
   ifelse(is.na(x), "", scales::number(round(x), accuracy = 1, big.mark = "\u00a0"))
 }
 
-fmt_pct <- function(x, acc = 0.1) {
-  ifelse(is.na(x), "", scales::percent(x, accuracy = acc, decimal.mark = ","))
-}
-
-source(here::here("code", "utils_tables.R"))
-source(here::here("code", "utils_extenso.R"))
-
 # Mês e ano de referência
 mes_nome  <- tolower(MESES_PT[MES])
 meses_abr <- c("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
 
-# ---- Datas dinâmicas ---------------------------------------------------------
-# Prazo de envio ao IMT: último dia do mês M+2 (desfasamento máximo de 3 meses
-# contando com o mês de referência). Ex.: julho/2026 -> 30 de setembro de 2026
-mes_prazo_num  <- ((MES - 1 + 2) %% 12) + 1
-ano_prazo      <- ANO + ((MES + 2 - 1) %/% 12)
-dia_prazo      <- as.integer(format(
-  seq(as.Date(sprintf("%d-%02d-01", ano_prazo, mes_prazo_num)), by = "month", length.out = 2)[2] - 1,
-  "%d"))
-data_prazo_imt <- paste(dia_prazo, "de", tolower(MESES_PT[mes_prazo_num]), "de", ano_prazo)
-
-# Mês anterior (e respetivo ano)
-mes_ant_num  <- if (MES > 1) MES - 1 else 12
-mes_ant_nome <- tolower(MESES_PT[mes_ant_num])
-ano_ant_mes  <- if (MES > 1) ANO else ANO - 1
-
-# Meses do ano corrente já pagos (ex.: "janeiro a maio")
-meses_pagos_txt <- if (length(meses_pagos_ano_atual) == 0) {
-  "nenhum mês"
-} else if (length(meses_pagos_ano_atual) == 1) {
-  tolower(MESES_PT[meses_pagos_ano_atual])
-} else {
-  paste(tolower(MESES_PT[min(meses_pagos_ano_atual)]), "a", tolower(MESES_PT[max(meses_pagos_ano_atual)]))
-}
-
 # Caminhos do mês
 paths <- month_paths(ANO, MES)
 
-# Carregar ficheiros de output do mês
-f_com    <- file.path(paths$output, output_filename(ANO, MES, "comNIF"))
-f_sem    <- file.path(paths$output, output_filename(ANO, MES, "semNIF"))
-f_limpos <- file.path(paths$output, output_filename(ANO, MES, "limpos_preagregacao"))
-f_ver    <- file.path(paths$output, output_filename(ANO, MES, "a_verificar"))
-f_nok    <- file.path(paths$output, output_filename(ANO, MES, "age_nok"))
+# Carregar ficheiros de output do mês (apenas colunas necessárias para Tabelas 2 e 3)
+f_com <- file.path(paths$output, output_filename(ANO, MES, "comNIF"))
+f_sem <- file.path(paths$output, output_filename(ANO, MES, "semNIF"))
 
 if (!file.exists(f_com) || !file.exists(f_sem)) {
   stop("Outputs comNIF/semNIF não encontrados em: ", paths$output)
 }
 
-dt_comNIF    <- fread(f_com, sep = ";", dec = ".")
-dt_semNIF    <- fread(f_sem, sep = ";", dec = ".")
-dt_verificar <- if (file.exists(f_ver)) fread(f_ver, sep = ";", dec = ".") else data.table()
-dt_age_nok   <- if (file.exists(f_nok)) fread(f_nok, sep = ";", dec = ".") else data.table()
-
-# Garantir auto-atualização de compensacao_pj_anteriores.csv
-atualizar_compensacao_pj_anteriores(ANO, MES)
-
-# Ler histórico atualizado
-f_ant  <- file.path(paths$auxiliar, "compensacao_pj_anteriores.csv")
-df_ant <- utils::read.csv2(f_ant, stringsAsFactors = FALSE, dec = ",")
+cols_sel  <- c("nome_imt", "numval", "compensacao", "emissor")
+dt_comNIF <- fread(f_com, sep = ";", dec = ".", select = cols_sel)
+dt_semNIF <- fread(f_sem, sep = ";", dec = ".", select = cols_sel)
 
 # Tabela consolidada comNIF + semNIF
-all_p <- rbind(
-  dt_comNIF[, .(nome_imt, numval, compensacao, emissor)],
-  dt_semNIF[, .(nome_imt, numval, compensacao, emissor)]
-)
+all_p <- rbind(dt_comNIF, dt_semNIF)
 
-# Indicadores do mês atual
-idx_ant_mes <- which(df_ant$ano == ANO & df_ant$mes == MES)
-n_registos_bilhetica <- if (length(idx_ant_mes) > 0 && !is.na(df_ant$registos_pj[idx_ant_mes])) {
-  df_ant$registos_pj[idx_ant_mes]
-} else {
-  nrow(dt_comNIF) + nrow(dt_semNIF)
-}
-
-n_utilizadores         <- nrow(dt_comNIF) + nrow(dt_semNIF)
-n_utilizadores_sem_nif <- nrow(dt_semNIF)
-validacoes_total       <- sum(dt_comNIF$numval, na.rm = TRUE) + sum(dt_semNIF$numval, na.rm = TRUE)
-comp_total             <- sum(dt_comNIF$compensacao, na.rm = TRUE) + sum(dt_semNIF$compensacao, na.rm = TRUE)
-media_validacoes_user  <- round(validacoes_total / n_utilizadores)
-
-# Casos pontuais / limpezas
-n_idade_incompativel <- nrow(dt_age_nok)
-n_cascais_exclusivo  <- sum(all_p$nome_imt == "Viver Cascais" & all_p$emissor == "AT Cascais")
-
-# Contagens gravadas por 01_preparar_dados.R (fonte: ficheiros de input)
-f_cont <- file.path(paths$output, output_filename(ANO, MES, "contagens_01", ext = "rds"))
-if (!file.exists(f_cont)) {
-  stop("Falta ", basename(f_cont), " — voltar a correr 01_preparar_dados.R para ", ANO, "/", MES)
-}
-cont_01 <- readRDS(f_cont)
-
-# Registos de Viver Cascais enviados pela AT Cascais (antes de qualquer limpeza)
-n_cascais_enviados <- cont_01$n_cascais_registos
-
-# Registos LX-BT (CIM Oeste) que têm, em simultâneo, um passe Navegante (comNIF)
-# com o mesmo NIF
-nifs_navegante <- dt_comNIF$fiscal_number[grepl("^Navegante", dt_comNIF$nome_imt)]
-lx <- cont_01$lxbt_removidos
-n_lxbt_removidos <- nrow(lx)
-n_lxbt <- sum(!is.na(lx$fiscal_number) & as.character(lx$fiscal_number) %in% as.character(nifs_navegante))
-
-# Variações percentuais (face ao mês anterior e mês homólogo do ano anterior)
-idx_ant_m1 <- which(df_ant$ano == ANO & df_ant$mes == (MES - 1))
-row_ant_m1 <- if (length(idx_ant_m1) > 0) df_ant[idx_ant_m1, ] else NULL
-
-idx_homo   <- which(df_ant$ano == (ANO - 1) & df_ant$mes == MES)
-row_homo   <- if (length(idx_homo) > 0) df_ant[idx_homo, ] else NULL
-
-pct_comp_ant   <- if (!is.null(row_ant_m1)) (comp_total - row_ant_m1$compensacao_valor) / row_ant_m1$compensacao_valor else NA_real_
-pct_comp_homo  <- if (!is.null(row_homo)) (comp_total - row_homo$compensacao_valor) / row_homo$compensacao_valor else NA_real_
-
-pct_users_ant  <- if (!is.null(row_ant_m1)) (n_utilizadores - row_ant_m1$utilizadores_pj) / row_ant_m1$utilizadores_pj else NA_real_
-pct_users_homo <- if (!is.null(row_homo)) (n_utilizadores - row_homo$utilizadores_pj) / row_homo$utilizadores_pj else NA_real_
-
-pct_val_ant    <- if (!is.null(row_ant_m1)) (validacoes_total - row_ant_m1$validacoes_pj) / row_ant_m1$validacoes_pj else NA_real_
-pct_val_homo   <- if (!is.null(row_homo)) (validacoes_total - row_homo$validacoes_pj) / row_homo$validacoes_pj else NA_real_
-
-# Totais históricos para Secção de Pagamento
-tot_2024_pago <- sum(df_ant$compensacao_valor[df_ant$ano == 2024], na.rm = TRUE)
-tot_2025_pago <- sum(df_ant$compensacao_valor[df_ant$ano == 2025], na.rm = TRUE)
-
-df_ano_atual       <- df_ant[df_ant$ano == ANO & df_ant$mes <= MES, ]
-tot_ano_solicitado <- sum(df_ano_atual$compensacao_valor, na.rm = TRUE)
-tot_ano_pago       <- sum(df_ano_atual$compensacao_valor[df_ano_atual$mes %in% meses_pagos_ano_atual], na.rm = TRUE)
-tot_ano_por_pagar  <- tot_ano_solicitado - tot_ano_pago
-
-tot_hist_solicitado <- tot_2024_pago + tot_2025_pago + tot_ano_solicitado
-tot_hist_pago       <- tot_2024_pago + tot_2025_pago + tot_ano_pago
-tot_hist_por_pagar  <- tot_hist_solicitado - tot_hist_pago
+# Ler histórico atualizado (para Tabela 4 e Figura 1)
+f_ant  <- file.path(paths$auxiliar, "compensacao_pj_anteriores.csv")
+df_ant <- utils::read.csv2(f_ant, stringsAsFactors = FALSE, dec = ",")
 ```
 
 ```{=typst}
