@@ -61,11 +61,9 @@ tests/
 
 /.quarto/
 **/*.quarto_ipynb
-code/informacao1.pdf
-code/informacao1.docx
 /.luarc.json
 
-code/oficio1.pdf
-code/oficio1.docx
-code/metodologia.pdf
-code/metodologia2.pdf
+code/*.pdf
+!code\templates\folha_restantes.pdf
+!code\templates\folha_1.pdf
+code/*.docx

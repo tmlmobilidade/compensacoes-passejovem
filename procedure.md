@@ -39,14 +39,15 @@ Deixaram de existir os Navegantes municipais sub18 e sub23, e o Navegante 12. No
 
 ### Preço base (título de referência)
 
-| `price_ticket_base_new` | `nome_imt` |
-| --- | --- |
-| 60 | Navegante Metropolitano + Complemento |
-| 50 | Navegante Municipal + Complemento |
-| 40 | Navegante Metropolitano |
-| 30 | Navegante Lisboa |
-| 20 | Viver Cascais |
-| 16.75 | MTS Passe |
+
+| `price_ticket_base_new` | `nome_imt`                            |
+| ------------------------- | --------------------------------------- |
+| 60                      | Navegante Metropolitano + Complemento |
+| 50                      | Navegante Municipal + Complemento     |
+| 40                      | Navegante Metropolitano               |
+| 30                      | Navegante Lisboa                      |
+| 20                      | Viver Cascais                         |
+| 16.75                   | MTS Passe                             |
 
 ---
 
@@ -67,9 +68,13 @@ PasseJovem/
 │   ├── 03_exportar_reporte.R                # Excel AML/IMT + histórico
 │   ├── 04_estimar_compensacao_operadores.R  # Repartição por operador e congelamento (CSV)
 │   ├── 05_exportar_anexo_reparticao.R       # Anexo II Excel formatado com fórmulas
-│   ├── 10_documentos.R                      # Informação e Ofícios (Quarto/Typst/DOCX)
+│   ├── 10_documentos.R                      # Informação, Ofícios e Anexo I Metodologia (Quarto)
 │   ├── 99_run_pipeline.R                    # Orquestrador
-│   └── doc_params.R                         # Parâmetros de emissão dos documentos
+│   ├── doc_params.R                         # Parâmetros de emissão dos documentos
+│   ├── informacao1.qmd                      # Informação de serviço
+│   ├── oficio1.qmd                          # Ofício de envio ao IMT
+│   ├── metodologia1.qmd                     # Anexo - Nota Metodológica
+│   └── metodologia2.qmd                     # Anexo I - Nota Metodológica com repartição
 └── data/
     ├── auxiliar/                            # Correções, exceções e histórico
     └── <ano>_<mm>_<mes>/
@@ -89,9 +94,11 @@ PasseJovem/
             ├── <ano>_<mm>_passejovem_resumo.csv
             ├── <ano>_<mm>_passejovem_congelamento.csv
             └── docs/
+                ├── <ano>_<mm>_AnexoI_metodologia.pdf
                 ├── <ano>_<mm>_AnexoII_reparticao.xlsx
                 ├── <ano>_<mm>_informacao1.pdf / .docx
                 └── <ano>_<mm>_oficio1.pdf / .docx
+                └── <ano>_<mm>_metodologia1.pdf
 ```
 
 ## Como Executar
@@ -125,7 +132,6 @@ run_pipeline(ano = 2026, meses = 7)
 > [!IMPORTANT]
 > Se houver mais do que um ficheiro `PasseJovem` ou `TML_*`, o pipeline usa o primeiro e emite um aviso — mantém só um por pasta.
 
-
 ## Passo 02 — Calcular compensações (`02_calcular_compensacoes.R`)
 
 ### Filtro dos passes do mês
@@ -134,10 +140,11 @@ run_pipeline(ano = 2026, meses = 7)
 
 ### Agregação por titular
 
-| Grupo | Chave | Notas |
-| --- | --- | --- |
-| **comNIF** | `fiscal_number` | Vários cartões/bilhetes do mesmo NIF são somados (e tornados explícitos) |
-| **semNIF** | documento de identificação (`DOC_<tipo>_<número>`) ou número do cartão (`CARD_<n.º>`) | Ver regras abaixo |
+
+| Grupo      | Chave                                                                                       | Notas                                                                        |
+| ------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **comNIF** | `fiscal_number`                                                                             | Vários cartões/bilhetes do mesmo NIF são somados (e tornados explícitos) |
+| **semNIF** | documento de identificação (`DOC_<tipo>_<número>`) ou número do cartão (`CARD_<n.º>`) | Ver regras abaixo                                                            |
 
 Quando um titular tem vários bilhetes:
 
@@ -172,15 +179,16 @@ Após as correções, registos com `age_new == 3` (demasiado novo) ou `age_new >
 
 Quem não tem NIF é identificado pelo documento (`doc_type`, `doc_number`). Para evitar fundir pessoas diferentes com documentos "dummy" (ex: `00000`):
 
-| Situação | Motivo registado | Agrupa por |
-| --- | --- | --- |
-| Documento válido, sem anomalia | — | **documento** (soma validações de vários cartões do mesmo titular, ex: passaportes `PA1234XX` e `U012345YY`) |
-| Documento em `id_exception.csv` | "… partilhado por jovens diferentes (fraude/exceção)" | **documento** (exceção para juntar) |
-| Mesmo `doc_number` com datas de nascimento distintas | "Documento com datas de nascimento distintas" | **cartão** |
-| Cartão de Cidadão só zeros / só noves / dígitos repetidos / < 6 dígitos | "Cartão de Cidadão com …" | **cartão** |
-| Outro documento só zeros / só noves | "Documento com apenas zeros/noves" | **cartão** |
-| Valores inválidos (`test`, `teste`, `null`, `none`, `na`, `xxx`, `12345`, `123456`) | "Documento com valor inválido" | **cartão** |
-| Sem documento | — | **cartão** |
+
+| Situação                                                                           | Motivo registado                                         | Agrupa por                                                                                                       |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Documento válido, sem anomalia                                                      | —                                                       | **documento** (soma validações de vários cartões do mesmo titular, ex: passaportes `PA1234XX` e `U012345YY`) |
+| Documento em `id_exception.csv`                                                      | "… partilhado por jovens diferentes (fraude/exceção)" | **documento** (exceção para juntar)                                                                            |
+| Mesmo `doc_number` com datas de nascimento distintas                                 | "Documento com datas de nascimento distintas"            | **cartão**                                                                                                      |
+| Cartão de Cidadão só zeros / só noves / dígitos repetidos / < 6 dígitos        | "Cartão de Cidadão com …"                             | **cartão**                                                                                                      |
+| Outro documento só zeros / só noves                                                | "Documento com apenas zeros/noves"                       | **cartão**                                                                                                      |
+| Valores inválidos (`test`, `teste`, `null`, `none`, `na`, `xxx`, `12345`, `123456`) | "Documento com valor inválido"                          | **cartão**                                                                                                      |
+| Sem documento                                                                        | —                                                       | **cartão**                                                                                                      |
 
 Todos os casos com motivo são exportados para `<ano>_<mm>_documentos_estranhos_semNIF.csv` (um registo por cartão).
 
@@ -234,13 +242,15 @@ Cada `nome_dist` é cruzado com `titulos_nomes.csv`, `titulos.csv` e `operadores
 
 Para cada título agregado, a compensação total é decomposta em:
 
-| Componente | Regra de cálculo | Destino / Repartição |
-| --- | --- | --- |
-| **Passes Navegante** | $\text{comp\_navegante} = \text{compensacao} \times \text{base\_weight}$ | Repartido pelos 11 operadores segundo as quotas mensais do título (`ticket_code`) |
-| **Complemento CM** | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | **100 % `AT TML - CM`** (`ticket_operator_code = 31`, `ticket_code = 1070`, `preco_base = 20 €`) |
-| **Viver Cascais** | $\text{comp\_cascais} = \text{compensacao}$ (`base_weight = 1`) | **100 % `AT Cascais`** (`ticket_operator_code = 21`, `ticket_code = 129131`, `preco_base = 20 €`) |
+
+| Componente           | Regra de cálculo                                                                | Destino / Repartição                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Passes Navegante** | $\text{comp\_navegante} = \text{compensacao} \times \text{base\_weight}$         | Repartido pelos 11 operadores segundo as quotas mensais do título (`ticket_code`)                 |
+| **Complemento CM**   | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | **100 % `AT TML - CM`** (`ticket_operator_code = 31`, `ticket_code = 1070`, `preco_base = 20 €`)  |
+| **Viver Cascais**    | $\text{comp\_cascais} = \text{compensacao}$ (`base_weight = 1`)                  | **100 % `AT Cascais`** (`ticket_operator_code = 21`, `ticket_code = 129131`, `preco_base = 20 €`) |
 
 **Exemplos de `base_weight`:**
+
 - `Navegante Metropolitano + Complemento` (`60 €` = `40 €` Navegante + `20 €` Complemento): $\text{base\_weight} = 2/3 \implies 2/3$ da compensação vai para o título Navegante (`6180` ou `6181`) e $1/3$ para `Complemento CM` (`1070`).
 - `Navegante Municipal (ex.: Montijo) + Complemento` (`50 €` = `30 €` Municipal + `20 €` Complemento): $\text{base\_weight} = 3/5 = 0{,}6 \implies 60\%$ para o título Navegante e $40\%$ para `Complemento CM`.
 - Títulos sem complemento (`Navegante 12`, `Navegante Metropolitano 418/sub23`, `Navegante Municipal 418/sub23`): $\text{base\_weight} = 1 \implies 100\%$ Navegante.
@@ -252,7 +262,11 @@ Para cada título agregado, a compensação total é decomposta em:
 - Lê o ficheiro de quotas do mês do repositório `Compensacoes`:
   `Compensacoes/data/<mm>_<mes_abrev>_<ano>/output/1_quotas_<mes_abrev><aa>.csv`
 - Para cada título Navegante $i$ (`1020`, `6150`, `6180`, `6181`) e operador $j$:
-  $$\text{Compensação}_{i,j} = \text{Compensação Total Navegante}_i \times \text{quota}_{i,j}$$
+  $$
+  \text{Compensação}_{i,j} = \text{Compensação Total Navegante}_i \times \text{quota}_{i,j}
+
+  $$
+
   sem arredondamento intermédio nas linhas de título.
 - Para os **Outros Passes**:
   - `Complemento CM` (`1070`): quota $= 100\%$ em `AT TML - CM` ($0\%$ nos restantes);
@@ -262,8 +276,9 @@ Para cada título agregado, a compensação total é decomposta em:
 
 Lê as Taxas de Atualização Tarifária anuais em `Compensacoes/lists/tat.csv` até ao ano de referência (`ano_ref`):
 
-| Ano | Taxa TAT |
-| --- | --- |
+
+| Ano  | Taxa TAT              |
+| ------ | ----------------------- |
 | 2024 | $6{,}40\%$ (`0.0640`) |
 | 2025 | $2{,}02\%$ (`0.0202`) |
 | 2026 | $2{,}28\%$ (`0.0228`) |
@@ -271,15 +286,33 @@ Lê as Taxas de Atualização Tarifária anuais em `Compensacoes/lists/tat.csv` 
 Aplicam-se dois fatores cumulativos distintos sobre os totais por operador:
 
 1. **Congelamento Passes Navegante** (atualização cumulativa desde 2024 sobre os títulos Navegante):
-   $$F_{\text{Navegante}} = \prod_{y=2024}^{\text{ano}} (1 + \text{TAT}_y) - 1 = (1 + 0{,}0640)\times(1 + 0{,}0202)\times(1 + 0{,}0228) - 1 = 11{,}0555\% \quad (0{,}11055490944)$$
-   $$\text{Congelamento Navegante}_j = \text{Total Passes Navegante}_j \times F_{\text{Navegante}}$$
 
+   $$
+   F_{\text{Navegante}} = \prod_{y=2024}^{\text{ano}} (1 + \text{TAT}_y) - 1 = (1 + 0{,}0640)\times(1 + 0{,}0202)\times(1 + 0{,}0228) - 1 = 11{,}0555\% \quad (0{,}11055490944)
+
+   $$
+
+   $$
+   \text{Congelamento Navegante}_j = \text{Total Passes Navegante}_j \times F_{\text{Navegante}}
+
+   $$
 2. **Congelamento Outros Passes** (`Complemento CM` e `Viver Cascais`):
-   $$F_{\text{Outros}} = \text{TAT}_{2024} \times \prod_{y=2025}^{\text{ano}} (1 + \text{TAT}_y) = 0{,}0640 \times (1 + 0{,}0202)\times(1 + 0{,}0228) = 6{,}7095\% \quad (0{,}06709490944)$$
-   $$\text{Congelamento Outros}_j = \text{Total Outros Passes}_j \times F_{\text{Outros}}$$
 
+   $$
+   F_{\text{Outros}} = \text{TAT}_{2024} \times \prod_{y=2025}^{\text{ano}} (1 + \text{TAT}_y) = 0{,}0640 \times (1 + 0{,}0202)\times(1 + 0{,}0228) = 6{,}7095\% \quad (0{,}06709490944)
+
+   $$
+
+   $$
+   \text{Congelamento Outros}_j = \text{Total Outros Passes}_j \times F_{\text{Outros}}
+
+   $$
 3. **Congelamento TOTAL por operador**:
-   $$\text{Congelamento TOTAL}_j = \text{Congelamento Navegante}_j + \text{Congelamento Outros}_j$$
+
+   $$
+   \text{Congelamento TOTAL}_j = \text{Congelamento Navegante}_j + \text{Congelamento Outros}_j
+
+   $$
 
 ### 6. Ficheiros CSV exportados (`output/`)
 
@@ -298,6 +331,7 @@ Gera o ficheiro Excel formatado `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_An
 ### Estrutura e Fórmulas do Workbook
 
 1. **Folha 1 — `<mes><aa>` (ex.: `jul26`)**:
+
    - **Bloco esquerdo (colunas `A:W`)**: `ano`, `mês`, `ticket_operator_code`, `ticket_code`, `titulo`, `Modalidade título`, `pvp`, `Título Base`, `Preço do título base`, `Nº passes com validações`, `Validações`, `Compensação total` e os 11 operadores (`CP` a `BT Oeste`).
    - **Coluna `X`**: separador em branco.
    - **Bloco direito (colunas `Y:AI`)**: `Quota (%) por título e operador` para os 11 operadores, com os valores exatos não arredondados de `f_quotas`, formatados visualmente a 4 casas decimais (`0,0000%`).
@@ -305,8 +339,8 @@ Gera o ficheiro Excel formatado `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_An
      - Nas linhas de título (`linhas 5 a 10`), cada célula de operador (`M:W`) usa a fórmula `=$L<row>*<col_quota><row>` (Compensação total $\times$ Quota), sem arredondamento intermédio.
      - As linhas de subtotal `Total Passes Navegante` (`linha 11`) e `Total Outros Passes` (`linha 12`) usam `=SUM(...)` sem arredondamento.
      - Apenas a linha final `Total` (`linha 13`) arredonda a soma dos dois subtotais a 2 casas decimais: `=ROUND(SUM(L11:L12), 2)` .. `=ROUND(SUM(W11:W12), 2)`.
-
 2. **Folha 2 — `<mes><aa>_resumo_congelamento` (ex.: `jul26_resumo_congelamento`)**:
+
    - **Tabela principal (linhas 6 a 17)**:
      - Colunas `D:F` (**Compensação Passe Jovem (€)**, em tons dourados):
        - `Passes Navegante` (`D`): `=SUM(jul26!M5:M8)` .. `=SUM(jul26!W5:W8)`
@@ -324,7 +358,13 @@ Gera o ficheiro Excel formatado `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_An
 
 ## Documentos (`10_documentos.R`)
 
-Renderiza `informacao1.qmd` (Typst → PDF e Word → DOCX) usando os parâmetros de `code/doc_params.R` (mês, referências, datas de pagamentos ETF, autores). Atualizar `doc_params.R` a cada mês.
+Renderiza os documentos Quarto em `output/docs/` usando os parâmetros de `code/doc_params.R` (mês, referências, datas de pagamentos ETF, autores, flags `RENDER_PDF` e `RENDER_DOCX`):
+
+- `informacao1.qmd` → `<ano>_<mm>_informacao1.pdf` e `.docx`
+- `oficio1.qmd` → `<ano>_<mm>_oficio1.pdf` e `.docx`
+- `metodologia2.qmd` → `<ano>_<mm>_AnexoI_metodologia.pdf` (apenas PDF/Typst; `metodologia1.qmd` mantém-se como versão anterior, comentada no pipeline)
+
+Atualizar `doc_params.R` a cada mês antes de gerar os documentos.
 
 ## Checklist mensal
 
