@@ -22,9 +22,11 @@ source(here::here("code", "doc_params.R"))
 #' @param raiz        Raiz do projeto
 #' @param render_pdf  Gerar PDF (Typst)? Por omissão respeita RENDER_PDF de doc_params.R
 #' @param render_docx Gerar DOCX (Word)? Por omissão respeita RENDER_DOCX de doc_params.R
+#' @param out_name    Nome base do ficheiro de saída (sem extensão e sem prefixo ano_mes_). Se NULL, usa o nome do .qmd
 render_qmd_doc <- function(qmd_name, ano = ANO, mes = MES, raiz = here_root(),
                            render_pdf = isTRUE(get0("RENDER_PDF", ifnotfound = TRUE)),
-                           render_docx = isTRUE(get0("RENDER_DOCX", ifnotfound = TRUE))) {
+                           render_docx = isTRUE(get0("RENDER_DOCX", ifnotfound = TRUE)),
+                           out_name = NULL) {
   qmd_file <- file.path(raiz, "code", qmd_name)
   if (!file.exists(qmd_file)) {
     warning(sprintf("Ficheiro %s não encontrado em code/.", qmd_name))
@@ -36,6 +38,7 @@ render_qmd_doc <- function(qmd_name, ano = ANO, mes = MES, raiz = here_root(),
   dir.create(docs_dir, showWarnings = FALSE, recursive = TRUE)
 
   base_name <- sub("\\.qmd$", "", qmd_name)
+  dest_name <- if (!is.null(out_name) && nzchar(out_name)) out_name else base_name
   mes_nm    <- tolower(MESES_PT[mes])
 
   message("=================================================================")
@@ -61,7 +64,7 @@ render_qmd_doc <- function(qmd_name, ano = ANO, mes = MES, raiz = here_root(),
     message("-> A gerar PDF (Typst)...")
     status_pdf <- system2("quarto", c("render", shQuote(qmd_file), "--to", "typst"))
     pdf_src <- file.path(raiz, "code", paste0(base_name, ".pdf"))
-    pdf_dest <- file.path(docs_dir, sprintf("%d_%02d_%s.pdf", ano, mes, base_name))
+    pdf_dest <- file.path(docs_dir, sprintf("%d_%02d_%s.pdf", ano, mes, dest_name))
     if (status_pdf == 0 && file.exists(pdf_src)) {
       file.copy(pdf_src, pdf_dest, overwrite = TRUE)
       message(sprintf("✓ PDF guardado em:  %s", pdf_dest))
@@ -75,7 +78,7 @@ render_qmd_doc <- function(qmd_name, ano = ANO, mes = MES, raiz = here_root(),
     message("-> A gerar Word (DOCX)...")
     status_docx <- system2("quarto", c("render", shQuote(qmd_file), "--to", "docx"))
     docx_src <- file.path(raiz, "code", paste0(base_name, ".docx"))
-    docx_dest <- file.path(docs_dir, sprintf("%d_%02d_%s.docx", ano, mes, base_name))
+    docx_dest <- file.path(docs_dir, sprintf("%d_%02d_%s.docx", ano, mes, dest_name))
     if (status_docx == 0 && file.exists(docx_src)) {
       file.copy(docx_src, docx_dest, overwrite = TRUE)
       message(sprintf("✓ DOCX guardado em: %s", docx_dest))
@@ -95,7 +98,8 @@ render_documentos <- function(ano = ANO, mes = MES, raiz = here_root()) {
   # render_qmd_doc("informacao2.qmd", ano = ano, mes = mes, raiz = raiz)
   render_qmd_doc("oficio1.qmd", ano = ano, mes = mes, raiz = raiz)
   # render_qmd_doc("oficio2.qmd", ano = ano, mes = mes, raiz = raiz)
-  render_qmd_doc("metodologia.qmd", ano = ano, mes = mes, raiz = raiz, render_docx = FALSE)
+  render_qmd_doc("metodologia1.qmd", ano = ano, mes = mes, raiz = raiz, render_docx = FALSE)
+  render_qmd_doc("metodologia2.qmd", ano = ano, mes = mes, raiz = raiz, render_pdf = TRUE, render_docx = FALSE, out_name = "AnexoI_metodologia")
 }
 
 if (!interactive() && identical(sys.frames(), list())) {
