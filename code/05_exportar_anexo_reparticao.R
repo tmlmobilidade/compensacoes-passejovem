@@ -380,13 +380,13 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   setColWidths(wb, ws1, cols = 5,     widths = 31)
   setColWidths(wb, ws1, cols = 6,     widths = 11)
   setColWidths(wb, ws1, cols = 7,     widths = 5)
-  setColWidths(wb, ws1, cols = 8,     widths = 19)
+  setColWidths(wb, ws1, cols = 8,     widths = 20)
   setColWidths(wb, ws1, cols = 9,     widths = 8)
   setColWidths(wb, ws1, cols = 10:11, widths = 14)
   setColWidths(wb, ws1, cols = 12,    widths = 15)
   setColWidths(wb, ws1, cols = 13:23, widths = 11)
   setColWidths(wb, ws1, cols = 24,    widths = 4)
-  setColWidths(wb, ws1, cols = 25:35, widths = 11)
+  setColWidths(wb, ws1, cols = 25:35, widths = 9)
   freezePane(wb, ws1, firstActiveRow = 5, firstActiveCol = 6)
 
   # ===========================================================================
