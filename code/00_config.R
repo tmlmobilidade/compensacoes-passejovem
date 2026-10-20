@@ -389,7 +389,7 @@ calc_nome_dist <- function(tn) {
 
 #' Calcula emissor a partir do código do operador (como string)
 calc_emissor <- function(ops_str) {
-  if (startsWith(ops_str, "31")) "AT AML"
+  if (startsWith(ops_str, "31")) "AT TML"
   else if (startsWith(ops_str, "21")) "AT Cascais"
   else if (ops_str == "16") "MTS"
   else ""

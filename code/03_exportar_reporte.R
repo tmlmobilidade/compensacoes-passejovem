@@ -121,6 +121,7 @@ prep_para_template <- function(dt, cols) {
   res <- dt |>
     as_tibble() |>
     mutate(
+      emissor               = if_else(emissor == "AT AML", "AT TML", emissor),
       birth_date_new        = as.Date(birth_date_new),
       price_ticket_base_new = as.numeric(price_ticket_base_new),
       compensacao           = round(as.numeric(compensacao), 2),
@@ -393,9 +394,9 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
 
   # Atualizar o texto da célula E8 (fórmula indicativa em texto) com os nomes reais das abas
   texto_e8 <- sprintf(
-    paste0("=SOMA.SE.S('%s'!$K$13:$K$1048576;'%s'!$A$13:$A$1048576;'%s'!$B$13:$B$1048576)",
+    paste0("=SOMA.SE.S('%s'!$K$13:$K$1048576;'%s'!$A$13:$A$1048576;'%s'!A13;'%s'!$B$13:$B$1048576;'%s'!B13)",
            "+SOMA.SE.S('%s'!$L$13:$L$1048576;'%s'!$A$13:$A$1048576;'%s'!A13;'%s'!$B$13:$B$1048576;'%s'!B13)"),
-    sheet_com, sheet_com, sheet_com,
+    sheet_com, sheet_com, sheet_resumo, sheet_com, sheet_resumo,
     sheet_sem, sheet_sem, sheet_resumo, sheet_sem, sheet_resumo
   )
   writeData(wb, sheet_resumo, x = texto_e8, startRow = 8, startCol = 5, colNames = FALSE)
