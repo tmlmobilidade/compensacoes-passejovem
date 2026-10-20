@@ -431,13 +431,17 @@ atualizar_compensacao_pj_anteriores <- function(ano, mes, raiz = here_root()) {
   dt_com <- fread(f_com, sep = ";", dec = ".")
   dt_sem <- fread(f_sem, sep = ";", dec = ".")
 
-  # Registos brutos do mês (se gravado pelo 01_preparar_dados.R)
-  f_brutos <- file.path(paths$output, output_filename(ano, mes, "registos_brutos", ext = "rds"))
-  n_registos <- if (file.exists(f_brutos)) {
-    readRDS(f_brutos)
+  # Registos brutos do mês (se gravado pelo 01_preparar_dados.R em contagens_01.rds)
+  f_cont <- file.path(paths$output, output_filename(ano, mes, "contagens_01", ext = "rds"))
+  n_registos <- if (file.exists(f_cont)) {
+    cont_01 <- readRDS(f_cont)
+    if (!is.null(cont_01$n_brutos)) cont_01$n_brutos else NA_integer_
   } else {
+    NA_integer_
+  }
+  if (is.na(n_registos)) {
     f_limpos <- file.path(paths$output, output_filename(ano, mes, "limpos_preagregacao"))
-    if (file.exists(f_limpos)) nrow(fread(f_limpos, sep = ";", dec = ".")) else NA_integer_
+    if (file.exists(f_limpos)) n_registos <- nrow(fread(f_limpos, sep = ";", dec = "."))
   }
 
   n_users      <- nrow(dt_com) + nrow(dt_sem)
