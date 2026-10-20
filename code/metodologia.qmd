@@ -216,7 +216,7 @@ No entanto, dada a diversidade de situações e a complexidade do processo migra
 
 Consideraram-se, assim, elegíveis para compensação:
 
-i) todos os passes intermodais, combinados e próprios com perfil sub18+TP e sub23+TP (ou ainda com perfil 4_18 e sub23) carregados ou ativos;
+i) todos os passes intermodais, combinados e próprios com perfil sub18+TP e sub23+TP (ou ainda com perfil 4_18 e sub23) carregados ou ativos (intermodais, combinados e próprios);
 ii) os passes de validade superior à mensal ativos em jovens com idade igual ou inferior a 23 anos, como é o caso do passe Navegante 12 e dos passes Viver Cascais.
 
 A @tbl-1 resume os passes considerados e o preço de referência para a compensação utilizado em cada caso.
@@ -388,6 +388,9 @@ O número de utilizadores a compensar diminuiu `r fmt_pct(abs(pct_users_ant))` f
 No que concerne ao número de validações, registou-se em `r mes_nome` de `r ANO` menos `r fmt_pct(abs(pct_val_ant))` do que em `r mes_ant_nome` de `r ano_ant_mes`, contudo, relativamente a `r mes_nome` de `r ANO - 1`, verifica-se um aumento de `r fmt_pct(abs(pct_val_homo))`.
 
 Em `r mes_nome` de `r ANO`, em média, cada utilizador realizou `r media_validacoes_user` validações.
+
+A @tbl-4 apresenta a evolução mensal do número de passes carregados, validações e compensações apuradas, bem como alguns indicadores, em `r ANO`.
+A @fig-1 apresenta graficamente a evolução mensal do número de passes carregados, validações e compensações apuradas, em `r ANO`.
 
 
 ::: {.content-visible when-format="docx"}

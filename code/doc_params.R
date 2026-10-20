@@ -24,10 +24,10 @@ RENDER_PDF  <- TRUE
 RENDER_DOCX <- TRUE
 
 # ---- Referências oficiais ----------------------------------------------------
-numero_informacao1 <- "TML-XXXX-XXXX-INF-XXXX-DEP"   # Nº da Informação Apuramento
-numero_informacao2 <- "TML-YYYY-YYYY-INF-YYYY-DEP"   # Nº da Informação Pagamentos ETF
-numero_oficio1     <- "TML-XXXX-XXXX-OF-XXXX-DEP"    # Nº do Ofício Apuramento
-numero_oficio2    <- "TML-YYYY-YYYY-OF-YYYY-DEP"    # Nº do Ofício Pagamentos ETF
+numero_informacao1 <- "TML-XXXX-XXXX-INF-XXXX-DEP"   # Nº da Informação IMT
+numero_informacao2 <- "TML-YYYY-YYYY-INF-YYYY-DEP"   # Nº da Informação Operadores
+numero_oficio1     <- "TML-XXXX-XXXX-OF-XXXX-DEP"    # Nº do Ofício IMT
+numero_oficio2    <- "TML-YYYY-YYYY-OF-YYYY-DEP"    # Nº do Ofício Operadores
 data_documento    <- format(Sys.Date(), "%d/%m/%Y")  # ou fixar manualmente: "24/09/2026"
 
 # ---- Autores / Intervenientes ------------------------------------------------
