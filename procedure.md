@@ -61,15 +61,17 @@ O fluxo foi totalmente migrado para R (sem recorrer a consulta das bases de dado
 ```
 PasseJovem/
 ├── code/
-│   ├── 00_config.R                  # Constantes, caminhos, leitura e utilitários
-│   ├── 01_preparar_dados.R          # Leitura, combinação e limpeza
-│   ├── 02_calcular_compensacoes.R   # Agregação e cálculo
-│   ├── 03_exportar_reporte.R        # Excel AML/IMT + histórico
-│   ├── 10_documentos.R              # Informação (Quarto/Typst/DOCX)
-│   ├── 99_run_pipeline.R            # Orquestrador
-│   └── doc_params.R                 # Parâmetros de emissão dos documentos
+│   ├── 00_config.R                          # Constantes, caminhos, leitura e utilitários
+│   ├── 01_preparar_dados.R                  # Leitura, combinação e limpeza
+│   ├── 02_calcular_compensacoes.R           # Agregação e cálculo por titular
+│   ├── 03_exportar_reporte.R                # Excel AML/IMT + histórico
+│   ├── 04_estimar_compensacao_operadores.R  # Repartição por operador e congelamento (CSV)
+│   ├── 05_exportar_anexo_reparticao.R       # Anexo II Excel formatado com fórmulas
+│   ├── 10_documentos.R                      # Informação e Ofícios (Quarto/Typst/DOCX)
+│   ├── 99_run_pipeline.R                    # Orquestrador
+│   └── doc_params.R                         # Parâmetros de emissão dos documentos
 └── data/
-    ├── auxiliar/                    # Correções, exceções e histórico
+    ├── auxiliar/                            # Correções, exceções e histórico
     └── <ano>_<mm>_<mes>/
         ├── input/
         │   ├── <ano><mm>_PasseJovem_ValidaçõesLimpas.xlsx   (folha 1 + folha Azambuja)
@@ -82,7 +84,14 @@ PasseJovem/
             ├── <ano>_<mm>_a_verificar.csv
             ├── <ano>_<mm>_age_nok.csv
             ├── <ano>_<mm>_documentos_estranhos_semNIF.csv
-            └── <ano>_<mm>_reporte_AML_IMT.xlsx
+            ├── <ano>_<mm>_reporte_AML_IMT.xlsx
+            ├── <ano>_<mm>_compensacao_por_titulo.csv
+            ├── <ano>_<mm>_passejovem_resumo.csv
+            ├── <ano>_<mm>_passejovem_congelamento.csv
+            └── docs/
+                ├── <ano>_<mm>_AnexoII_reparticao.xlsx
+                ├── <ano>_<mm>_informacao1.pdf / .docx
+                └── <ano>_<mm>_oficio1.pdf / .docx
 ```
 
 ## Como Executar
@@ -198,6 +207,120 @@ Copia o template oficial **v2** (`Exemplos/Template_PASSE GRATUITO JOVEM - REPOR
 - **Estimativa sem bilhética** (col. 10): fica a 0/vazia.
 - **RESUMO**: totais por emissor (`AT TML`, `AT CASCAIS`) e TOTAL em negrito, com separador de milhares e 2 casas decimais.
 - Atualiza automaticamente `data/auxiliar/compensacao_pj_anteriores.csv` (registos, utilizadores, utilizadores semNIF, validações, validações/utilizador, compensação total e por utilizador). Se o mês já existe, a linha é atualizada.
+
+## Passo 04 — Estimar compensação por operador e congelamento (`04_estimar_compensacao_operadores.R`)
+
+Estima a repartição mensal das compensações Passe Jovem pelos **11 operadores** (`CP`, `FT`, `TT`, `SL`, `ML`, `MTS`, `Carris`, `TCB`, `AT Cascais`, `AT TML - CM`, `BT Oeste`) e o respetivo **Congelamento Tarifário (TAT)**, cruzando os outputs do Passo 02 com as listas e quotas do repositório `Compensacoes` (`C:/Repos/Compensacoes`).
+
+### 1. Agregação por título distribuído (`nome_dist`)
+
+- Lê `<ano>_<mm>_comNIF.csv` e `<ano>_<mm>_semNIF.csv`, filtra apenas os registos elegíveis (`status == "OK"`, ou todos se a coluna não existir) e agrega por `nome_dist`:
+  - `passes = n()` (n.º de passes com validações)
+  - `numval = sum(numval)` (total de validações)
+  - `compensacao = sum(compensacao)` (compensação apurada em €)
+
+### 2. Cruzamento com as listas de `Compensacoes/lists/`
+
+Cada `nome_dist` é cruzado com `titulos_nomes.csv`, `titulos.csv` e `operadores.csv` para obter:
+
+- `ticket_name_reduzido`: título de referência após separar eventual complemento interregional;
+- `complemento_CM`: indicador lógico de título com Complemento Metropolitano (Azambuja);
+- `base_weight`: proporção do preço base correspondente à parte **Navegante**;
+- `ticket_operator_code`, `ticket_code`, `ticket_modalidade_operador`, `pvp`, `titulo_nome_base` e `preco_base`.
+
+> **Nota sobre títulos compostos (`A + Complemento`)**: quando `nome_dist` tem duas partes separadas por `+` e não consta diretamente com peso próprio em `titulos_nomes.csv`, o `ticket_name_reduzido` e o `base_weight` são herdados do registo-mestre da 1.ª parte em `titulos_nomes.csv`.
+
+### 3. Separação da compensação em 3 componentes
+
+Para cada título agregado, a compensação total é decomposta em:
+
+| Componente | Regra de cálculo | Destino / Repartição |
+| --- | --- | --- |
+| **Passes Navegante** | $\text{comp\_navegante} = \text{compensacao} \times \text{base\_weight}$ | Repartido pelos 11 operadores segundo as quotas mensais do título (`ticket_code`) |
+| **Complemento CM** | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | **100 % `AT TML - CM`** (`ticket_operator_code = 31`, `ticket_code = 1070`, `preco_base = 20 €`) |
+| **Viver Cascais** | $\text{comp\_cascais} = \text{compensacao}$ (`base_weight = 1`) | **100 % `AT Cascais`** (`ticket_operator_code = 21`, `ticket_code = 129131`, `preco_base = 20 €`) |
+
+**Exemplos de `base_weight`:**
+- `Navegante Metropolitano + Complemento` (`60 €` = `40 €` Navegante + `20 €` Complemento): $\text{base\_weight} = 2/3 \implies 2/3$ da compensação vai para o título Navegante (`6180` ou `6181`) e $1/3$ para `Complemento CM` (`1070`).
+- `Navegante Municipal (ex.: Montijo) + Complemento` (`50 €` = `30 €` Municipal + `20 €` Complemento): $\text{base\_weight} = 3/5 = 0{,}6 \implies 60\%$ para o título Navegante e $40\%$ para `Complemento CM`.
+- Títulos sem complemento (`Navegante 12`, `Navegante Metropolitano 418/sub23`, `Navegante Municipal 418/sub23`): $\text{base\_weight} = 1 \implies 100\%$ Navegante.
+
+> **Contagem de passes e validações:** nas linhas de `Passes Navegante` (`1020`, `6150`, `6180`, `6181`), `passes` e `validacoes` contam o total de cartões/validações que utilizaram esse título base; na linha `Complemento CM` (`1070`), `passes` e `validacoes` somam os cartões/validações que tinham complemento metropolitano.
+
+### 4. Repartição pelos operadores (Quotas mensais)
+
+- Lê o ficheiro de quotas do mês do repositório `Compensacoes`:
+  `Compensacoes/data/<mm>_<mes_abrev>_<ano>/output/1_quotas_<mes_abrev><aa>.csv`
+- Para cada título Navegante $i$ (`1020`, `6150`, `6180`, `6181`) e operador $j$:
+  $$\text{Compensação}_{i,j} = \text{Compensação Total Navegante}_i \times \text{quota}_{i,j}$$
+  sem arredondamento intermédio nas linhas de título.
+- Para os **Outros Passes**:
+  - `Complemento CM` (`1070`): quota $= 100\%$ em `AT TML - CM` ($0\%$ nos restantes);
+  - `Viver Cascais` (`129131`): quota $= 100\%$ em `AT Cascais` ($0\%$ nos restantes).
+
+### 5. Estimativa do Congelamento Tarifário (TAT)
+
+Lê as Taxas de Atualização Tarifária anuais em `Compensacoes/lists/tat.csv` até ao ano de referência (`ano_ref`):
+
+| Ano | Taxa TAT |
+| --- | --- |
+| 2024 | $6{,}40\%$ (`0.0640`) |
+| 2025 | $2{,}02\%$ (`0.0202`) |
+| 2026 | $2{,}28\%$ (`0.0228`) |
+
+Aplicam-se dois fatores cumulativos distintos sobre os totais por operador:
+
+1. **Congelamento Passes Navegante** (atualização cumulativa desde 2024 sobre os títulos Navegante):
+   $$F_{\text{Navegante}} = \prod_{y=2024}^{\text{ano}} (1 + \text{TAT}_y) - 1 = (1 + 0{,}0640)\times(1 + 0{,}0202)\times(1 + 0{,}0228) - 1 = 11{,}0555\% \quad (0{,}11055490944)$$
+   $$\text{Congelamento Navegante}_j = \text{Total Passes Navegante}_j \times F_{\text{Navegante}}$$
+
+2. **Congelamento Outros Passes** (`Complemento CM` e `Viver Cascais`):
+   $$F_{\text{Outros}} = \text{TAT}_{2024} \times \prod_{y=2025}^{\text{ano}} (1 + \text{TAT}_y) = 0{,}0640 \times (1 + 0{,}0202)\times(1 + 0{,}0228) = 6{,}7095\% \quad (0{,}06709490944)$$
+   $$\text{Congelamento Outros}_j = \text{Total Outros Passes}_j \times F_{\text{Outros}}$$
+
+3. **Congelamento TOTAL por operador**:
+   $$\text{Congelamento TOTAL}_j = \text{Congelamento Navegante}_j + \text{Congelamento Outros}_j$$
+
+### 6. Ficheiros CSV exportados (`output/`)
+
+Todos os CSV são gravados com separador `;`, vírgula decimal `,` e UTF-8 BOM (`bom = TRUE`, garantindo leitura correta de caracteres como `CRIANÇA` no Excel em Windows):
+
+1. `<ano>_<mm>_compensacao_por_titulo.csv`: detalhe por `nome_dist` com `ticket_name_reduzido`, `complemento_CM`, `base_weight`, códigos de bilhete/operador/modalidade, `passes`, `numval`, `compensacao` e a decomposição nas 3 parcelas (`comp_navegante`, `comp_complemento`, `comp_cascais`).
+2. `<ano>_<mm>_passejovem_resumo.csv`: tabela por título de referência (`1020`, `6150`, `6180`, `6181`, `1070 Complemento CM`, `129131 Viver Cascais`) com `passes`, `validacoes`, `compensacao_total` e valores por operador (sem linhas `TOTAL*`).
+3. `<ano>_<mm>_passejovem_congelamento.csv`: 3 linhas (`Congelamento Navegante`, `Congelamento Outros Passes`, `Congelamento TOTAL`) com o total e a repartição pelos 11 operadores.
+
+---
+
+## Passo 05 — Exportar Anexo II de Repartição (`05_exportar_anexo_reparticao.R`)
+
+Gera o ficheiro Excel formatado `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_AnexoII_reparticao.xlsx` a partir de `<ano>_<mm>_passejovem_resumo.csv`, `titulos.csv`, `1_quotas_<mes><aa>.csv` e `tat.csv`. Pode ser executado autonomamente (`exportar_anexo_reparticao(ano, mes)`) em menos de 1 segundo.
+
+### Estrutura e Fórmulas do Workbook
+
+1. **Folha 1 — `<mes><aa>` (ex.: `jul26`)**:
+   - **Bloco esquerdo (colunas `A:W`)**: `ano`, `mês`, `ticket_operator_code`, `ticket_code`, `titulo`, `Modalidade título`, `pvp`, `Título Base`, `Preço do título base`, `Nº passes com validações`, `Validações`, `Compensação total` e os 11 operadores (`CP` a `BT Oeste`).
+   - **Coluna `X`**: separador em branco.
+   - **Bloco direito (colunas `Y:AI`)**: `Quota (%) por título e operador` para os 11 operadores, com os valores exatos não arredondados de `f_quotas`, formatados visualmente a 4 casas decimais (`0,0000%`).
+   - **Fórmulas dinâmicas e arredondamento**:
+     - Nas linhas de título (`linhas 5 a 10`), cada célula de operador (`M:W`) usa a fórmula `=$L<row>*<col_quota><row>` (Compensação total $\times$ Quota), sem arredondamento intermédio.
+     - As linhas de subtotal `Total Passes Navegante` (`linha 11`) e `Total Outros Passes` (`linha 12`) usam `=SUM(...)` sem arredondamento.
+     - Apenas a linha final `Total` (`linha 13`) arredonda a soma dos dois subtotais a 2 casas decimais: `=ROUND(SUM(L11:L12), 2)` .. `=ROUND(SUM(W11:W12), 2)`.
+
+2. **Folha 2 — `<mes><aa>_resumo_congelamento` (ex.: `jul26_resumo_congelamento`)**:
+   - **Tabela principal (linhas 6 a 17)**:
+     - Colunas `D:F` (**Compensação Passe Jovem (€)**, em tons dourados):
+       - `Passes Navegante` (`D`): `=SUM(jul26!M5:M8)` .. `=SUM(jul26!W5:W8)`
+       - `Outros Passes` (`E`): `=SUM(jul26!M9:M10)` .. `=SUM(jul26!W9:W10)`
+       - `TOTAL` (`F`): `=D<row>+E<row>`
+     - Colunas `G:I` (**Compensação por Congelamento Tarifário — TAT (€)**, diferenciadas em tons de cinzento):
+       - `Congelamento Passes Navegante` (`G`): `=D<row>*$I$21`
+       - `Congelamento Outros Passes` (`H`): `=E<row>*$I$22`
+       - `Congelamento TOTAL` (`I`): `=G<row>+H<row>`
+     - Linha `TOTAL` (`linha 17`): arredondada a 2 casas decimais em todas as colunas monetárias (`=ROUND(SUM(D6:D16), 2)` .. `=ROUND(SUM(I6:I16), 2)`).
+   - **Bloco de Notas / Parâmetros TAT (linhas 19 a 23)**:
+     - Apresenta a tabela anual de taxas TAT (`2024: 6,40%`, `2025: 2,02%`, `2026: 2,28%` em `C21:C23`) e calcula por fórmula os fatores cumulativos em `I21` (`=(1+C21)*(1+C22)*(1+C23)-1` $\rightarrow 11{,}0555\%$) e `I22` (`=C21*(1+C22)*(1+C23)` $\rightarrow 6{,}7095\%$).
+
+---
 
 ## Documentos (`10_documentos.R`)
 
