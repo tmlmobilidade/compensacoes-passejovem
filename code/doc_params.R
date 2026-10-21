@@ -27,27 +27,31 @@ RENDER_DOCX <- TRUE
 
 # ---- Referências oficiais ----------------------------------------------------
 docs_nr_path <- here::here("..", "Compensacoes", "lists", "documents_nr.csv")
-docs_nr_row <- if (file.exists(docs_nr_path)) {
-  df_docs <- utils::read.csv2(docs_nr_path, stringsAsFactors = FALSE, na.strings = c("", "NA"))
-  df_docs[df_docs$tipo == "passejovem" & df_docs$ano == ANO & df_docs$mes == MES, ]
+df_docs <- if (file.exists(docs_nr_path)) {
+  utils::read.csv2(docs_nr_path, stringsAsFactors = FALSE, na.strings = c("", "NA"))
 } else {
   data.frame()
 }
 
-get_doc_nr <- function(col, default) {
-  if (nrow(docs_nr_row) > 0 && col %in% names(docs_nr_row)) {
-    val <- trimws(as.character(docs_nr_row[[col]][1]))
-    if (!is.na(val) && nzchar(val)) return(val)
+get_doc_nr <- function(col, default, tipo = "passejovem") {
+  if (nrow(df_docs) > 0 && col %in% names(df_docs)) {
+    row <- df_docs[df_docs$tipo == tipo & df_docs$ano == ANO & df_docs$mes == MES, ]
+    if (nrow(row) > 0) {
+      val <- trimws(as.character(row[[col]][1]))
+      if (!is.na(val) && nzchar(val)) return(val)
+    }
   }
   default
 }
 
 # fallback defaults for document numbers if not found in documents_nr.csv
-numero_informacao1 <- get_doc_nr("numero_informacao1", "TML-XXXX-XXXX-INF-XXXX-DEP")  # Nº da Informação IMT
-numero_oficio1     <- get_doc_nr("numero_oficio1",     "TML-XXXX-XXXX-OF-XXXX-DEP")   # Nº do Ofício IMT
-numero_informacao2 <- get_doc_nr("numero_informacao2", "TML-YYYY-YYYY-INF-YYYY-DEP")  # Nº da Informação Operadores
-numero_oficio2     <- get_doc_nr("numero_oficio2",     "TML-YYYY-YYYY-OF-YYYY-DEP")   # Nº do Ofício Operadores
-data_documento     <- format(Sys.Date(), "%d/%m/%Y")  # ou fixar manualmente: "24/09/2026"
+numero_informacao1           <- get_doc_nr("numero_informacao1", "TML-XXXX-XXXX-INF-XXXX-DEP", "passejovem")  # Nº da Informação IMT
+numero_oficio1               <- get_doc_nr("numero_oficio1",     "TML-XXXX-XXXX-OF-XXXX-DEP",  "passejovem")  # Nº do Ofício IMT
+numero_informacao2           <- get_doc_nr("numero_informacao2", "TML-YYYY-YYYY-INF-YYYY-DEP", "passejovem")  # Nº da Informação Operadores
+numero_oficio2               <- get_doc_nr("numero_oficio2",     "TML-YYYY-YYYY-OF-YYYY-DEP",  "passejovem")  # Nº do Ofício Operadores
+numero_informacao1_navegante <- get_doc_nr("numero_informacao1", "TML-XXXX-XXXX-INF-XXXX-DEP", "navegante")   # Nº da Informação 1 quotas Navegante
+numero_oficio1_navegante     <- get_doc_nr("numero_oficio1",     "TML-XXXX-XXXX-OF-XXXX-DEP",  "navegante")   # Nº do Ofício 1 quotas Navegante
+data_documento               <- format(Sys.Date(), "%d/%m/%Y")  # ou fixar manualmente: "24/09/2026"
 
 # ---- Autores / Intervenientes ------------------------------------------------
 de_pessoa1_nome  <- "Ana Isabel Capote Fernandes Rosado"
