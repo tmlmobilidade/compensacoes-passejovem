@@ -1,0 +1,390 @@
+---
+lang: pt
+format:
+  typst:
+    papersize: a4
+    linestretch: 1.2
+    numbering: "I"
+    margin:
+      x: 3.0cm
+      y: 3.0cm
+      top: 4.0cm
+      bottom: 3.0cm
+    include-in-header:
+      - templates/custom_styles.typ
+  docx:
+    reference-doc: templates/TML_Informacao_pandoc.docx
+    number-sections: false # a numeração dos títulos vem do estilo Word (Título 1/2/3)
+    fig-dpi: 300
+filters:
+  - templates/linebreaks.lua
+  - quarto
+  - templates/docx_styles.lua
+number-sections: true
+section-numbering: 1.1.1.
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: params
+
+# Parâmetros de emissão centralizados — editar code/doc_params.R
+source(here::here("code", "doc_params.R"))
+```
+
+```{r}
+#| label: setup
+
+# =============================================================================
+# CARREGAMENTO DE DADOS E CÁLCULOS DO RELATÓRIO PASSE JOVEM (FASE 2)
+# =============================================================================
+
+source(here::here("code", "00_config.R"))
+
+suppressPackageStartupMessages({
+  library(data.table)
+  library(dplyr)
+  library(tidyr)
+  library(scales)
+  library(knitr)
+  library(tinytable)
+})
+
+# ---- Funções Auxiliares de Formatação ----------------------------------------
+fmt_eur <- function(x) {
+  ifelse(is.na(x), "", scales::number(x, accuracy = 0.01, big.mark = "\u00a0", decimal.mark = ",", suffix = "\u00a0€"))
+}
+
+source(here::here("code", "utils_tables.R"))
+source(here::here("code", "utils_extenso.R"))
+
+# Mês e ano de referência
+mes_nome <- tolower(MESES_PT[MES])
+
+# Caminhos do mês
+paths <- month_paths(ANO, MES)
+
+# Carregar ficheiros de resumo de repartição e de congelamento do mês
+f_res  <- file.path(paths$output, output_filename(ANO, MES, "passejovem_resumo"))
+f_cong <- file.path(paths$output, output_filename(ANO, MES, "passejovem_congelamento"))
+
+if (!file.exists(f_res) || !file.exists(f_cong)) {
+  stop("Ficheiros passejovem_resumo / passejovem_congelamento não encontrados em: ", paths$output)
+}
+
+dt_resumo <- fread(f_res, sep = ";", dec = ",", encoding = "UTF-8")
+dt_cong   <- fread(f_cong, sep = ";", dec = ",", encoding = "UTF-8")
+
+# Operadores na ordem oficial
+ops <- names(OPERADORES_RESUMO)
+
+# Totais de compensação Passe Jovem por operador e global (arredondados a 2 c.d.)
+comp_ops   <- vapply(ops, function(op) round(sum(dt_resumo[[op]], na.rm = TRUE), 2), numeric(1))
+comp_total <- round(sum(comp_ops), 2)
+
+# Totais de compensação por congelamento tarifário por operador e global
+row_cong_tot <- dt_cong[linha == "Congelamento TOTAL"]
+if (nrow(row_cong_tot) > 0) {
+  cong_ops   <- vapply(ops, function(op) round(as.numeric(row_cong_tot[[op]][1]), 2), numeric(1))
+  cong_total <- round(as.numeric(row_cong_tot$compensacao_total[1]), 2)
+} else {
+  cong_ops   <- vapply(ops, function(op) round(sum(dt_cong[[op]], na.rm = TRUE), 2), numeric(1))
+  cong_total <- round(sum(cong_ops), 2)
+}
+
+# Valores individuais por operador para a secção Proposta (TT + SL somados)
+comp_cp      <- unname(comp_ops["CP"])
+comp_ft      <- unname(comp_ops["FT"])
+comp_ttsl    <- round(unname(comp_ops["TT"] + comp_ops["SL"]), 2)
+comp_ml      <- unname(comp_ops["ML"])
+comp_mts     <- unname(comp_ops["MTS"])
+comp_ca      <- unname(comp_ops["Carris"])
+comp_tcb     <- unname(comp_ops["TCB"])
+comp_cascais <- unname(comp_ops["AT Cascais"])
+comp_cm      <- unname(comp_ops["AT TML - CM"])
+comp_bt      <- unname(comp_ops["BT Oeste"])
+
+cong_cp      <- unname(cong_ops["CP"])
+cong_ft      <- unname(cong_ops["FT"])
+cong_ttsl    <- round(unname(cong_ops["TT"] + cong_ops["SL"]), 2)
+cong_ml      <- unname(cong_ops["ML"])
+cong_mts     <- unname(cong_ops["MTS"])
+cong_ca      <- unname(cong_ops["Carris"])
+cong_tcb     <- unname(cong_ops["TCB"])
+cong_cascais <- unname(cong_ops["AT Cascais"])
+cong_cm      <- unname(cong_ops["AT TML - CM"])
+cong_bt      <- unname(cong_ops["BT Oeste"])
+
+# Tabela TAT até ao ano de referência
+tat_df <- ler_lista_compensacoes("tat.csv") |>
+  mutate(tat = as.numeric( gsub(",", ".", as.character(tat)) )) |>
+  filter(ano <= ANO) |>
+  arrange(ano)
+```
+
+::: {.content-visible when-format="docx"}
+::: {custom-style="Title"}
+Informação n.º `r numero_informacao2`
+:::
+
+::: {custom-style="Subject"}
+Assunto: Pagamento das compensações financeiras pela disponibilização dos Passes Gratuitos para Jovens na área metropolitana de Lisboa, referentes a `r mes_nome` de `r ANO`
+:::
+:::
+
+```{=typst}
+#align(right)[
+  #heading(level: 1, numbering: none)[
+    #text(size: 12pt)[Informação n.º `r numero_informacao2`]
+  ]
+]
+#v(1cm)
+```
+::::: {style="font-size: 0.7em;" .content-visible when-format="typst"}
+
+:::: {layout-ncol=2}
+
+::: {}
+**De:**\
+`r de_pessoa1_nome`\
+`r de_pessoa2_nome`\
+`r de_pessoa3_nome`\
+`r de_pessoa1_cargo`\
+`r de_divisao`
+:::
+
+::: {}
+**Para:**\
+`r para_pessoa_nome`\
+`r para_cargo`\
+`r para_divisao`
+:::
+
+::::
+
+:::::
+
+```{=typst}
+#par(hanging-indent: 52pt)[
+    #set text(weight: "bold")
+Assunto: Pagamento das compensações financeiras pela disponibilização dos Passes Gratuitos para Jovens na área metropolitana de Lisboa, referentes a `r mes_nome` de `r ANO`
+]
+```
+
+```{=typst}
+#v(1cm)
+```
+
+::: {.content-visible when-format="typst"}
+**PARECER/VISTO:**
+:::
+
+```{=typst}
+#v(1.5cm)
+#line(length: 100%)
+```
+
+::: {.content-visible when-format="typst"}
+**DESPACHOS:**
+:::
+
+```{=typst}
+#v(1.5cm)
+#line(length: 100%)
+```
+
+# Enquadramento
+
+No dia 5 de janeiro de 2024 foi publicada no Diário da República, n.º 4, 1.ª série, a Portaria n.º 7-A/2024, da Presidência do Conselho de Ministros, Finanças, Ambiente e Ação Climática e Coesão Territorial, que define as condições de atribuição e de operacionalização dos passes gratuitos para jovens estudantes, nas modalidades sub 18+TP e estudantes sub23 +TP, com efeitos a 1 de janeiro de 2024.
+A Portaria n.º 307-A/2024/1, de 28 de novembro de 2024, procede à alteração à Portaria n.º 7-A/2024, com vista a alargar a gratuitidade do passe para jovens estudantes a todos os indivíduos até aos 23 anos, nas modalidades sub 18+TP e sub23 +TP, passando a ser designados de ‘passes gratuitos para jovens’.
+
+Conforme disposto na referida Portaria, a Transportes Metropolitanos de Lisboa (“TML”), tendo em conta o contrato de delegação e subdelegação de competências com a Área Metropolitana de Lisboa (“AML”), procede ao cálculo das compensações financeiras a atribuir aos operadores pela disponibilização destes títulos no respetivo território, remetendo ao Instituto da Mobilidade e dos Transportes, I.P. (“IMT”), até ao último dia de cada mês, com um desfasamento máximo de 3 meses, o montante da compensação financeira apurada.
+
+No dia `r pagamentos_ETF_data`, a TML recebeu da Entidade do Tesouro e Finanças (“ETF”) o montante de `r fmt_eur(pagamentos_ETF_valor)` (`r numero_por_extenso(pagamentos_ETF_valor)`) referente ao valor de `r mes_nome` de `r ANO`, cabendo agora à TML repartir pelos operadores o montante recebido. 
+
+# Metodologia de repartição das compensações de passes gratuitos para jovens pelos operadores/autoridades de transporte
+
+## Apuramento de compensações
+
+A metodologia adotada para determinar a elegibilidade dos passes para compensação e o procedimento de cálculo da referida compensação por passe encontram-se detalhados na informação n.º `r numero_informacao1` de apuramento dos valores totais de compensação em `r mes_nome` de `r ANO`. 
+
+## Quota de repartição das compensações
+
+Ao abrigo do ponto 6.3 do anexo V ao Regulamento n.º 278-A/2019, na sua redação atual, a distribuição das compensações dos títulos bonificados Navegante 4_18, Sub23, Social+ e PAC (os dois primeiros agora substituídos pelo passe gratuito para jovens e o terceiro substituído pelo Circula PT) pelos Operadores / Autoridades de Transporte realiza-se aplicando as **quotas de repartição mensal dinâmicas**, determinadas em função dos passageiros quilómetros ("**PKM**") de cada operador. 
+
+Deste modo, para a repartição das compensações de `r mes_nome` de `r ANO` foram utilizadas as quotas previamente aprovadas com base na informação n.º `r numero_informacao1_navegante` e comunicadas aos operadores através do ofício n.º `r numero_oficio1_navegante`.
+
+No caso dos títulos próprios dos operadores, nomeadamente os passes AT Cascais e o complemento ao Navegante da Carris Metropolitana, a compensação é repartida pelos titulares dos respetivos passes. 
+
+## Pagamento das compensações pela disponibilização dos passes gratuitos para jovens
+
+Os pagamentos aos operadores/autoridades de transporte relativos a `r mes_nome` de `r ANO` foram calculados aplicando as quotas definidas no ponto anterior às compensações apuradas por passe, com base em dados reais de vendas e validações e no montante transferido pela ETF. Em anexo, no ficheiro `r output_filename(ANO, MES, "AnexoII_reparticao", "xlsx")` encontram-se as tabelas que resumem os cálculos efetuados. 
+
+A @tbl-1 apresenta os valores de compensação apurados e a pagamento por operador/autoridade de transporte, no mês de `r mes_nome` de `r ANO`, que incluem os títulos próprios e a repartição dos passes navegante e que totalizam o valor de `r fmt_eur(comp_total)` (`r numero_por_extenso(comp_total)`). 
+
+```{r}
+#| label: tbl-1
+#| tbl-cap: !expr paste0("Compensação dos passes gratuitos para jovens devida aos operadores que os disponibilizam, relativa ao mês de ", mes_nome, " de ", ANO, ", apurada ao abrigo da Portaria nº 7-A/2024, na sua redação atual.")
+
+col_comp_nm <- paste0("Compensação Passe Jovem (€)\n", mes_nome, "/", ANO)
+
+t1_display <- data.frame(
+  operador = c(ops, "TOTAL"),
+  valor    = fmt_eur(c(comp_ops, comp_total)),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+colnames(t1_display) <- c("Operador / AT", col_comp_nm)
+
+tml_table(
+  t1_display,
+  align = c("l", "r"),
+  bold_total = TRUE,
+  fontsize = 0.85,
+  width = c(0.2, 0.4)
+)
+```
+
+## Pagamento da compensação pelo congelamento do preço dos passes
+
+Adicionalmente ao valor da compensação pela disponibilização dos passes gratuitos jovem, é necessário determinar o valor de compensação pelo congelamento do preço de referência destes passes. 
+
+O valor da compensação por congelamento dos preços dos **passes Navegante**, aplicada às respetivas compensações por disponibilização dos passes gratuitos jovem, corresponde a: 
+
+$$
+\text{Congelamento}_{\text{Passes Navegante}} = (1 + \text{TAT}_{2024}) \times (1 + \text{TAT}_{2025}) \times (1 + \text{TAT}_{2026}) - 1
+$$
+
+Já no caso dos **títulos próprios**, só em 2024 é que o seu congelamento foi uma decisão imposta por outra Autoridade de Transportes, que não a própria, pelo que a mesma compensação por congelamento do preço, corresponde apenas a:
+
+$$
+\text{Congelamento}_{\text{Outros Passes}} = \text{TAT}_{2024} \times (1 + \text{TAT}_{2025}) \times (1 + \text{TAT}_{2026})
+$$
+
+Em que os valores da TAT são:
+
+```{r}
+t_tat <- data.frame(
+  Ano = as.character(tat_df$ano),
+  `TAT (%)` = scales::number(tat_df$tat * 100, accuracy = 0.01, decimal.mark = ","),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+tml_table(
+  t_tat,
+  align = c("c", "c"),
+  width = 0.2,
+  bold_total = FALSE
+)
+```
+
+
+Para o mês de `r mes_nome` de `r ANO`, essa compensação totaliza o valor de `r fmt_eur(cong_total)` (`r numero_por_extenso(cong_total)`), apresentado na @tbl-2. 
+
+```{r}
+#| label: tbl-2
+#| tbl-cap: !expr paste0("Compensação pelo congelamento do preço dos passes gratuitos para jovens devida aos operadores que os disponibilizam, relativa ao mês de ", mes_nome, " de ", ANO, ", apurada ao abrigo da Portaria nº 7-A/2024, na sua redação atual.")
+
+col_cong_nm <- paste0("Compensação por \nCongelamento Tarifário (€)\n", mes_nome, "/", ANO)
+
+t2_display <- data.frame(
+  operador = c(ops, "TOTAL"),
+  valor    = fmt_eur(c(cong_ops, cong_total)),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+colnames(t2_display) <- c("Operador / AT", col_cong_nm)
+
+tml_table(
+  t2_display,
+  align = c("l", "r"),
+  bold_total = TRUE,
+  fontsize = 0.85,
+  width = c(0.2, 0.4)
+)
+```
+
+# Proposta
+
+Tendo em conta o disposto nos pontos anteriores nomeadamente: (i) o valor apurado de compensações com base em dados reais de vendas e validações; (ii) a transferência realizada pela ETF correspondente à verba solicitada para `r mes_nome` `r ANO`; (iii) a aprovação prévia das quotas de repartição de passes Navegante para o mês de `r mes_nome` de `r ANO`; (iv) o previsto na Portaria n.º 7-A/2024 de 5 de janeiro, alterada pela Portaria n.º 307-A/2024/1 de 28 de novembro; (v) a compensação do congelamento do preço dos passes em `r ANO`, conforme Regulamento Tarifário, submete-se à aprovação do Conselho de Administração:
+
+1)	Os valores de pagamentos das compensações financeiras pela disponibilização dos passes gratuitos para Jovens, relativos ao mês de `r mes_nome` de `r ANO`, num total de **`r fmt_eur(comp_total)`** (`r numero_por_extenso(comp_total)`) e que se distribui pelos operadores/autoridades de transporte conforme @tbl-1:
+
+    - **CP - Comboios de Portugal, E.P.E.**: **`r fmt_eur(comp_cp)`** (`r numero_por_extenso(comp_cp)`);
+
+    - **Fertagus - Travessia do Tejo, Transportes S.A.**: **`r fmt_eur(comp_ft)`** (`r numero_por_extenso(comp_ft)`);
+
+    - **Transtejo Soflusa, S.A.**: **`r fmt_eur(comp_ttsl)`** (`r numero_por_extenso(comp_ttsl)`);
+
+    - **Metropolitano de Lisboa, E.P.E.**: **`r fmt_eur(comp_ml)`** (`r numero_por_extenso(comp_ml)`);
+
+    - **MTS - Metro Transportes do Sul, S.A.**: **`r fmt_eur(comp_mts)`** (`r numero_por_extenso(comp_mts)`);
+
+    - **Carris - Companhia Carris de Ferro de Lisboa, E.M. S.A.**: **`r fmt_eur(comp_ca)`** (`r numero_por_extenso(comp_ca)`);
+
+    - **Serviços Municipalizados de Transportes Coletivos do Barreiro**: **`r fmt_eur(comp_tcb)`** (`r numero_por_extenso(comp_tcb)`);
+
+    - **AT Cascais – Contrato e Operador interno**: **`r fmt_eur(comp_cascais)`** (`r numero_por_extenso(comp_cascais)`);
+
+    - **Transportes Metropolitanos de Lisboa, E.M.T., S.A. - Contratos Carris Metropolitana Áreas 1, 2, 3 e 4**: **`r fmt_eur(comp_cm)`** (`r numero_por_extenso(comp_cm)`);
+
+    - **Barraqueiro Transportes, S.A.**: **`r fmt_eur(comp_bt)`** (`r numero_por_extenso(comp_bt)`).
+
+
+1)	Os valores de pagamentos das compensações financeiras pelo congelamento do preço de referência dos passes gratuitos para Jovens, relativos ao mês de `r mes_nome` de `r ANO`, num total de **`r fmt_eur(cong_total)`** (`r numero_por_extenso(cong_total)`) e que se distribui pelos operadores/autoridades de transporte conforme @tbl-2:
+
+    - **CP - Comboios de Portugal, E.P.E.**: **`r fmt_eur(cong_cp)`** (`r numero_por_extenso(cong_cp)`);
+
+    - **Fertagus - Travessia do Tejo, Transportes S.A.**: **`r fmt_eur(cong_ft)`** (`r numero_por_extenso(cong_ft)`);
+
+    - **Transtejo Soflusa, S.A.**: **`r fmt_eur(cong_ttsl)`** (`r numero_por_extenso(cong_ttsl)`);
+
+    - **Metropolitano de Lisboa, E.P.E.**: **`r fmt_eur(cong_ml)`** (`r numero_por_extenso(cong_ml)`);
+
+    - **MTS - Metro Transportes do Sul, S.A.**: **`r fmt_eur(cong_mts)`** (`r numero_por_extenso(cong_mts)`);
+
+    - **Carris - Companhia Carris de Ferro de Lisboa, E.M. S.A.**: **`r fmt_eur(cong_ca)`** (`r numero_por_extenso(cong_ca)`);
+
+    - **Serviços Municipalizados de Transportes Coletivos do Barreiro**: **`r fmt_eur(cong_tcb)`** (`r numero_por_extenso(cong_tcb)`);
+
+    - **AT Cascais – Contrato e Operador interno**: **`r fmt_eur(cong_cascais)`** (`r numero_por_extenso(cong_cascais)`);
+
+    - **Transportes Metropolitanos de Lisboa, E.M.T., S.A. - Contratos Carris Metropolitana Áreas 1, 2, 3 e 4**: **`r fmt_eur(cong_cm)`** (`r numero_por_extenso(cong_cm)`);
+
+    - **Barraqueiro Transportes, S.A.**: **`r fmt_eur(cong_bt)`** (`r numero_por_extenso(cong_bt)`).
+
+1)	Comunicar aos operadores/autoridades de transporte os valores de compensação aprovados nos pontos 1) e 2) e autorizar a faturação dos mesmos. Enviar documento explicativo da metodologia de apuramento e ficheiro com detalhe do cálculo (Anexos I e II). 
+
+1)	Comunicar ao IMT os valores de repartição apurados e, ao abrigo do n.º 3 da Cláusula 4.ª do Aditamento ao Contrato Interadministrativo de Delegação e Subdelegação de Competências, comunicar os mesmos valores à Área Metropolitana de Lisboa.
+
+
+```{=typst}
+#v(0.8cm)
+```
+
+`r data_documento`
+
+
+```{=typst}
+#v(0.5cm)
+#grid(
+  columns: (1fr, 1fr, 1fr),
+  gutter: 1cm,
+  [
+    `r de_pessoa1_nome` \
+    #text(size: 8pt, fill: luma(80))[`r de_pessoa1_cargo`]
+  ],
+  [
+    `r de_pessoa2_nome` \
+    #text(size: 8pt, fill: luma(80))[`r de_pessoa2_cargo`]
+  ],
+  [
+    `r de_pessoa3_nome` \
+    #text(size: 8pt, fill: luma(80))[`r de_pessoa3_cargo`]
+  ]
+)
+```
