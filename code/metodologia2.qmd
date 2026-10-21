@@ -380,7 +380,7 @@ p
 
 Ao abrigo do ponto 6.3 do anexo V ao Regulamento n.º 278-A/2019, na sua redação atual, a distribuição das compensações dos títulos bonificados Navegante 4_18, Sub23, Social+ e PAC (os dois primeiros agora substituídos pelo passe gratuito para jovens e o terceiro substituído pelo Circula PT) pelos Operadores / Autoridades de Transporte realiza-se aplicando as **quotas de repartição mensal dinâmicas**, determinadas em função dos passageiros quilómetros ("**PKM**") de cada operador. 
 
-Deste modo, para a repartição das compensações de março de 2026 foram utilizadas as quotas previamente aprovadas e comunicadas no ofício n.º `r numero_oficio1`.
+Deste modo, para a repartição das compensações de `r mes_nome` de `r ANO` foram utilizadas as quotas previamente aprovadas e comunicadas no ofício n.º `r numero_oficio1_navegante`.
 
 No caso dos títulos próprios dos operadores, nomeadamente os passes AT Cascais e o complemento ao Navegante da Carris Metropolitana, a compensação é repartida pelos titulares dos respetivos passes. 
 
