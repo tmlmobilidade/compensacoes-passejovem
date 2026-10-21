@@ -32,7 +32,7 @@ suppressPackageStartupMessages({
 # documentos metodologia2, informacao2 e oficio2)?
 #   FALSE -> corre apenas a Fase 1 (apuramento para o IMT: scripts 01 a 03 + docs 1)
 #   TRUE  -> corre também a Fase 2 (quando as quotas mensais já estão disponíveis)
-RUN_FASE2 <- FALSE
+RUN_FASE2 <- TRUE
 
 # Renderizar os documentos oficiais em PDF/Word (10_documentos.R)?
 #   FALSE -> salta a renderização Quarto (informacao, oficio, metodologia)

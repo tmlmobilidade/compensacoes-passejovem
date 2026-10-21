@@ -104,7 +104,7 @@ render_documentos <- function(ano = ANO, mes = MES, raiz = here_root(),
   if (isTRUE(run_fase2)) {
     render_qmd_doc("metodologia2.qmd", ano = ano, mes = mes, raiz = raiz,
                    render_pdf = TRUE, render_docx = FALSE, out_name = "AnexoI_metodologia")
-    # render_qmd_doc("informacao2.qmd", ano = ano, mes = mes, raiz = raiz) # TBprepared
+    render_qmd_doc("informacao2.qmd", ano = ano, mes = mes, raiz = raiz) 
     # render_qmd_doc("oficio2.qmd",     ano = ano, mes = mes, raiz = raiz) # TBprepared
   }
 }
