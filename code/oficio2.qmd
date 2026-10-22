@@ -234,7 +234,7 @@ Nessa sequência, vimos por este meio informar que a TML, tendo em conta: (i) o 
 
     - **Barraqueiro Transportes, S.A.**: **`r fmt_eur(cong_bt)`** (`r numero_por_extenso(cong_bt)`).
 
-Juntam-se, em anexo, um documento explicativo da metodologia de apuramento (`r paste(ANO, MES, "AnexoI_metodologia.pdf", sep = "_")`) e um ficheiro com o detalhe do cálculo (`r paste(ANO, MES, "AnexoII_reparticao.xlsx", sep = "_")`).
+Juntam-se, em anexo, um documento explicativo da metodologia de apuramento (`r output_filename(ANO, MES, "AnexoI_metodologia", "pdf")`) e um ficheiro com o detalhe do cálculo (`r output_filename(ANO, MES, "AnexoII_reparticao", "xlsx")`).
 
 Solicita-se que sejam enviadas **faturas distintas** para os valores dos pontos 1) e 2).
 
@@ -246,7 +246,7 @@ A TML reserva-se o direito de não proceder a pagamentos no caso de não envio d
 Chama-se a atenção uma vez mais para a importância dos dados dos sistemas de bilhética de cada um dos operadores serem remetidos para a TML em tempo útil e de acordo com o calendário definido no Regulamento n.º 278-A/2019, na sua redação atual, com risco de perda de receitas para o sistema e cada um dos operadores, já que o apuramento do valor da compensação pelo Estado pela gratuitidade dos jovens e estudantes depende do n.º de validações por cartão.
 Nesse sentido, se a informação sobre as validações ocorridas num operador só for rececionada após o apuramento das validações por cartão, o valor de compensação pode ser inferior ao valor total do título carregado a compensar.
 
-Agradecendo a colaboração de todos na implementação desta medida, colocamo-nos à disposição para qualquer esclarecimento que entendam necessário, através do endereço de correio eletrónico [transportes@tmlmobilidade.pt](mailto:transportes@tmlmobilidade.pt)
+Agradecendo a colaboração de todos na implementação desta medida, colocamo-nos à disposição para qualquer esclarecimento que entendam necessário, através do endereço de correio eletrónico [transportes@tmlmobilidade.pt](mailto:transportes@tmlmobilidade.pt).
 
 Com os melhores cumprimentos,
 
