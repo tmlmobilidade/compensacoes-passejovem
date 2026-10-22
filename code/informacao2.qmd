@@ -118,6 +118,11 @@ cong_cascais <- unname(cong_ops["AT Cascais"])
 cong_cm      <- unname(cong_ops["AT TML - CM"])
 cong_bt      <- unname(cong_ops["BT Oeste"])
 
+# Vetores para as tabelas (com TT e SL agregados em "TT SL")
+ops_tab <- c("CP", "FT", "TT SL", "ML", "MTS", "Carris", "TCB", "AT Cascais", "AT TML - CM", "BT Oeste")
+comp_ops_tab <- c(comp_cp, comp_ft, comp_ttsl, comp_ml, comp_mts, comp_ca, comp_tcb, comp_cascais, comp_cm, comp_bt)
+cong_ops_tab <- c(cong_cp, cong_ft, cong_ttsl, cong_ml, cong_mts, cong_ca, cong_tcb, cong_cascais, cong_cm, cong_bt)
+
 # Tabela TAT até ao ano de referência
 tat_df <- ler_lista_compensacoes("tat.csv") |>
   mutate(tat = as.numeric( gsub(",", ".", as.character(tat)) )) |>
@@ -232,8 +237,8 @@ A @tbl-1 apresenta os valores de compensação apurados e a pagamento por operad
 col_comp_nm <- paste0("Compensação Passe Jovem (€)\n", mes_nome, "/", ANO)
 
 t1_display <- data.frame(
-  operador = c(ops, "TOTAL"),
-  valor    = fmt_eur(c(comp_ops, comp_total)),
+  operador = c(ops_tab, "TOTAL"),
+  valor    = fmt_eur(c(comp_ops_tab, comp_total)),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
@@ -292,8 +297,8 @@ Para o mês de `r mes_nome` de `r ANO`, essa compensação totaliza o valor de `
 col_cong_nm <- paste0("Compensação por \nCongelamento Tarifário (€)\n", mes_nome, "/", ANO)
 
 t2_display <- data.frame(
-  operador = c(ops, "TOTAL"),
-  valor    = fmt_eur(c(cong_ops, cong_total)),
+  operador = c(ops_tab, "TOTAL"),
+  valor    = fmt_eur(c(cong_ops_tab, cong_total)),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
@@ -310,7 +315,7 @@ tml_table(
 
 # Proposta
 
-Tendo em conta o disposto nos pontos anteriores nomeadamente: (i) o valor apurado de compensações com base em dados reais de vendas e validações; (ii) a transferência realizada pela ETF correspondente à verba solicitada para `r mes_nome` `r ANO`; (iii) a aprovação prévia das quotas de repartição de passes Navegante para o mês de `r mes_nome` de `r ANO`; (iv) o previsto na Portaria n.º 7-A/2024 de 5 de janeiro, alterada pela Portaria n.º 307-A/2024/1 de 28 de novembro; (v) a compensação do congelamento do preço dos passes em `r ANO`, conforme Regulamento Tarifário, submete-se à aprovação do Conselho de Administração:
+Tendo em conta o disposto nos pontos anteriores nomeadamente: (i) o valor apurado de compensações com base em dados reais de vendas e validações; (ii) o valor transferido pela ETF correspondente à verba solicitada para `r mes_nome` `r ANO`; (iii) a aprovação prévia das quotas de repartição de passes Navegante apuradas para o mês de `r mes_nome` de `r ANO`; (iv) o previsto na Portaria n.º 7-A/2024 de 5 de janeiro, alterada pela Portaria n.º 307-A/2024/1 de 28 de novembro; (v) a compensação do congelamento do preço dos passes em `r ANO`, conforme Regulamento Tarifário, submete-se à aprovação do Conselho de Administração:
 
 1)	Os valores de pagamentos das compensações financeiras pela disponibilização dos passes gratuitos para Jovens, relativos ao mês de `r mes_nome` de `r ANO`, num total de **`r fmt_eur(comp_total)`** (`r numero_por_extenso(comp_total)`) e que se distribui pelos operadores/autoridades de transporte conforme @tbl-1:
 
@@ -318,7 +323,7 @@ Tendo em conta o disposto nos pontos anteriores nomeadamente: (i) o valor apurad
 
     - **Fertagus - Travessia do Tejo, Transportes S.A.**: **`r fmt_eur(comp_ft)`** (`r numero_por_extenso(comp_ft)`);
 
-    - **Transtejo Soflusa, S.A.**: **`r fmt_eur(comp_ttsl)`** (`r numero_por_extenso(comp_ttsl)`);
+    - **TTSL - Transtejo Soflusa, S.A.**: **`r fmt_eur(comp_ttsl)`** (`r numero_por_extenso(comp_ttsl)`);
 
     - **Metropolitano de Lisboa, E.P.E.**: **`r fmt_eur(comp_ml)`** (`r numero_por_extenso(comp_ml)`);
 
@@ -341,7 +346,7 @@ Tendo em conta o disposto nos pontos anteriores nomeadamente: (i) o valor apurad
 
     - **Fertagus - Travessia do Tejo, Transportes S.A.**: **`r fmt_eur(cong_ft)`** (`r numero_por_extenso(cong_ft)`);
 
-    - **Transtejo Soflusa, S.A.**: **`r fmt_eur(cong_ttsl)`** (`r numero_por_extenso(cong_ttsl)`);
+    - **TTSL - Transtejo Soflusa, S.A.**: **`r fmt_eur(cong_ttsl)`** (`r numero_por_extenso(cong_ttsl)`);
 
     - **Metropolitano de Lisboa, E.P.E.**: **`r fmt_eur(cong_ml)`** (`r numero_por_extenso(cong_ml)`);
 
