@@ -527,7 +527,7 @@ atualizar_compensacao_pj_anteriores <- function(ano, mes, raiz = here_root()) {
 # -----------------------------------------------------------------------------
 
 # Raiz do repositório Compensacoes (pode ser sobreposta por variável de ambiente)
-COMPENSACOES_ROOT <- Sys.getenv("COMPENSACOES_ROOT", unset = "C:/Repos/Compensacoes")
+COMPENSACOES_ROOT <- Sys.getenv("COMPENSACOES_ROOT", unset = here::here("..", "Compensacoes"))
 
 # Fonte alternativa (repositório público) caso os ficheiros locais não existam
 COMPENSACOES_GITHUB <-
