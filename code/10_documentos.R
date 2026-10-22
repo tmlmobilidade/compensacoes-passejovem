@@ -94,11 +94,14 @@ render_qmd_doc <- function(qmd_name, ano = ANO, mes = MES, raiz = here_root(),
 }
 
 render_documentos <- function(ano = ANO, mes = MES, raiz = here_root(),
+                              run_fase1 = isTRUE(get0("RUN_FASE1", ifnotfound = TRUE)),
                               run_fase2 = isTRUE(get0("RUN_FASE2", ifnotfound = FALSE))) {
-  # Fase 1 — Apuramento mensal (IMT)
-  render_qmd_doc("informacao1.qmd",  ano = ano, mes = mes, raiz = raiz)
-  render_qmd_doc("oficio1.qmd",      ano = ano, mes = mes, raiz = raiz)
-  render_qmd_doc("metodologia1.qmd", ano = ano, mes = mes, raiz = raiz, render_docx = FALSE)
+  # Fase 1 — Apuramento mensal (IMT) (quando RUN_FASE1 = TRUE)
+  if (isTRUE(run_fase1)) {
+    render_qmd_doc("informacao1.qmd",  ano = ano, mes = mes, raiz = raiz)
+    render_qmd_doc("oficio1.qmd",      ano = ano, mes = mes, raiz = raiz)
+    render_qmd_doc("metodologia1.qmd", ano = ano, mes = mes, raiz = raiz, render_docx = FALSE)
+  }
 
   # Fase 2 — Repartição pelos operadores e congelamento (quando RUN_FASE2 = TRUE)
   if (isTRUE(run_fase2)) {

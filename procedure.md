@@ -115,13 +115,16 @@ run_pipeline(ano = 2026, meses = 7)
 ```
 
 > **Controlo de execução em `code/00_config.R`**:
+> - `RUN_FASE1`:
+>   - `TRUE`: corre a **Fase 1** (scripts `01` a `03` + documentos `informacao1`, `oficio1`, `metodologia1`).
+>   - `FALSE`: salta a **Fase 1** (útil quando a Fase 1 já foi corrida e se pretende correr/testar apenas a Fase 2).
 > - `RUN_FASE2`:
->   - `FALSE`: corre apenas a **Fase 1** (scripts `01` a `03` + documentos `informacao1`, `oficio1`, `metodologia1`).
->   - `TRUE`: corre também a **Fase 2** (scripts `04` e `05` + documentos `metodologia2`, `informacao2`, `oficio2`), quando as quotas mensais dos operadores já se encontram disponíveis.
+>   - `FALSE`: salta a **Fase 2**.
+>   - `TRUE`: corre a **Fase 2** (scripts `04` e `05` + documentos `metodologia2`, `informacao2`, `oficio2`), quando as quotas mensais dos operadores já se encontram disponíveis.
 > - `RENDER_DOCS`:
->   - `TRUE`: executa `10_documentos.R` (`render_documentos()`) no final do pipeline.
+>   - `TRUE`: executa `10_documentos.R` (`render_documentos()`) no final do pipeline para as fases ativas.
 >   - `FALSE`: salta a renderização dos documentos Quarto (PDF/DOCX).
-> - Ambos podem também ser sobrepostos diretamente na chamada `run_pipeline(ano = 2026, meses = 7, render_docs = FALSE, run_fase2 = FALSE)`.
+> - Podem também ser sobrepostos diretamente na chamada `run_pipeline(ano = 2026, meses = 7, render_docs = FALSE, run_fase1 = FALSE, run_fase2 = TRUE)`.
 
 ## Passo 01 — Preparar dados (`01_preparar_dados.R`)
 

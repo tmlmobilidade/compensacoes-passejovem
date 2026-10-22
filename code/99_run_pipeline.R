@@ -61,10 +61,14 @@ source(file.path(code_dir, "10_documentos.R"),                     local = TRUE)
 #'                    Se NULL, detecta automaticamente os meses disponíveis em data/
 #' @param render_docs Lógico; se TRUE renderiza os documentos oficiais (PDF/Word).
 #'                    Por omissão usa RENDER_DOCS definido em 00_config.R.
-#' @param run_fase2   Lógico; se TRUE executa também a Fase 2 (scripts 04 e 05 +
+#' @param run_fase1   Lógico; se TRUE executa a Fase 1 (scripts 01 a 03 +
+#'                    documentos informacao1, oficio1, metodologia1). Por omissão
+#'                    usa RUN_FASE1 definido em 00_config.R.
+#' @param run_fase2   Lógico; se TRUE executa a Fase 2 (scripts 04 e 05 +
 #'                    documentos metodologia2, informacao2, oficio2). Por omissão
 #'                    usa RUN_FASE2 definido em 00_config.R.
-run_pipeline <- function(ano, meses = NULL, render_docs = RENDER_DOCS, run_fase2 = RUN_FASE2) {
+run_pipeline <- function(ano, meses = NULL, render_docs = RENDER_DOCS,
+                         run_fase1 = RUN_FASE1, run_fase2 = RUN_FASE2) {
   t0_pipe <- proc.time()
 
   raiz <- here_root()
@@ -94,10 +98,14 @@ run_pipeline <- function(ano, meses = NULL, render_docs = RENDER_DOCS, run_fase2
 
     # Correr os passos do pipeline; continuar para o próximo mês se houver erro
     tryCatch({
-      # Fase 1: apuramento mensal (IMT)
-      preparar_dados(ano, mes, raiz)
-      calcular_compensacoes(ano, mes, raiz)
-      exportar_reporte(ano, mes, raiz)
+      # Fase 1: apuramento mensal (IMT) (opcional via RUN_FASE1)
+      if (isTRUE(run_fase1)) {
+        preparar_dados(ano, mes, raiz)
+        calcular_compensacoes(ano, mes, raiz)
+        exportar_reporte(ano, mes, raiz)
+      } else {
+        message("[Fase 1] Ignorada (RUN_FASE1 = FALSE em 00_config.R)")
+      }
 
       # Fase 2: repartição pelos operadores e congelamento (opcional via RUN_FASE2)
       if (isTRUE(run_fase2)) {
@@ -108,7 +116,8 @@ run_pipeline <- function(ano, meses = NULL, render_docs = RENDER_DOCS, run_fase2
       }
 
       if (isTRUE(render_docs)) {
-        render_documentos(ano = ano, mes = mes, raiz = raiz, run_fase2 = run_fase2)
+        render_documentos(ano = ano, mes = mes, raiz = raiz,
+                          run_fase1 = run_fase1, run_fase2 = run_fase2)
       } else {
         message("[Documentos] Ignorados (RENDER_DOCS = FALSE em 00_config.R)")
       }
