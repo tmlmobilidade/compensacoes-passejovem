@@ -436,7 +436,7 @@ Renderiza os documentos Quarto em `output/docs/` usando os parâmetros de `code/
 
 `informacao2` e `oficio2` leem `passejovem_resumo.csv` e `passejovem_congelamento.csv` (param. `numero_informacao2` / `numero_oficio2` em `doc_params.R`) e falham se a Fase 2 ainda não foi corrida.
 
-Atualizar `doc_params.R` a cada mês antes de gerar os documentos.
+Atualizar `doc_params.R` a cada mês antes de gerar os documentos. Os números de referência dos documentos são lidos de `Compensacoes/lists/documents_nr.csv` (por `tipo`, `ano` e `mes`); se a linha do mês não existir, usam-se valores por omissão (`TML-XXXX-…`), por isso **atualizar esse ficheiro antes de gerar os documentos**.
 
 ## Checklist mensal
 
@@ -447,14 +447,14 @@ Atualizar `doc_params.R` a cada mês antes de gerar os documentos.
 3. Correr a Fase 1 (`RUN_FASE1 = TRUE`, `RUN_FASE2 = FALSE`).
 4. Rever `a_verificar.csv`, `age_nok.csv` e `documentos_estranhos_semNIF.csv`; adicionar correções/exceções e **voltar a correr**.
 5. Validar o reporte Excel e enviar ao IMT.
-6. Atualizar `doc_params.R` e gerar `informacao1` e `oficio1`.
+6. Atualizar as referências dos documentos (`numero_informacao1`, `numero_oficio1`) em `Compensacoes/lists/documents_nr.csv`, atualizar `doc_params.R` e gerar `informacao1` e `oficio1`.
 
 **Fase 2 — Repartição pelos operadores**
 
 7. Confirmar que o ficheiro de quotas do mês existe em `Compensacoes` (`1_quotas_<mes><aa>.csv`) e que `tat.csv`/`titulos.csv` estão atualizados.
 8. Correr a Fase 2 (`RUN_FASE1 = FALSE`, `RUN_FASE2 = TRUE`).
 9. Validar `passejovem_resumo.csv`, `passejovem_congelamento.csv` e o Anexo II (totais = compensação da Fase 1).
-10. Atualizar `doc_params.R` (`numero_informacao2`, `numero_oficio2`, pagamentos ETF) e gerar `metodologia2`, `informacao2` e `oficio2`.
+10. Atualizar as referências dos documentos (`numero_informacao2`, `numero_oficio2`) em `Compensacoes/lists/documents_nr.csv`, os pagamentos ETF em `doc_params.R`, e gerar `metodologia2`, `informacao2` e `oficio2`.
 
 **Fecho**
 
