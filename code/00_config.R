@@ -471,9 +471,9 @@ atualizar_compensacao_pj_anteriores <- function(ano, mes, raiz = here_root()) {
   comp_user    <- if (n_users > 0) comp_tot / n_users else 0
 
   if (file.exists(f_ant)) {
-    df_ant <- utils::read.csv2(f_ant, stringsAsFactors = FALSE, dec = ",")
+    df_ant <- utils::read.csv2(f_ant, stringsAsFactors = FALSE, dec = ",") |> as_tibble()
   } else {
-    df_ant <- data.frame(
+    df_ant <- tibble(
       ano                    = integer(),
       mes                    = integer(),
       registos_pj            = integer(),
@@ -482,37 +482,44 @@ atualizar_compensacao_pj_anteriores <- function(ano, mes, raiz = here_root()) {
       validacoes_pj          = integer(),
       validacoes_utilizador  = numeric(),
       compensacao_valor      = numeric(),
-      compensasao_utilizador = numeric(),
-      stringsAsFactors       = FALSE
+      compensasao_utilizador = numeric()
     )
   }
 
-  idx <- which(df_ant$ano == ano & df_ant$mes == mes)
-  if (length(idx) > 0) {
-    reg_val <- if (!is.na(n_registos)) n_registos else df_ant$registos_pj[idx]
-    df_ant$registos_pj[idx]              <- reg_val
-    df_ant$utilizadores_pj[idx]         <- n_users
-    df_ant$utilizadores_pj_semNIF[idx]  <- n_semnif
-    df_ant$validacoes_pj[idx]           <- n_vals
-    df_ant$validacoes_utilizador[idx]   <- round(v_user, 8)
-    df_ant$compensacao_valor[idx]       <- round(comp_tot, 2)
-    df_ant$compensasao_utilizador[idx]  <- round(comp_user, 8)
+  reg_ant <- df_ant |>
+    filter(ano == !!ano, mes == !!mes) |>
+    pull(registos_pj)
+
+  reg_val <- if (!is.na(n_registos)) {
+    as.integer(n_registos)
+  } else if (length(reg_ant) > 0) {
+    reg_ant[1]
+  } else {
+    NA_integer_
+  }
+
+  nova_linha <- tibble(
+    ano                    = as.integer(ano),
+    mes                    = as.integer(mes),
+    registos_pj            = reg_val,
+    utilizadores_pj        = as.integer(n_users),
+    utilizadores_pj_semNIF = as.integer(n_semnif),
+    validacoes_pj          = as.integer(n_vals),
+    validacoes_utilizador  = round(v_user, 8),
+    compensacao_valor      = round(comp_tot, 2),
+    compensasao_utilizador = round(comp_user, 8)
+  )
+
+  ja_existe <- any(df_ant$ano == ano & df_ant$mes == mes)
+
+  df_ant <- df_ant |>
+    filter(!(ano == !!ano & mes == !!mes)) |>
+    bind_rows(nova_linha) |>
+    arrange(ano, mes)
+
+  if (ja_existe) {
     message(sprintf("[00] Mes %d/%02d atualizado em compensacao_pj_anteriores.csv", ano, mes))
   } else {
-    nova_linha <- data.frame(
-      ano                    = as.integer(ano),
-      mes                    = as.integer(mes),
-      registos_pj            = as.integer(n_registos),
-      utilizadores_pj        = as.integer(n_users),
-      utilizadores_pj_semNIF = as.integer(n_semnif),
-      validacoes_pj          = as.integer(n_vals),
-      validacoes_utilizador  = round(v_user, 8),
-      compensacao_valor      = round(comp_tot, 2),
-      compensasao_utilizador = round(comp_user, 8),
-      stringsAsFactors       = FALSE
-    )
-    df_ant <- rbind(df_ant, nova_linha)
-    df_ant <- df_ant[order(df_ant$ano, df_ant$mes), ]
     message(sprintf("[00] Novo mes %d/%02d adicionado a compensacao_pj_anteriores.csv", ano, mes))
   }
 
