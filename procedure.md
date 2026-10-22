@@ -57,6 +57,31 @@ Deixaram de existir os Navegantes municipais sub18 e sub23, e o Navegante 12. No
 
 O fluxo foi totalmente migrado para R (sem recorrer a consulta das bases de dados Postgres/DBeaver). O processamento é local, via `data.table` (10 a 60 s por mês, ~450 000 registos).
 
+## Fases do processo
+
+O processo mensal tem duas fases, que podem ser corridas em separado (`RUN_FASE1` / `RUN_FASE2`):
+
+| Fase | Objetivo | Destinatário | Scripts | Documentos |
+| --- | --- | --- | --- | --- |
+| **Fase 1 — Apuramento** | Calcular a compensação mensal por titular (comNIF/semNIF) e reportar ao IMT | IMT | `01` a `03` | `informacao1`, `oficio1`, `metodologia1` |
+| **Fase 2 — Repartição** | Repartir a compensação pelos 11 operadores/autoridades e estimar o Congelamento Tarifário (TAT) | Operadores | `04` e `05` | `metodologia2` (Anexo I), `informacao2`, `oficio2`, Anexo II (Excel) |
+
+A Fase 2 depende de:
+
+- outputs da Fase 1 (`comNIF.csv` e `semNIF.csv`);
+- quotas mensais dos operadores, calculadas no repositório `Compensacoes` (`1_quotas_<mes><aa>.csv`). Só se corre quando estas já estão disponíveis.
+
+```mermaid
+flowchart LR
+    I[input/ ITS + Cascais + Azambuja] --> F1[Fase 1: 01 → 02 → 03]
+    F1 --> R[reporte_AML_IMT.xlsx + comNIF/semNIF.csv]
+    R --> D1[informacao1 + oficio1 + metodologia1]
+    R --> F2[Fase 2: 04 → 05]
+    Q[Compensacoes: quotas + titulos + tat] --> F2
+    F2 --> O[resumo.csv + congelamento.csv + AnexoII.xlsx]
+    O --> D2[metodologia2 + informacao2 + oficio2]
+```
+
 ## Estrutura de Pastas
 
 ```
@@ -73,8 +98,10 @@ PasseJovem/
 │   ├── doc_params.R                         # Parâmetros de emissão dos documentos
 │   ├── informacao1.qmd                      # Informação de serviço
 │   ├── oficio1.qmd                          # Ofício de envio ao IMT
-│   ├── metodologia1.qmd                     # Anexo - Nota Metodológica
-│   └── metodologia2.qmd                     # Anexo I - Nota Metodológica com repartição
+│   ├── metodologia1.qmd                     # Fase 1 — Anexo - Nota Metodológica
+│   ├── informacao2.qmd                      # Fase 2 — Informação de serviço (repartição)
+│   ├── oficio2.qmd                          # Fase 2 — Ofício aos operadores
+│   └── metodologia2.qmd                     # Fase 2 — Anexo I - Nota Metodológica com repartição
 └── data/
     ├── auxiliar/                            # Correções, exceções e histórico
     └── <ano>_<mm>_<mes>/
@@ -94,12 +121,16 @@ PasseJovem/
             ├── <ano>_<mm>_passejovem_resumo.csv
             ├── <ano>_<mm>_passejovem_congelamento.csv
             └── docs/
-                ├── <ano>_<mm>_AnexoI_metodologia.pdf
-                ├── <ano>_<mm>_AnexoII_reparticao.xlsx
-                ├── <ano>_<mm>_informacao1.pdf / .docx
-                └── <ano>_<mm>_oficio1.pdf / .docx
-                └── <ano>_<mm>_metodologia1.pdf
+                ├── <ano>_<mm>_informacao1.pdf / .docx       (Fase 1)
+                ├── <ano>_<mm>_oficio1.pdf / .docx           (Fase 1)
+                ├── <ano>_<mm>_metodologia1.pdf              (Fase 1)
+                ├── <ano>_<mm>_AnexoI_metodologia.pdf        (Fase 2)
+                ├── <ano>_<mm>_AnexoII_reparticao.xlsx       (Fase 2)
+                ├── <ano>_<mm>_informacao2.pdf / .docx       (Fase 2)
+                └── <ano>_<mm>_oficio2.pdf / .docx           (Fase 2)
 ```
+
+> Os CSV `compensacao_por_titulo`, `passejovem_resumo` e `passejovem_congelamento` são produzidos pela **Fase 2**; os restantes CSV/XLSX de `output/` pela **Fase 1**.
 
 ## Como Executar
 
@@ -125,6 +156,10 @@ run_pipeline(ano = 2026, meses = 7)
 >   - `TRUE`: executa `10_documentos.R` (`render_documentos()`) no final do pipeline para as fases ativas.
 >   - `FALSE`: salta a renderização dos documentos Quarto (PDF/DOCX).
 > - Podem também ser sobrepostos diretamente na chamada `run_pipeline(ano = 2026, meses = 7, render_docs = FALSE, run_fase1 = FALSE, run_fase2 = TRUE)`.
+
+# Fase 1 — Apuramento mensal (IMT)
+
+Passos `01`, `02` e `03`. Resultado: reporte Excel ao IMT, listas de controlo e documentos `informacao1`, `oficio1` e `metodologia1`.
 
 ## Passo 01 — Preparar dados (`01_preparar_dados.R`)
 
@@ -227,6 +262,12 @@ Copia o template oficial **v2** (`Exemplos/Template_PASSE GRATUITO JOVEM - REPOR
 - **Estimativa sem bilhética** (col. 10): fica a 0/vazia.
 - **RESUMO**: totais por emissor (`AT TML`, `AT CASCAIS`) e TOTAL em negrito, com separador de milhares e 2 casas decimais.
 - Atualiza automaticamente `data/auxiliar/compensacao_pj_anteriores.csv` (registos, utilizadores, utilizadores semNIF, validações, validações/utilizador, compensação total e por utilizador). Se o mês já existe, a linha é atualizada.
+
+---
+
+# Fase 2 — Repartição pelos operadores e congelamento tarifário
+
+Passos `04` e `05`. **Pré-requisitos:** Fase 1 concluída para o mês e ficheiro de quotas do mês disponível em `Compensacoes` (caminho configurável com a variável de ambiente `COMPENSACOES_ROOT`; as listas, se não existirem localmente, são lidas do GitHub). Resultado: `compensacao_por_titulo.csv`, `passejovem_resumo.csv`, `passejovem_congelamento.csv`, Anexo II (Excel) e documentos `metodologia2` (Anexo I), `informacao2` e `oficio2`.
 
 ## Passo 04 — Estimar compensação por operador e congelamento (`04_estimar_compensacao_operadores.R`)
 
@@ -375,18 +416,40 @@ Gera o ficheiro Excel formatado `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_An
 
 Renderiza os documentos Quarto em `output/docs/` usando os parâmetros de `code/doc_params.R` (mês, referências, datas de pagamentos ETF, autores, flags `RENDER_PDF` e `RENDER_DOCX`):
 
+**Fase 1** (`RUN_FASE1`):
+
 - `informacao1.qmd` → `<ano>_<mm>_informacao1.pdf` e `.docx`
 - `oficio1.qmd` → `<ano>_<mm>_oficio1.pdf` e `.docx`
-- `metodologia2.qmd` → `<ano>_<mm>_AnexoI_metodologia.pdf` (apenas PDF/Typst; `metodologia1.qmd` mantém-se como versão anterior, comentada no pipeline)
+- `metodologia1.qmd` → `<ano>_<mm>_metodologia1.pdf` (apenas PDF/Typst)
+
+**Fase 2** (`RUN_FASE2`):
+
+- `metodologia2.qmd` → `<ano>_<mm>_AnexoI_metodologia.pdf` (apenas PDF/Typst)
+- `informacao2.qmd` → `<ano>_<mm>_informacao2.pdf` e `.docx` (enquadramento, metodologia de repartição, apuramento, quotas, pagamento das compensações e do congelamento, proposta)
+- `oficio2.qmd` → `<ano>_<mm>_oficio2.pdf` e `.docx`
+
+`informacao2` e `oficio2` leem `passejovem_resumo.csv` e `passejovem_congelamento.csv` (param. `numero_informacao2` / `numero_oficio2` em `doc_params.R`) e falham se a Fase 2 ainda não foi corrida.
 
 Atualizar `doc_params.R` a cada mês antes de gerar os documentos.
 
 ## Checklist mensal
 
+**Fase 1 — Apuramento (IMT)**
+
 1. Criar `data/<ano>_<mm>_<mes>/input/` e colocar o XLSX ITS e o ficheiro Cascais.
 2. Atualizar `data/auxiliar/` se houver novas correções/exceções.
-3. Correr o pipeline.
+3. Correr a Fase 1 (`RUN_FASE1 = TRUE`, `RUN_FASE2 = FALSE`).
 4. Rever `a_verificar.csv`, `age_nok.csv` e `documentos_estranhos_semNIF.csv`; adicionar correções/exceções e **voltar a correr**.
 5. Validar o reporte Excel e enviar ao IMT.
-6. Atualizar `doc_params.R` e gerar a Informação.
-7. Commit e tag do mês.
+6. Atualizar `doc_params.R` e gerar `informacao1` e `oficio1`.
+
+**Fase 2 — Repartição pelos operadores**
+
+7. Confirmar que o ficheiro de quotas do mês existe em `Compensacoes` (`1_quotas_<mes><aa>.csv`) e que `tat.csv`/`titulos.csv` estão atualizados.
+8. Correr a Fase 2 (`RUN_FASE1 = FALSE`, `RUN_FASE2 = TRUE`).
+9. Validar `passejovem_resumo.csv`, `passejovem_congelamento.csv` e o Anexo II (totais = compensação da Fase 1).
+10. Atualizar `doc_params.R` (`numero_informacao2`, `numero_oficio2`, pagamentos ETF) e gerar `metodologia2`, `informacao2` e `oficio2`.
+
+**Fecho**
+
+11. Commit e tag do mês.
