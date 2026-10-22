@@ -20,7 +20,7 @@ O processo divide-se em duas fases:
 | **Fase 1 — Apuramento (IMT)** | Calcula a compensação mensal por titular e reporta ao IMT | `01`–`03` | Reporte AML/IMT, listas de controlo, `informacao1`, `oficio1`, `metodologia1` |
 | **Fase 2 — Repartição (operadores)** | Reparte a compensação pelos 11 operadores/autoridades segundo as quotas mensais e estima o Congelamento Tarifário (TAT) | `04`–`05` | `passejovem_resumo.csv`, `passejovem_congelamento.csv`, Anexo II (xlsx), Anexo I (`metodologia2`), `informacao2`, `oficio2` |
 
-A Fase 2 só se corre depois da Fase 1 e quando as **quotas mensais** estão disponíveis no repositório `Compensacoes` (`C:/Repos/Compensacoes`, ou outro caminho via variável de ambiente `COMPENSACOES_ROOT`).
+A Fase 2 só se corre depois da Fase 1 e quando as **quotas mensais** estão disponíveis no repositório `Compensacoes` (repositório [`compensacoes-navegante`](https://github.com/tmlmobilidade/compensacoes-navegante), por omissão clonado em `../Compensacoes/`; outro caminho via variável de ambiente `COMPENSACOES_ROOT`).
 
 > [!NOTE]
 > Nesta versão, só são suportados os meses **a partir de julho de 2026** (formato XLSX com `doc_type`/`doc_number` e template v2). Os meses anteriores (maio, junho) tinham requisitos diferentes e já não são mantidos.

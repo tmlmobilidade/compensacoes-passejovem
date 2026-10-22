@@ -269,9 +269,15 @@ Copia o template oficial **v2** (`Exemplos/Template_PASSE GRATUITO JOVEM - REPOR
 
 Passos `04` e `05`. **Pré-requisitos:** Fase 1 concluída para o mês e ficheiro de quotas do mês disponível em `Compensacoes` (caminho configurável com a variável de ambiente `COMPENSACOES_ROOT`; as listas, se não existirem localmente, são lidas do GitHub). Resultado: `compensacao_por_titulo.csv`, `passejovem_resumo.csv`, `passejovem_congelamento.csv`, Anexo II (Excel) e documentos `metodologia2` (Anexo I), `informacao2` e `oficio2`.
 
+Ordem de execução:
+
+1. **Passo 04** — calcula a repartição e o congelamento (3 CSV em `output/`);
+2. **Passo 05** — lê o `passejovem_resumo.csv` do Passo 04 e gera o Anexo II em `output/docs/`;
+3. **Documentos** — `metodologia2`, `informacao2` e `oficio2` (ver secção *Documentos*).
+
 ## Passo 04 — Estimar compensação por operador e congelamento (`04_estimar_compensacao_operadores.R`)
 
-Estima a repartição mensal das compensações Passe Jovem pelos **11 operadores** (`CP`, `FT`, `TT`, `SL`, `ML`, `MTS`, `Carris`, `TCB`, `AT Cascais`, `AT TML - CM`, `BT Oeste`) e o respetivo **Congelamento Tarifário (TAT)**, cruzando os outputs do Passo 02 com as listas e quotas do repositório `Compensacoes` (`C:/Repos/Compensacoes`).
+Estima a repartição mensal das compensações Passe Jovem pelos **11 operadores** (`CP`, `FT`, `TT`, `SL`, `ML`, `MTS`, `Carris`, `TCB`, `AT Cascais`, `AT TML - CM`, `BT Oeste`) e o respetivo **Congelamento Tarifário (TAT)**, cruzando os outputs do Passo 02 com as listas e quotas do repositório `Compensacoes` (repositório `compensacoes-navegante`, por omissão em `../Compensacoes/`).
 
 ### 1. Agregação por título e código de bilhete (`nome_dist`, `ticket_code`)
 
