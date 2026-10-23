@@ -79,51 +79,24 @@ if (!file.exists(f_res) || !file.exists(f_cong)) {
 dt_resumo <- fread(f_res, sep = ";", dec = ",", encoding = "UTF-8")
 dt_cong   <- fread(f_cong, sep = ";", dec = ",", encoding = "UTF-8")
 
-# Operadores na ordem oficial
+# Totais por operador (com TT e SL agregados em "TT SL")
 ops <- names(OPERADORES_RESUMO)
 
-# Totais de compensação Passe Jovem por operador e global (arredondados a 2 c.d.)
-comp_ops   <- vapply(ops, function(op) round(sum(dt_resumo[[op]], na.rm = TRUE), 2), numeric(1))
+comp_ops <- dt_resumo |>
+  summarise(across(all_of(ops), ~ round(sum(.x, na.rm = TRUE), 2))) |>
+  mutate(`TT SL` = round(TT + SL, 2), .after = FT) |>
+  select(-TT, -SL) |>
+  unlist()
+
+cong_ops <- dt_cong |>
+  filter(linha == "Congelamento TOTAL") |>
+  select(all_of(ops)) |>
+  mutate(`TT SL` = round(TT + SL, 2), .after = FT) |>
+  select(-TT, -SL) |>
+  unlist()
+
 comp_total <- round(sum(comp_ops), 2)
-
-# Totais de compensação por congelamento tarifário por operador e global
-row_cong_tot <- dt_cong[linha == "Congelamento TOTAL"]
-if (nrow(row_cong_tot) > 0) {
-  cong_ops   <- vapply(ops, function(op) round(as.numeric(row_cong_tot[[op]][1]), 2), numeric(1))
-  cong_total <- round(as.numeric(row_cong_tot$compensacao_total[1]), 2)
-} else {
-  cong_ops   <- vapply(ops, function(op) round(sum(dt_cong[[op]], na.rm = TRUE), 2), numeric(1))
-  cong_total <- round(sum(cong_ops), 2)
-}
-
-# Valores individuais por operador para a secção Proposta (TT + SL somados)
-comp_cp      <- unname(comp_ops["CP"])
-comp_ft      <- unname(comp_ops["FT"])
-comp_ttsl    <- round(unname(comp_ops["TT"] + comp_ops["SL"]), 2)
-comp_ml      <- unname(comp_ops["ML"])
-comp_mts     <- unname(comp_ops["MTS"])
-comp_ca      <- unname(comp_ops["Carris"])
-comp_tcb     <- unname(comp_ops["TCB"])
-comp_cascais <- unname(comp_ops["AT Cascais"])
-comp_cm      <- unname(comp_ops["AT TML - CM"])
-comp_bt      <- unname(comp_ops["BT Oeste"])
-
-cong_cp      <- unname(cong_ops["CP"])
-cong_ft      <- unname(cong_ops["FT"])
-cong_ttsl    <- round(unname(cong_ops["TT"] + cong_ops["SL"]), 2)
-cong_ml      <- unname(cong_ops["ML"])
-cong_mts     <- unname(cong_ops["MTS"])
-cong_ca      <- unname(cong_ops["Carris"])
-cong_tcb     <- unname(cong_ops["TCB"])
-cong_cascais <- unname(cong_ops["AT Cascais"])
-cong_cm      <- unname(cong_ops["AT TML - CM"])
-cong_bt      <- unname(cong_ops["BT Oeste"])
-
-# Vetores para as tabelas (com TT e SL agregados em "TT SL")
-ops_tab <- c("CP", "FT", "TT SL", "ML", "MTS", "Carris", "TCB", "AT Cascais", "AT TML - CM", "BT Oeste")
-comp_ops_tab <- c(comp_cp, comp_ft, comp_ttsl, comp_ml, comp_mts, comp_ca, comp_tcb, comp_cascais, comp_cm, comp_bt)
-cong_ops_tab <- c(cong_cp, cong_ft, cong_ttsl, cong_ml, cong_mts, cong_ca, cong_tcb, cong_cascais, cong_cm, cong_bt)
-
+cong_total <- round(sum(cong_ops), 2)
 ```
 
 ::: {.content-visible when-format="docx"}
@@ -191,48 +164,48 @@ Nessa sequência, vimos por este meio informar que a TML, tendo em conta: (i) o 
 
 1)	Os valores de pagamentos das compensações financeiras pela disponibilização dos passes gratuitos para Jovens, relativos ao mês de `r mes_nome` de `r ANO`, num total de **`r fmt_eur(comp_total)`** (`r numero_por_extenso(comp_total)`) e que se distribui pelos operadores/autoridades de transporte conforme @tbl-1:
 
-    - **CP - Comboios de Portugal, E.P.E.**: **`r fmt_eur(comp_cp)`** (`r numero_por_extenso(comp_cp)`);
+    - **CP - Comboios de Portugal, E.P.E.**: **`r fmt_eur(comp_ops["CP"])`** (`r numero_por_extenso(comp_ops["CP"])`);
 
-    - **Fertagus - Travessia do Tejo, Transportes S.A.**: **`r fmt_eur(comp_ft)`** (`r numero_por_extenso(comp_ft)`);
+    - **Fertagus - Travessia do Tejo, Transportes S.A.**: **`r fmt_eur(comp_ops["FT"])`** (`r numero_por_extenso(comp_ops["FT"])`);
 
-    - **TTSL - Transtejo Soflusa, S.A.**: **`r fmt_eur(comp_ttsl)`** (`r numero_por_extenso(comp_ttsl)`);
+    - **TTSL - Transtejo Soflusa, S.A.**: **`r fmt_eur(comp_ops["TT SL"])`** (`r numero_por_extenso(comp_ops["TT SL"])`);
 
-    - **Metropolitano de Lisboa, E.P.E.**: **`r fmt_eur(comp_ml)`** (`r numero_por_extenso(comp_ml)`);
+    - **Metropolitano de Lisboa, E.P.E.**: **`r fmt_eur(comp_ops["ML"])`** (`r numero_por_extenso(comp_ops["ML"])`);
 
-    - **MTS - Metro Transportes do Sul, S.A.**: **`r fmt_eur(comp_mts)`** (`r numero_por_extenso(comp_mts)`);
+    - **MTS - Metro Transportes do Sul, S.A.**: **`r fmt_eur(comp_ops["MTS"])`** (`r numero_por_extenso(comp_ops["MTS"])`);
 
-    - **Carris - Companhia Carris de Ferro de Lisboa, E.M. S.A.**: **`r fmt_eur(comp_ca)`** (`r numero_por_extenso(comp_ca)`);
+    - **Carris - Companhia Carris de Ferro de Lisboa, E.M. S.A.**: **`r fmt_eur(comp_ops["Carris"])`** (`r numero_por_extenso(comp_ops["Carris"])`);
 
-    - **Serviços Municipalizados de Transportes Coletivos do Barreiro**: **`r fmt_eur(comp_tcb)`** (`r numero_por_extenso(comp_tcb)`);
+    - **Serviços Municipalizados de Transportes Coletivos do Barreiro**: **`r fmt_eur(comp_ops["TCB"])`** (`r numero_por_extenso(comp_ops["TCB"])`);
 
-    - **AT Cascais – Contrato e Operador interno**: **`r fmt_eur(comp_cascais)`** (`r numero_por_extenso(comp_cascais)`);
+    - **AT Cascais – Contrato e Operador interno**: **`r fmt_eur(comp_ops["AT Cascais"])`** (`r numero_por_extenso(comp_ops["AT Cascais"])`);
 
-    - **Transportes Metropolitanos de Lisboa, E.M.T., S.A. - Contratos Carris Metropolitana Áreas 1, 2, 3 e 4**: **`r fmt_eur(comp_cm)`** (`r numero_por_extenso(comp_cm)`);
+    - **Transportes Metropolitanos de Lisboa, E.M.T., S.A. - Contratos Carris Metropolitana Áreas 1, 2, 3 e 4**: **`r fmt_eur(comp_ops["AT TML - CM"])`** (`r numero_por_extenso(comp_ops["AT TML - CM"])`);
 
-    - **Barraqueiro Transportes, S.A.**: **`r fmt_eur(comp_bt)`** (`r numero_por_extenso(comp_bt)`).
+    - **Barraqueiro Transportes, S.A.**: **`r fmt_eur(comp_ops["BT Oeste"])`** (`r numero_por_extenso(comp_ops["BT Oeste"])`).
 
 
 1)	Os valores de pagamentos das compensações financeiras pelo congelamento do preço de referência dos passes gratuitos para Jovens, relativos ao mês de `r mes_nome` de `r ANO`, num total de **`r fmt_eur(cong_total)`** (`r numero_por_extenso(cong_total)`) e que se distribui pelos operadores/autoridades de transporte conforme @tbl-2:
 
-    - **CP - Comboios de Portugal, E.P.E.**: **`r fmt_eur(cong_cp)`** (`r numero_por_extenso(cong_cp)`);
+    - **CP - Comboios de Portugal, E.P.E.**: **`r fmt_eur(cong_ops["CP"])`** (`r numero_por_extenso(cong_ops["CP"])`);
 
-    - **Fertagus - Travessia do Tejo, Transportes S.A.**: **`r fmt_eur(cong_ft)`** (`r numero_por_extenso(cong_ft)`);
+    - **Fertagus - Travessia do Tejo, Transportes S.A.**: **`r fmt_eur(cong_ops["FT"])`** (`r numero_por_extenso(cong_ops["FT"])`);
 
-    - **TTSL - Transtejo Soflusa, S.A.**: **`r fmt_eur(cong_ttsl)`** (`r numero_por_extenso(cong_ttsl)`);
+    - **TTSL - Transtejo Soflusa, S.A.**: **`r fmt_eur(cong_ops["TT SL"])`** (`r numero_por_extenso(cong_ops["TT SL"])`);
 
-    - **Metropolitano de Lisboa, E.P.E.**: **`r fmt_eur(cong_ml)`** (`r numero_por_extenso(cong_ml)`);
+    - **Metropolitano de Lisboa, E.P.E.**: **`r fmt_eur(cong_ops["ML"])`** (`r numero_por_extenso(cong_ops["ML"])`);
 
-    - **MTS - Metro Transportes do Sul, S.A.**: **`r fmt_eur(cong_mts)`** (`r numero_por_extenso(cong_mts)`);
+    - **MTS - Metro Transportes do Sul, S.A.**: **`r fmt_eur(cong_ops["MTS"])`** (`r numero_por_extenso(cong_ops["MTS"])`);
 
-    - **Carris - Companhia Carris de Ferro de Lisboa, E.M. S.A.**: **`r fmt_eur(cong_ca)`** (`r numero_por_extenso(cong_ca)`);
+    - **Carris - Companhia Carris de Ferro de Lisboa, E.M. S.A.**: **`r fmt_eur(cong_ops["Carris"])`** (`r numero_por_extenso(cong_ops["Carris"])`);
 
-    - **Serviços Municipalizados de Transportes Coletivos do Barreiro**: **`r fmt_eur(cong_tcb)`** (`r numero_por_extenso(cong_tcb)`);
+    - **Serviços Municipalizados de Transportes Coletivos do Barreiro**: **`r fmt_eur(cong_ops["TCB"])`** (`r numero_por_extenso(cong_ops["TCB"])`);
 
-    - **AT Cascais – Contrato e Operador interno**: **`r fmt_eur(cong_cascais)`** (`r numero_por_extenso(cong_cascais)`);
+    - **AT Cascais – Contrato e Operador interno**: **`r fmt_eur(cong_ops["AT Cascais"])`** (`r numero_por_extenso(cong_ops["AT Cascais"])`);
 
-    - **Transportes Metropolitanos de Lisboa, E.M.T., S.A. - Contratos Carris Metropolitana Áreas 1, 2, 3 e 4**: **`r fmt_eur(cong_cm)`** (`r numero_por_extenso(cong_cm)`);
+    - **Transportes Metropolitanos de Lisboa, E.M.T., S.A. - Contratos Carris Metropolitana Áreas 1, 2, 3 e 4**: **`r fmt_eur(cong_ops["AT TML - CM"])`** (`r numero_por_extenso(cong_ops["AT TML - CM"])`);
 
-    - **Barraqueiro Transportes, S.A.**: **`r fmt_eur(cong_bt)`** (`r numero_por_extenso(cong_bt)`).
+    - **Barraqueiro Transportes, S.A.**: **`r fmt_eur(cong_ops["BT Oeste"])`** (`r numero_por_extenso(cong_ops["BT Oeste"])`).
 
 Juntam-se, em anexo, um documento explicativo da metodologia de apuramento (`r output_filename(ANO, MES, "AnexoI_metodologia", "pdf")`) e um ficheiro com o detalhe do cálculo (`r output_filename(ANO, MES, "AnexoII_reparticao", "xlsx")`).
 
@@ -269,8 +242,8 @@ Com os melhores cumprimentos,
 col_comp_nm <- paste0("Compensação Passe Jovem (€)\n", mes_nome, "/", ANO)
 
 t1_display <- data.frame(
-  operador = c(ops_tab, "TOTAL"),
-  valor    = fmt_eur(c(comp_ops_tab, comp_total)),
+  operador = c(names(comp_ops), "TOTAL"),
+  valor    = fmt_eur(c(comp_ops, comp_total)),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
@@ -293,8 +266,8 @@ tml_table(
 col_cong_nm <- paste0("Compensação por \nCongelamento Tarifário (€)\n", mes_nome, "/", ANO)
 
 t2_display <- data.frame(
-  operador = c(ops_tab, "TOTAL"),
-  valor    = fmt_eur(c(cong_ops_tab, cong_total)),
+  operador = c(names(cong_ops), "TOTAL"),
+  valor    = fmt_eur(c(cong_ops, cong_total)),
   check.names = FALSE,
   stringsAsFactors = FALSE
 )
