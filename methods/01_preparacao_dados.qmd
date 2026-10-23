@@ -1,0 +1,88 @@
+# Preparação, Combinação e Limpeza de Dados
+
+O primeiro passo da **Fase 1** consiste na leitura, harmonização e limpeza dos ficheiros mensais de validações provenientes do sistema de bilhética metropolitana (DITS) e da Autoridade de Transportes de Cascais, bem como na aplicação de listas históricas de repescagem e correção "manual" de registos.
+
+---
+
+## Fontes de Dados de Entrada
+
+Para cada mês de apuramento, os ficheiros de entrada são colocados na pasta `data/<ano>_<mm>_<mes>/input/` (ex.: `data/2026_07_julho/input/`) (_gitignored_):
+
+1. **Ficheiro Principal de Validações Passe Jovem (`*PasseJovem*.xlsx`)**:
+   * Fornecido pelo Departamento ITS;
+   * A **1.ª folha** contém os registos de validações por cartão e título com as colunas: `YEAR_DIST`, `MONTH_DIST`, `CARD_SERIAL_NUMBER`, `AGE`, `FISCAL_NUMBER`, `TICKET_OPERATOR_CODE`, `TICKET_CODE`, `TICKET_NAME`, `PRICE`, `PRICE_TICKET_BASE`, `COUNT_VAL`, `BIRTH_DATE`, `ID_DOC_NUMBER` e `ID_DOC_NUMBER_DESC`;
+   * Na leitura (`read_passe_jovem()` em [`code/00_config.R`](../code/00_config.R)), todos os nomes de colunas são convertidos para minúsculas e as colunas de documento de identificação são renomeadas para `doc_number` (`id_doc_number`) e `doc_type` (`id_doc_number_desc`).
+
+2. **Ficheiro Viver Cascais (`TML_<mes><ano>.xlsx`)**:
+   * Enviado mensalmente pela Autoridade de Transportes de Cascais com as validações dos títulos *Viver Cascais Residente* e *Viver Cascais Estudante* em jovens elegíveis;
+   * Como o ficheiro original vem com o preço base a zero, a função `read_cascais()` fixa automaticamente:
+     * `ticket_operator_code = 21L` (AT Cascais);
+     * `price = 0` (gratuito);
+     * `price_ticket_base = 20` (`PRECO_CASCAIS`).
+
+3. **Complemento CP Azambuja (`*Complemento_Azambuja*` ou 2.ª folha do XLSX principal)**:
+   * Contém as validações efetuadas no Complemento CP Azambuja-Carregado (`YEAR_DIST`, `MONTH_DIST`, `CARD_SERIAL_NUMBER`, `FISCAL_NUMBER`, `TICKET_CODE`, `COUNT_VAL`);
+   * Se não existir um ficheiro CSV autónomo na pasta `input/`, o script procura automaticamente uma folha cujo nome contenha `"Azambuja"` dentro do ficheiro Excel principal `*PasseJovem*.xlsx` (`read_complemento_azambuja_xlsx()`).
+
+::: {.callout-important}
+## Unicidade de Ficheiros em `input/`
+Se existir mais do que um ficheiro contendo `PasseJovem` ou `TML_` na pasta `input/` do mês, o pipeline seleciona apenas o primeiro e emite um aviso (`warning`). Deve manter-se **apenas um ficheiro de cada tipo** por pasta mensal.
+:::
+
+---
+
+## Sequência de Tratamento e Limpeza
+
+O script [`code/01_preparar_dados.R`](../code/01_preparar_dados.R) executa sequencialmente as seguintes operações sobre os dados combinados (`dt_main = bind_rows(dt_pj, dt_casc)`):
+
+### Normalização e Repescagem de NIFs (`nif_repescagem2024.csv`)
+
+* **Normalização inicial** (`normalizar_nif()`): valores vazios `""`, `"0"` ou `"NA"` no campo `fiscal_number` são convertidos para `NA_character_`.
+* **Repescagem de NIFs em falta**: no âmbito de auditorias e pedidos de esclarecimento anteriores, foi constituída uma base de correspondência entre números de série de cartões e NIFs (`data/auxiliar/nif_repescagem2024.csv`), que é usada para colmatar NIFs em falta.
+* O pipeline cruza todos os registos por `card_serial_number` e preenche o `fiscal_number` **apenas onde este se encontra ausente (`NA`)**, preservando sempre o NIF original quando já existe (`coalesce(fiscal_number, fiscal_number_rep)`).
+* A mesma regra de repescagem é aplicada à tabela do **Complemento Azambuja** (`dt_az`).
+
+### Exclusão de Títulos Não Elegíveis (`LX-BT`)
+
+* Os bilhetes combinados inter-regionais exclusivos com designação iniciada por `"LX-BT"` (`remove_lxbt()`) não são elegíveis para compensação ao abrigo deste procedimento e são removidos de `dt_main`.
+* Os registos `LX-BT` removidos são guardados em memória (`lxbt_removidos` em `contagens_01.rds`) para contabilizar, nos relatórios oficiais, quantos utilizadores adquiriram simultaneamente passes `LX-BT` (CIM Oeste) e passes Navegante com o mesmo NIF.
+
+### Conversão de Validações por "Perfil de Criança"
+
+Em alguns operadores, mesmo quando o jovem é titular de um passe gratuito, o validador dá prioridade à validação pelo **perfil de criança** (< 12 anos) do cartão de suporte, gerando nos dados do ITS uma linha sem operador nem código de título (`is.na(ticket_operator_code) & is.na(ticket_code)`).
+
+Uma vez que as condições de acesso ao perfil criança são idênticas às do título *Navegante 12*, estes registos são reclassificados como:
+
+* `ticket_operator_code = 31L` (AT TML);
+* `ticket_code = 1020L`;
+* `ticket_name = "Navegante 12"`;
+* `price = 0` e `price_ticket_base = 40`.
+
+### Aplicação de Correções Manuais (`data/auxiliar/`)
+
+Para corrigir erros persistentes na ficha de cliente exportada pelo sistema ITS (datas de nascimento mal digitadas ou NIFs incorretos validados junto do Departamento de Clientes), aplicam-se duas tabelas de correção por `card_serial_number`:
+
+1. **`data_nascimento_correct.csv`**: substitui `birth_date` pela data validada `dn_corrigida`;
+2. **`nif_correct.csv`**: substitui `fiscal_number` e/ou `birth_date` pelos valores corrigidos.
+
+### Recálculo da Idade e Tratamento de Casos-Limite
+
+Após a aplicação das correções de data de nascimento, a coluna `age` original do ITS pode estar desatualizada. O pipeline recalcula a idade para todos os registos com `birth_date` preenchida, tomando como referência o **dia 1 do mês de apuramento** ($t_{\text{ref}} = \text{ANO-MES-01}$):
+
+$$\text{age} = \left\lfloor \frac{t_{\text{ref}} - \text{birth\_date}}{365{,}25} \right\rfloor$$
+
+Em seguida, corrige dois **casos-limite** decorrentes do facto de a elegibilidade mensal considerar o mês de aniversário (ignorando o dia específico do mês):
+
+* **Limite superior (`age == 25`)**: se o jovem aparece com 25 anos mas nasceu no próprio mês de referência ($\text{month}(\text{birth\_date}) = \text{MES}$), ainda tinha 24 anos em parte do mês $\longrightarrow$ corrige para `age = 24L`;
+* **Limite inferior (`age == 3`)**: se a criança aparece com 3 anos mas nasceu no mês de referência ($\text{month}(\text{birth\_date}) = \text{MES}$), completa 4 anos nesse mês $\longrightarrow$ corrige para `age = 4L`.
+
+---
+
+### Script: `01_preparar_dados.R` {.unnumbered}
+
+A função `preparar_dados(ano, mes, raiz)` executa todo o fluxo descrito acima e grava os ficheiros intermédios na pasta `data/<ano>_<mm>_<mes>/output/`:
+
+* `<ano>_<mm>_limpos_preagregacao.csv`: tabela completa limpa e corrigida, pronta para a agregação por titular;
+* `<ano>_<mm>_complemento_azambuja.csv`: registos normalizados do Complemento CP Azambuja (quando aplicável);
+* `<ano>_<mm>_contagens_01.rds`: objeto R com metadados de auditoria (`n_brutos`, `n_cascais_registos` e `lxbt_removidos`) utilizado pelo histórico e pelos relatórios Quarto.
+

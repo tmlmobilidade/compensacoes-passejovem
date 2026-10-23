@@ -1,0 +1,175 @@
+# Introdução e Visão Geral {.unnumbered}
+
+Este manual documenta o procedimento metodológico e operacional gerido pela **TML — Transportes Metropolitanos de Lisboa** para o **apuramento mensal das compensações financeiras pela disponibilização dos passes gratuitos para jovens** (a reportar ao **IMT, I. P.**) e para a subsequente **repartição dessas compensações e do congelamento tarifário (TAT)** pelos operadores e autoridades de transportes da Área Metropolitana de Lisboa (AML).
+
+O modelo implementado em **R** reproduz as regras estipuladas na Portaria n.º 7-A/2024 [-@Portaria7A2024], com as alterações introduzidas pela Portaria n.º 307-A/2024/1 [-@Portaria307A2024] e pela Portaria n.º 287/2026/1 [-@Portaria287_2026], bem como os critérios de repartição estabelecidos no Regulamento da AML n.º 278-A/2019 [-@Regulamento278A2019], na redação conferida pelo Regulamento n.º 1362-C/2023 [-@Regulamento1362C2023].
+
+---
+
+## Enquadramento Regulamentar
+
+### Regras de Elegibilidade
+
+De acordo com a legislação aplicável, são abrangidos pelo regime de gratuitidade:
+
+* **Jovens até aos 23 anos (inclusive)**, identificados com Número de Identificação Fiscal (NIF) e data de nascimento;
+* **Exceção até aos 24 anos (inclusive)** para estudantes inscritos nos ciclos de estudos de *Arquitetura e Urbanismo*, *Ciências Farmacêuticas*, *Medicina*, *Medicina Dentária* e *Medicina Veterinária*, mediante entrega de comprovativo de matrícula da instituição de ensino superior;
+* **Unicidade de benefício**: cada jovem não pode usufruir de mais do que um passe gratuito a nível nacional (ex.: acumular Navegante na AML e Andante na AMP), sendo essa verificação assegurada pelo IMT após cruzamento das listagens de NIF submetidas pelas Autoridades de Transportes;
+* **Liberdade de escolha geográfica**: não é obrigatório adquirir o passe correspondente à área de residência, podendo igualmente adquirir complementos de passe inter-regional quando aplicável (ex.: Complemento Carris Metropolitana / CIM Oeste);
+* **Validade ativa**: o título ou perfil associado ao cartão de suporte tem de se encontrar dentro do prazo de validade e ter registado pelo menos uma validação no mês de referência.
+
+### Regra de Compensação Financeira (Artigo 7.º)
+
+O valor da compensação mensal por cada passe gratuito para jovens com registo de validações é determinado em função da tarifa de venda ao público do título de referência ($\text{Preço}_{\text{base}}$) e do número de validações efetuadas no mês ($n_{\text{val}}$):
+
+* **a) Nas Áreas Metropolitanas (AM)** — regra aplicável à AML (`THRESHOLD_VAL = 20`, `PCT_VAL = 0.05`):
+  * i) Cada validação corresponde a **$5\%$ do valor do título de referência**, pagando-se esse valor multiplicado pelo número de validações realizadas até se atingir **20 validações**:
+    $$\text{Compensação} = 0{,}05 \times \text{Preço}_{\text{base}} \times n_{\text{val}}, \quad \text{se } 1 \le n_{\text{val}} < 20$$
+  * ii) Atingidas **20 validações, inclusive**, é pago o valor do título de referência por inteiro:
+    $$\text{Compensação} = \text{Preço}_{\text{base}}, \quad \text{se } n_{\text{val}} \ge 20$$
+* **b) Nas Comunidades Intermunicipais (CIM)**: cada validação corresponde a $10\%$ do valor do título de referência até 10 validações (atingidas 10 validações, é pago o título por inteiro);
+* **c) Sem validações**: os passes que não registem qualquer validação no mês ($n_{\text{val}} = 0$) não conferem direito a compensação.
+
+### Títulos Elegíveis e Preços de Referência
+
+Embora a oferta tarifária jovem atual se concentre nos títulos **Navegante Metropolitano sub18+TP** e **Navegante Metropolitano sub23+TP** (tendo deixado de existir os passes municipais sub18/sub23 e o Navegante 12 autónomo), subsistem em utilização títulos de validade superior à mensal (como o *Navegante 12* e os passes *Viver Cascais*) e carregamentos residuais das modalidades *4_18* e *sub23* em máquinas automáticas ou cartões de substituição.
+
+A tabela seguinte sintetiza os títulos de referência e os respetivos preços base (`NOME_IMT` em [`code/00_config.R`](../code/00_config.R)):
+
+| Preço Base (`price_ticket_base_new`) | Designação IMT (`nome_imt`) | Âmbito / Notas |
+| :---: | :--- | :--- |
+| **$60{,}00\text{ €}$** | `Navegante Metropolitano + Complemento` | Navegante Metropolitano ($40\text{ €}$) + Complemento Inter-regional CM ($20\text{ €}$) |
+| **$50{,}00\text{ €}$** | `Navegante Municipal + Complemento` | Navegante Municipal ($30\text{ €}$) + Complemento Inter-regional CM ($20\text{ €}$) |
+| **$40{,}00\text{ €}$** | `Navegante Metropolitano` | Inclui Sub18+TP, Sub23+TP, 4_18, Sub23, Navegante 12 e Complemento CP Azambuja |
+| **$30{,}00\text{ €}$** | `Navegante Lisboa` | Títulos de âmbito municipal ($30\text{ €}$) |
+| **$20{,}00\text{ €}$** | `Viver Cascais` | Viver Cascais Residente / Estudante (`PRECO_CASCAIS = 20`) |
+| **$16{,}75\text{ €}$** | `MTS Passe` | Passe próprio MTS |
+
+::: {.callout-note}
+## Âmbito Temporal do Pipeline
+O procedimento documentado neste livro aplica-se aos meses **a partir de julho de 2026** (inclusive), tirando partido do formato de entrada em Excel (`.xlsx`) com identificação documental (`ID_DOC_NUMBER` / `ID_DOC_NUMBER_DESC`) e do **Template Oficial IMT v2**. O processamento corre integralmente em R via `data.table` e `dplyr` (10 a 60 segundos por mês para ~450 000 registos), sem dependência de bases de dados externas (PostgreSQL/DBeaver).
+:::
+
+---
+
+## Arquitetura em Duas Fases
+
+O procedimento mensal encontra-se estruturado em **duas fases sequenciais**, que podem ser executadas de forma conjunta ou independente através das flags `RUN_FASE1` e `RUN_FASE2` em [`code/00_config.R`](../code/00_config.R):
+
+1. **Fase 1 — Apuramento Mensal (IMT)**:
+   * Processa os ficheiros de validações do DITS/ITS, da AT Cascais e do Complemento CP Azambuja;
+   * Aplica limpezas, repescagem de NIFs e correções manuais, agrega as validações por titular (`comNIF` e `semNIF`) e calcula a compensação individual;
+   * Exporta as listas de auditoria/verificação, preenche o **Reporte Oficial Excel v2** para o IMT e gera os documentos da 1.ª fase (`informacao1`, `oficio1` e `metodologia1`).
+
+2. **Fase 2 — Repartição pelos Operadores e Congelamento Tarifário**:
+   * Executada após a conclusão da Fase 1 e assim que o ficheiro mensal de quotas dinâmicas (`1_quotas_<mes><aa>.csv`) se encontra apurado no repositório [`Compensacoes`](https://github.com/tmlmobilidade/compensacoes-navegante);
+   * Decompõe a compensação por título nas três componentes (**Passes Navegante**, **Complemento CM** e **Viver Cascais**), reparte a componente Navegante pelos **11 operadores/autoridades** e estima o **Congelamento Tarifário (TAT)**;
+   * Gera o livro Excel oficial **Anexo II de Repartição** (com fórmulas dinâmicas) e compila os documentos da 2.ª fase (`metodologia2` / Anexo I, `informacao2` e `oficio2`).
+
+---
+
+## Fluxograma Metodológico
+
+O diagrama seguinte ilustra o fluxo completo de dados e scripts em R, desde as fontes primárias até aos relatórios finais das Fases 1 e 2:
+
+```{mermaid}
+---
+config:
+  flowchart:
+    curve: basis
+    nodeSpacing: 40
+    rankSpacing: 50
+---
+flowchart TD
+    %% -------------------------------------------------------------------------
+    %% 1. FONTES DE DADOS E ENTRADAS
+    %% -------------------------------------------------------------------------
+    subgraph IN["1. Fontes de Dados e Tabelas Auxiliares"]
+        direction TB
+        IN_ITS("**Validações Limpas ITS (.xlsx)**<br/>- Folha 1: Validações Passe Jovem<br/>- Folha 2: Complemento CP Azambuja")
+        IN_CASCAIS("**Viver Cascais (TML_*.xlsx)**<br/>- Registos AT Cascais (operador 21)")
+        IN_AUX("**Tabelas Auxiliares (data/auxiliar/)**<br/>- Repescagem de NIF (2024)<br/>- Correções de NIF e Data de Nascimento<br/>- Exceções de Documentos (id_exception)")
+        IN_COMP("**Repositório Compensacoes**<br/>- Quotas dinâmicas (1_quotas_{mes}{aa}.csv)<br/>- Catálogo titulos.csv e taxas tat.csv<br/>- Números de documento (documents_nr.csv)")
+    end
+
+    %% -------------------------------------------------------------------------
+    %% 2. FASE 1 - APURAMENTO MENSAL (IMT)
+    %% -------------------------------------------------------------------------
+    subgraph FASE1["2. Fase 1 — Apuramento Mensal (IMT)"]
+        direction TB
+        P01["**01_preparar_dados.R**<br/>- Combinação ITS + Cascais + Azambuja<br/>- Repescagem NIF e exclusão LX-BT<br/>- Conversão Perfil Criança (Nav. 12)<br/>- Correções manuais e recálculo de idade<br/>→ limpos_preagregacao.csv"]
+        P02["**02_calcular_compensacoes.R**<br/>- Agregação por titular (comNIF / semNIF)<br/>- Adição de validações Azambuja<br/>- Regra AML (5% até 20 val.)<br/>- Controlo de idade e documentos<br/>→ comNIF.csv, semNIF.csv, a_verificar.csv"]
+        P03["**03_exportar_reporte.R**<br/>- Preenchimento Template Oficial IMT v2<br/>- Atualização automática do histórico<br/>→ reporte_AML_IMT.xlsx"]
+
+        P01 --> P02
+        P02 --> P03
+    end
+
+    %% -------------------------------------------------------------------------
+    %% 3. FASE 2 - REPARTIÇÃO PELOS OPERADORES
+    %% -------------------------------------------------------------------------
+    subgraph FASE2["3. Fase 2 — Repartição pelos Operadores e TAT"]
+        direction TB
+        P04["**04_estimar_compensacao_operadores.R**<br/>- Agregação por título e cruzamento com titulos.csv<br/>- Decomposição: Navegante / Complemento CM / Cascais<br/>- Repartição pelos 11 operadores (Quotas PKM)<br/>- Estimativa Congelamento Tarifário (TAT)<br/>→ passejovem_resumo.csv, passejovem_congelamento.csv"]
+        P05["**05_exportar_anexo_reparticao.R**<br/>- Construção do Workbook<br/>- Folha 1: Distribuição e Quotas<br/>- Folha 2: Resumo Operadores e Congelamento<br/>→ AnexoII_reparticao.xlsx"]
+
+        P04 --> P05
+    end
+
+    %% -------------------------------------------------------------------------
+    %% 4. PRODUTOS FINAIS E DOCUMENTOS OFICIAIS
+    %% -------------------------------------------------------------------------
+    subgraph OUT_STEP["4. Produtos Finais e Documentos (10_documentos.R)"]
+        direction TB
+        OUT_F1["**Documentos Fase 1 (IMT)**<br/>- reporte_AML_IMT.xlsx<br/>- informacao1 (.pdf / .docx)<br/>- oficio1 (.pdf / .docx)<br/>- metodologia1 (.pdf)"]
+        OUT_F2["**Documentos Fase 2 (Operadores)**<br/>- AnexoII_reparticao.xlsx<br/>- AnexoI_metodologia (.pdf)<br/>- informacao2 (.pdf / .docx)<br/>- oficio2 (.pdf / .docx)"]
+    end
+
+    %% Ligações principais
+    IN_ITS --> P01
+    IN_CASCAIS --> P01
+    IN_AUX --> P01
+    IN_AUX --> P02
+
+    P02 --> P04
+    IN_COMP --> P04
+    IN_COMP --> P05
+
+    P03 --> OUT_F1
+    P05 --> OUT_F2
+
+    %% Styling
+    classDef inputStyle fill:#e1f5ff,stroke:#0288d1,stroke-width:2px,color:#111827
+    classDef processStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#111827
+    classDef calcStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#111827
+    classDef outputStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#111827
+
+    class IN_ITS,IN_CASCAIS,IN_AUX,IN_COMP inputStyle
+    class P01,P02,P03 processStyle
+    class P04,P05 calcStyle
+    class OUT_F1,OUT_F2 outputStyle
+
+    style IN fill:none,stroke:#d0d7de,stroke-width:1.5px,color:#111827
+    style FASE1 fill:none,stroke:#d0d7de,stroke-width:1.5px,color:#111827
+    style FASE2 fill:none,stroke:#d0d7de,stroke-width:1.5px,color:#111827
+    style OUT_STEP fill:none,stroke:#d0d7de,stroke-width:1.5px,color:#111827
+```
+
+---
+
+## Síntese Metodológica
+
+| Fase | Etapa | Script(s) | Entradas Principais | Saídas Principais |
+| :--- | :--- | :--- | :--- | :--- |
+| **Configuração** | **Constantes e Utilitários** | [`00_config.R`](../code/00_config.R), [`99_run_pipeline.R`](../code/99_run_pipeline.R) | Parâmetros de negócio, caminhos e histórico | Funções partilhadas e orquestração mensal |
+| **Fase 1 (IMT)** | **1. Preparação e Limpeza** | [`01_preparar_dados.R`](../code/01_preparar_dados.R) | `*PasseJovem*.xlsx`, `TML_*.xlsx` (Cascais), `data/auxiliar/*.csv` | `<ano>_<mm>_limpos_preagregacao.csv`, `<ano>_<mm>_complemento_azambuja.csv`, `<ano>_<mm>_contagens_01.rds` |
+| **Fase 1 (IMT)** | **2. Cálculo por Titular** | [`02_calcular_compensacoes.R`](../code/02_calcular_compensacoes.R) | `limpos_preagregacao.csv`, `complemento_azambuja.csv`, `id_exception.csv` | `<ano>_<mm>_comNIF.csv`, `<ano>_<mm>_semNIF.csv`, `<ano>_<mm>_a_verificar.csv`, `<ano>_<mm>_age_nok.csv`, `<ano>_<mm>_documentos_estranhos_semNIF.csv` |
+| **Fase 1 (IMT)** | **3. Reporte Oficial IMT** | [`03_exportar_reporte.R`](../code/03_exportar_reporte.R) | `comNIF.csv`, `semNIF.csv`, Template IMT v2 | `docs/<ano>_<mm>_reporte_AML_IMT.xlsx`, `compensacao_pj_anteriores.csv` |
+| **Fase 2 (Operadores)** | **4. Repartição e Congelamento** | [`04_estimar_compensacao_operadores.R`](../code/04_estimar_compensacao_operadores.R) | `comNIF.csv`, `semNIF.csv`, `1_quotas_<mes><aa>.csv`, `titulos.csv`, `tat.csv` | `<ano>_<mm>_compensacao_por_titulo.csv`, `<ano>_<mm>_passejovem_resumo.csv`, `<ano>_<mm>_passejovem_congelamento.csv` |
+| **Fase 2 (Operadores)** | **5. Anexo II Excel** | [`05_exportar_anexo_reparticao.R`](../code/05_exportar_anexo_reparticao.R) | `passejovem_resumo.csv`, `1_quotas_<mes><aa>.csv`, `titulos.csv`, `tat.csv` | `docs/<ano>_<mm>_AnexoII_reparticao.xlsx` |
+| **Ambas** | **6. Documentos Oficiais** | [`10_documentos.R`](../code/10_documentos.R), [`doc_params.R`](../code/doc_params.R) | Tabelas de output, histórico, `documents_nr.csv` | `informacao1`, `oficio1`, `metodologia1` (Fase 1); `AnexoI_metodologia`, `informacao2`, `oficio2` (Fase 2) |
+
+## Guia de Execução
+
+Ver [**Guia de Preparação Mensal e Execução**](anexo_execucao.qmd) para instruções passo a passo sobre como preparar e correr um novo mês.
+

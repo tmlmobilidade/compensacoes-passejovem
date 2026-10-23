@@ -1,0 +1,152 @@
+# Cálculo de Compensações e Controlo de Qualidade
+
+No segundo passo da **Fase 1**, o script [`code/02_calcular_compensacoes.R`](../code/02_calcular_compensacoes.R) filtra os passes elegíveis do mês, agrega múltiplos cartões ou títulos pertencentes ao mesmo jovem (`comNIF` e `semNIF`), incorpora as validações do Complemento CP Azambuja, aplica a fórmula regulamentar de compensação e produz as listas de verificação e auditoria.
+
+---
+
+## Filtro de Passes Elegíveis do Mês
+
+A partir de `<ano>_<mm>_limpos_preagregacao.csv`, são selecionados apenas os registos que cumprem cumulativamente as seguintes condições:
+
+* `year_dist == ano` e `month_dist == mes`;
+* `price == 0` (títulos gratuitos);
+* `!is.na(price_ticket_base)` (preço de referência definido);
+* `count_val > 0L` (pelo menos uma validação registada no mês).
+
+Os registos elegíveis são então divididos em dois universos disjuntos consoante a presença de NIF válido:
+
+1. **Universo `comNIF`** (`!is.na(fiscal_number)`): titulares identificados pelo NIF;
+2. **Universo `semNIF`** (`is.na(fiscal_number)`): titulares sem NIF, identificados pelo documento de identificação civil ou pelo número de série do cartão.
+
+---
+
+## Regras de Agregação por Titular
+
+Um mesmo jovem pode apresentar **múltiplos registos no mesmo mês** — seja por substituição de cartão (mudança de `card_serial_number`), seja pela coexistência de um título base com um complemento inter-regional (ex.: *Navegante Metropolitano* + *Complemento CM*), seja ainda pela transição entre títulos (*Viver Cascais* ou *Navegante 12* para *Sub18+TP* / *Sub23+TP*).
+
+::: {.callout-tip collapse="true"}
+## Otimização Computacional (`singles` vs. `multis`)
+Como cerca de $95\%$ dos titulares possuem apenas um registo no mês (`N == 1`), a função `agregar_por_grupo()` separa os casos simples (`singles`), processados de forma 100% vetorizada em `data.table`/`dplyr`, dos casos com múltiplos registos (`multis`, $\approx 5\%$), onde aplica as regras de ordenação e fusão por grupo (`agregar_grupo()`).
+:::
+
+### Hierarquia de Prioridade (Operador e Título)
+
+Quando um titular acumula vários bilhetes no mês, os códigos e nomes são concatenados (separados por `"_"` e `"+"`, respetivamente) segundo uma ordem estrita de prioridade definida em [`code/00_config.R`](../code/00_config.R):
+
+1. **Prioridade de Operador (`op_prio`)**:
+   * 1.º `31` (AT TML) $\succ$ 2.º `0` $\succ$ 3.º restantes operadores (`21` AT Cascais, `16` MTS, etc.).
+
+2. **Prioridade de Código de Título (`code_prio`)**:
+   * 1.º `6181` (Navegante Metropolitano sub23 Gratuito)
+   * 2.º `6180` (Navegante Metropolitano 418 / sub18 Gratuito)
+   * 3.º `6150` (Navegante Municipal 418)
+   * 4.º `7650` (Navegante Municipal sub23)
+   * 5.º `1020` (Navegante 12)
+   * 6.º `6151` a `6171` (Complementos e combinados 418)
+   * 7.º `7651` a `7671` (Complementos e combinados sub23)
+   * 8.º `0` $\succ$ 9.º outros códigos.
+
+::: {.callout-note}
+## Importância da Ordenação para a Fase 2
+Esta ordenação garante que o **primeiro código** de `ticket_code_new` (extraído na Fase 2 via `sub("_.*", "", ticket_code_new)`) corresponde sempre ao título principal de maior abrangência geográfica (ex.: num cartão com `6181` e complemento `7670`, o código fica registado como `6181_7670`).
+:::
+
+### Determinação do Preço Base do Grupo (`price_ticket_base_new`)
+
+Para cada titular, o preço base de referência ($\text{PTB}_{\text{new}}$) depende da presença de códigos de **Complemento Metropolitano** (`CODES_COMP = c(6170, 7670)`):
+
+$$
+\text{PTB}_{\text{new}} = \begin{cases}
+60\text{ €}, & \text{se o grupo tem apenas 1 registo e é complemento } (6170 \text{ ou } 7670) \\[4pt]
+\max(\text{price\_ticket\_base}) + 20\text{ €}, & \text{se combina outro título com complemento } (6170 \text{ ou } 7670) \\[4pt]
+\max(\text{price\_ticket\_base}), & \text{se não inclui complemento metropolitano}
+\end{cases}
+$$
+
+* **Caso especial `comNIF` com complemento isolado (`6170` ou `7670`) no operador `31`**: quando no ficheiro surge apenas a linha do complemento, o pipeline prefixa automaticamente o código e o nome do título base correspondente à faixa etária do jovem:
+  * Idade $< 19$ anos $\longrightarrow$ prefixa `6180_` e `"Navegante Metropolitano 418 Gratuito+"`;
+  * Idade $\ge 19$ anos $\longrightarrow$ prefixa `6181_` e `"Navegante Metropolitano sub23 Gratuito+"`.
+
+### Variáveis Agregadas do Titular
+
+* **Total de validações (`numval`)**: soma das validações (`sum(count_val)`) de todos os cartões/títulos do titular;
+* **Idade (`age_new`)** e **Data de nascimento (`birth_date_new`)**: mínimo das idades (`min(age)`) e máximo das datas de nascimento (`max(birth_date)`);
+* **Cartões de suporte (`cardserialnumber_new`)**: números de série únicos ordenados e concatenados por `"_"`.
+
+---
+
+## Integração do Complemento CP Azambuja
+
+O Complemento CP Azambuja-Carregado só pode ser adquirido em conjunto com o passe Navegante (mantendo um custo de $0{,}50\text{ €}$ suportado pelo utilizador e o preço de referência do Navegante Metropolitano de $40\text{ €}$). As suas validações são somadas às do titular:
+
+1. **Com NIF (`az_fiscal`)**: agrupa as validações Azambuja por `fiscal_number` e junta a `dt_comNIF`, atualizando `numval = numval + count_val_az` e guardando o código em `compaz`;
+2. **Sem NIF (`az_card`)**: agrupa as validações Azambuja sem NIF por `card_serial_number` e junta a `dt_semNIF`.
+
+---
+
+## Cálculo da Compensação Financeira
+
+Com o número total de validações consolidadas ($\text{numval}$, já incluindo eventuais validações Azambuja) e o preço de referência ($\text{PTB}_{\text{new}}$), aplica-se a fórmula regulamentar da AML:
+
+$$
+\text{Compensação} = \begin{cases}
+5\text{%} \times \text{PTB}_{\text{new}} \times \text{numval}, & \text{se } \text{numval} < 20 \\[6pt]
+\text{PTB}_{\text{new}}, & \text{se } \text{numval} \ge 20
+\end{cases}
+$$
+
+---
+
+## Tratamento de Registos `semNIF` e Validação de Documentos
+
+A partir de julho de 2026, a pedido do IMT, os registos sem NIF devem incluir o tipo (`doc_type`) e o número (`doc_number`) do documento de identificação civil (Cartão de Cidadão, Passaporte, Autorização de Residência, etc.).
+
+Para agregar corretamente vários cartões pertencentes à mesma pessoa sem NIF **sem fundir pessoas diferentes** que tenham números de documento fictícios/preenchidos por omissão (ex.: `00000000`, `99999999`, `123456` ou `teste`), o pipeline classifica previamente cada documento:
+
+| Situação Detetada | Motivo Registado (`motivo_doc`) | Chave de Agrupamento (`group_id`) |
+| :--- | :--- | :--- |
+| **Documento válido e sem anomalias** | — | **Por Documento** (`DOC_<tipo>_<número>`) |
+| **Documento na lista `id_exception.csv`** | `"Passaporte/Documento partilhado por jovens diferentes (fraude/excecao)"` | **Por Documento** (`DOC_<tipo>_<número>`) |
+| **Mesmo `doc_number` com datas de nascimento distintas** | `"Documento com datas de nascimento distintas"` | **Por Cartão** (`CARD_<n.º série>`) |
+| **Cartão de Cidadão (`CITIZEN_CARD`) anómalo** (só zeros, só noves, dígitos repetidos ou $< 6$ dígitos) | `"Cartao de Cidadao com ..."` | **Por Cartão** (`CARD_<n.º série>`) |
+| **Outro documento só zeros ou só noves** | `"Documento com apenas zeros/noves"` | **Por Cartão** (`CARD_<n.º série>`) |
+| **Valores de teste/inválidos** (`test`, `teste`, `null`, `none`, `na`, `xxx`, `12345`, `123456`) | `"Documento com valor invalido"` | **Por Cartão** (`CARD_<n.º série>`) |
+| **Sem documento preenchido** | — | **Por Cartão** (`CARD_<n.º série>`) |
+
+::: {.callout-warning}
+## Lista de Exceções de Identificação (`data/auxiliar/id_exception.csv`)
+O ficheiro `id_exception.csv` (colunas `doc_type;doc_number;motivo`) regista casos auditados manualmente em que o mesmo documento consta com anomalias (ex.: datas de nascimento diferentes em dois cartões) mas em que se confirmou que devem ser agrupado num único titular (ou sinalizado como exceção conhecida).
+:::
+
+---
+
+## Controlo de Qualidade e Listas de Auditoria
+
+O passo `02` separa ou sinaliza automaticamente três conjuntos de registos para controlo de qualidade e envio ao Departamento de Cliente (DMC):
+
+1. **Exclusão por Idade Incompatível (`<ano>_<mm>_age_nok.csv`)**:
+   * Após o recálculo da idade e a correção dos casos-limite no passo `01`, os registos com **`age_new == 3`** (demasiado novo, $< 4$ anos) ou **`age_new >= 25`** (acima do limite máximo absoluto) são **excluídos das tabelas `comNIF` e `semNIF`** e gravados em `age_nok.csv`.
+   * *Nota:* Os jovens com **24 anos** (`age_new == 24`) permanecem nas tabelas de compensação (por poderem pertencer aos cursos universitários de exceção), mas são incluídos em `a_verificar.csv` para confirmação do comprovativo académico.
+
+2. **Documentos Estranhos Sem NIF (`<ano>_<mm>_documentos_estranhos_semNIF.csv`)**:
+   * Contém um registo único por cartão (`card_serial_number`) para todos os cartões `semNIF` que apresentaram qualquer anomalia no número de documento (`!is.na(motivo_doc)`).
+
+3. **Registos Suspeitos a Verificar (`<ano>_<mm>_a_verificar.csv`)**:
+   * Consolida todos os registos que requerem verificação manual, classificados segundo a seguinte ordem de precedência:
+     1. `"Excecao ID (datas de nascimento distintas)"`: documento presente em `id_exception.csv`;
+     2. `"Documento com datas de nascimento distintas"`: mesmo `doc_number` em `semNIF` associado a múltiplas datas de nascimento;
+     3. `"Sem NIF"`: todos os restantes titulares sem NIF válido;
+     4. `"Idade > 23"`: titulares `comNIF` com 24 anos de idade.
+
+---
+
+### Script: `02_calcular_compensacoes.R` {.unnumbered}
+
+A função `calcular_compensacoes(ano, mes, raiz)` grava na pasta `data/<ano>_<mm>_<mes>/output/`:
+
+* `<ano>_<mm>_comNIF.csv`: compensação apurada por NIF (elegíveis);
+* `<ano>_<mm>_semNIF.csv`: compensação apurada por documento/cartão para titulares sem NIF (elegíveis);
+* `<ano>_<mm>_a_verificar.csv`: listagem completa para auditoria manual;
+* `<ano>_<mm>_age_nok.csv`: registos excluídos por idade incompatível ($3$ ou $\ge 25$ anos);
+* `<ano>_<mm>_documentos_estranhos_semNIF.csv`: documentos `semNIF` com formato inválido ou suspeito.
+

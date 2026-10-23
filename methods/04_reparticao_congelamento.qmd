@@ -1,0 +1,126 @@
+# Repartição pelos Operadores e Congelamento Tarifário
+
+Concluído o apuramento mensal por titular para o IMT (Fase 1) e uma vez apuradas as **quotas dinâmicas mensais de repartição** no repositório [`Compensacoes`](https://github.com/tmlmobilidade/compensacoes-navegante) (`1_quotas_<mes><aa>.csv`), inicia-se a **Fase 2**: a distribuição da compensação financeira pelos **11 operadores e autoridades de transportes** da AML e a estimativa da compensação adicional pelo **Congelamento Tarifário (TAT)**.
+
+---
+
+## Pré-requisitos e Integração com o Repositório `Compensacoes`
+
+O script [`code/04_estimar_compensacao_operadores.R`](../code/04_estimar_compensacao_operadores.R) combina os ficheiros `<ano>_<mm>_comNIF.csv` e `<ano>_<mm>_semNIF.csv` da Fase 1 com três ficheiros provenientes do repositório `Compensacoes` (localizado por omissão em `../Compensacoes/` ou configurado pela variável de ambiente `COMPENSACOES_ROOT`):
+
+1. **Quotas dinâmicas do mês**: `Compensacoes/data/<mm>_<mes_abrev>_<ano>/output/1_quotas_<mes_abrev><aa>.csv` (obrigatório);
+2. **Catálogo de títulos**: [`Compensacoes/lists/titulos.csv`](../Compensacoes/lists/titulos.csv) (lido localmente ou via fallback automático do GitHub através de `ler_lista_compensacoes()`);
+3. **Série histórica da TAT**: [`Compensacoes/lists/tat.csv`](../Compensacoes/lists/tat.csv).
+
+Os **11 operadores/autoridades** contemplados na matriz de repartição (`OPERADORES_RESUMO` em [`code/00_config.R`](../code/00_config.R)) são:
+
+| Designação no Resumo (`OPERADORES_RESUMO`) | Código de Quota (`1_quotas_*.csv`) | Entidade / Operador |
+| :--- | :---: | :--- |
+| **`CP`** | `CP` | CP — Comboios de Portugal |
+| **`FT`** | `FT` | Fertagus |
+| **`TT`** | `TT` | Transtejo |
+| **`SL`** | `SL` | Soflusa |
+| **`ML`** | `ML` | Metropolitano de Lisboa |
+| **`MTS`** | `MS` | Metro Transportes do Sul |
+| **`Carris`** | `CA` | Carris |
+| **`TCB`** | `TB` | Transportes Coletivos do Barreiro |
+| **`AT Cascais`** | `CAP` | Autoridade de Transportes de Cascais / Cascais Próxima |
+| **`AT TML - CM`** | `CM` | TML / Carris Metropolitana |
+| **`BT Oeste`** | `BQ` | Barraqueiro Oeste |
+
+---
+
+## Algoritmo de Decomposição e Repartição
+
+### 1. Agregação por Título e Código Base (`agregar_por_titulo`)
+
+O algoritmo lê `<ano>_<mm>_comNIF.csv` e `<ano>_<mm>_semNIF.csv`, filtra os registos elegíveis e extrai de cada titular:
+
+* **`ticket_code`**: primeiro código de `ticket_code_new` (`sub("_.*", "", ticket_code_new)`), que corresponde sempre ao título principal graças à ordenação de prioridade aplicada no Passo 02;
+* **`ticket_operator_code`**: primeiro código de `ticket_operator_code_new`;
+* **`ptb_new`**: preço de referência total do registo (`price_ticket_base_new`);
+* **`tem_comp_code`**: indicador lógico da presença dos códigos de Complemento Metropolitano (`CODES_COMP = c(6170, 7670)`) em `ticket_code_new`.
+
+Os dados são então agregados por `(nome_dist, ticket_code, ticket_operator_code, ptb_new)`, somando o número de passes (`passes = n()`), validações (`numval = sum(numval)`) e compensação (`compensacao = sum(compensacao)`).
+
+### 2. Cruzamento Direto com `titulos.csv` e Cálculo de `base_weight`
+
+Cada `ticket_code` é cruzado diretamente com `titulos.csv` (`enriquecer_titulos()`) para obter a designação oficial (`titulo_nome`), a `modalidade`, o `pvp`, o `titulo_nome_base` e o `preco_base` do título Navegante sem complemento:
+
+* **Identificação de `viver_cascais`**: `ticket_operator_code == 21` ou `nome_dist` iniciado por `"Viver Cascais"`;
+* **Identificação de `complemento_CM`**: presença de código `6170`/`7670` em `ticket_code_new` ou da palavra `"Complemento"` em `nome_dist` (excluindo `viver_cascais`);
+* **Fator de proporção do título base (`base_weight`)**: mede a fração do preço de referência total correspondente ao título Navegante base:
+  $$
+  \text{base\_weight} = \begin{cases}
+  \dfrac{\text{preco\_base}}{\text{price\_ticket\_base\_new}}, & \text{se tem Complemento CM} \\[8pt]
+  1, & \text{caso contrário}
+  \end{cases}
+  $$
+
+**Exemplos práticos de `base_weight`:**
+
+* *Navegante Metropolitano + Complemento CM* ($\text{PTB}_{\text{new}} = 60\text{ €}$, sendo $40\text{ €}$ Navegante + $20\text{ €}$ Complemento):
+  $$\text{base\_weight} = \frac{40}{60} = \frac{2}{3} \approx 0{,}6667 \implies \frac{2}{3} \text{ para Navegante e } \frac{1}{3} \text{ para Complemento CM}$$
+* *Navegante Municipal + Complemento CM* ($\text{PTB}_{\text{new}} = 50\text{ €}$, sendo $30\text{ €}$ Municipal + $20\text{ €}$ Complemento):
+  $$\text{base\_weight} = \frac{30}{50} = \frac{3}{5} = 0{,}60 \implies 60\% \text{ para Navegante e } 40\% \text{ para Complemento CM}$$
+* *Títulos sem complemento* (`Navegante 12`, `Navegante Metropolitano 418/sub23`, `Navegante Municipal 418/sub23`): $\text{base\_weight} = 1$ ($100\%$ Navegante).
+
+### 3. Separação da Compensação em 3 Componentes
+
+A compensação apurada em cada linha agregada é decomposta em três parcelas mutuamente exclusivas:
+
+| Componente | Fórmula de Decomposição | Regra de Imputação / Destino |
+| :--- | :--- | :--- |
+| **1. Passes Navegante** | $\text{comp\_navegante} = \text{compensacao} \times \text{base\_weight}$ | Agregada por `ticket_code` (`1020`, `6150`, `6180`, `6181`) e repartida pelos **11 operadores** segundo as quotas dinâmicas do mês |
+| **2. Complemento CM** | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | Consolidada numa linha única (`ticket_code = "1070"`, `preco_base = 20 €`) e atribuída a **$100\%$ à `AT TML - CM`** |
+| **3. Viver Cascais** | $\text{comp\_cascais} = \text{compensacao}$ | Consolidada numa linha única (`ticket_code = "129_131"`, `preco_base = 20 €`) e atribuída a **$100\%$ à `AT Cascais`** |
+
+::: {.callout-note}
+## Contabilização de Passes e Validações por Linha
+Nas linhas de **Passes Navegante** (`1020`, `6150`, `6180`, `6181`), as colunas `passes` e `validacoes` registam a totalidade dos cartões e validações que utilizaram esse título base (com ou sem complemento). Na linha **Complemento CM** (`1070`), `passes` e `validacoes` somam os cartões e validações que possuíam complemento inter-regional.
+:::
+
+### 4. Aplicação das Quotas Dinâmicas Mensais
+
+Ao abrigo do ponto 6.3 do Anexo V ao Regulamento n.º 278-A/2019 (na redação atual), a compensação de cada título intermodal Navegante $i \in \{1020, 6150, 6180, 6181\}$ é distribuída por cada operador $j$ multiplicando a compensação total do título pela respetiva quota mensal ($\text{quota}_{i,j}$):
+
+$$\text{Compensação}_{i,j} = \text{Compensação Total Navegante}_i \times \text{quota}_{i,j}$$
+
+Os valores por título e operador são mantidos **sem arredondamento intermédio**, efetuando-se o arredondamento a duas casas decimais unicamente nas linhas de totalização final.
+
+---
+
+## Estimativa do Congelamento Tarifário (TAT)
+
+Para além da compensação direta pela gratuitidade dos passes jovens (calculada aos preços de referência vigentes), é apurada a compensação financeira pelo **congelamento tarifário** desses preços de referência face às **Taxas de Atualização Tarifária (TAT)** homologadas anualmente pela AMT (constantes em [`Compensacoes/lists/tat.csv`](../Compensacoes/lists/tat.csv)).
+
+### Fórmulas Diferenciadas: Passes Navegante vs. Outros Passes
+
+A metodologia distingue duas fórmulas cumulativas (`fatores_congelamento()`), refletindo o momento a partir do qual o congelamento tarifário foi imposto a cada categoria de títulos:
+
+1. **Congelamento dos Passes Navegante (`Congelamento Navegante`)**:
+   * Aplica a atualização cumulativa integral desde 2024 até ao ano de referência ($\text{ANO}$):
+   $$F_{\text{Navegante}} = \prod_{y=2024}^{\text{ANO}} (1 + \text{TAT}_y) - 1$$
+   * Para cada operador $j$:
+   $$\text{Congelamento Navegante}_j = \text{Total Passes Navegante}_j \times F_{\text{Navegante}}$$
+
+2. **Congelamento dos Títulos Próprios / Outros Passes (`Congelamento Outros Passes` — `Complemento CM` e `Viver Cascais`)**:
+   * No caso dos títulos próprios, apenas em 2024 o congelamento resultou de imposição externa à respetiva Autoridade de Transportes, sendo esse efeito atualizado pelas taxas subsequentes:
+   $$F_{\text{Outros}} = \text{TAT}_{2024} \times \prod_{y=2025}^{\text{ANO}} (1 + \text{TAT}_y)$$
+   * Para cada operador $j$:
+   $$\text{Congelamento Outros}_j = \text{Total Outros Passes}_j \times F_{\text{Outros}}$$
+
+3. **Congelamento TOTAL por Operador (`Congelamento TOTAL`)**:
+   * Soma das duas componentes, arredondada a duas casas decimais por operador:
+   $$\text{Congelamento TOTAL}_j = \text{round}\!\left(\text{Congelamento Navegante}_j + \text{Congelamento Outros}_j, \; 2\right)$$
+
+---
+
+### Script: `04_estimar_compensacao_operadores.R` {.unnumbered}
+
+A função `estimar_compensacao_operadores(ano, mes, raiz)` exporta três ficheiros CSV na pasta `data/<ano>_<mm>_<mes>/output/` (gravados com separador `;`, vírgula decimal `,` e `bom = TRUE` para leitura direta no Excel em Windows):
+
+* `<ano>_<mm>_compensacao_por_titulo.csv`: tabela detalhada por `nome_dist` com `ticket_name_reduzido`, `complemento_CM`, `base_weight`, `passes`, `numval`, `compensacao` e as 3 componentes (`comp_navegante`, `comp_complemento`, `comp_cascais`);
+* `<ano>_<mm>_passejovem_resumo.csv`: matriz de repartição por título de referência (`1020`, `6150`, `6180`, `6181`, `1070 Complemento CM` e `129_131 Viver Cascais`) e pelos 11 operadores (sem linhas de total);
+* `<ano>_<mm>_passejovem_congelamento.csv`: tabela com as 3 linhas de congelamento tarifário (`Congelamento Navegante`, `Congelamento Outros Passes`, `Congelamento TOTAL`) para o total e para cada um dos 11 operadores.
+

@@ -1,0 +1,87 @@
+# Exportação do Anexo II de Repartição
+
+No quinto passo do pipeline (segunda etapa da **Fase 2**), o script [`code/05_exportar_anexo_reparticao.R`](../code/05_exportar_anexo_reparticao.R) constrói o livro oficial em Excel **`<ano>_<mm>_AnexoII_reparticao.xlsx`**, que acompanha a Informação 2 e os Ofícios de comunicação da repartição aos operadores.
+
+Ao contrário de uma simples exportação de valores estáticos, este workbook incorpora **fórmulas nativas de Excel** em todas as células de repartição, subtotais, totais e fatores de congelamento, garantindo total transparência e auditabilidade pelas entidades destinatárias.
+
+---
+
+## Estrutura do Workbook (`AnexoII_reparticao.xlsx`)
+
+O ficheiro é gerado na pasta `data/<ano>_<mm>_<mes>/output/docs/` e contém duas folhas de cálculo nomeadas com o sufixo do mês (`<mes_abrev><aa>`, ex.: `jul26`):
+
+1. **Folha 1 — `<mes><aa>`** (ex.: `jul26`): *Distribuição da compensação Passe Jovem por título e operador (€) e Quotas (%)*;
+2. **Folha 2 — `<mes><aa>_resumo_congelamento`** (ex.: `jul26_resumo_congelamento`): *Resumo por Operador e Congelamento Tarifário — TAT (€)*.
+
+---
+
+## Folha 1: Distribuição por Título, Operador e Quotas
+
+A Folha 1 encontra-se organizada lado a lado em dois blocos separados pela coluna `X` (em branco):
+
+### Bloco Esquerdo (Colunas `A:W`) — Dados e Compensações
+
+* **Colunas de Identificação e Procura (`A:L`)**:
+  * `A:B`: `ano` e `mês`;
+  * `C:D`: `ticket_operator_code` e `ticket_code` (`1020`, `6150`, `6180`, `6181`, `1070`, `129_131`);
+  * `E:I`: `titulo`, `Modalidade título`, `pvp`, `Título Base` e `Preço do título base`;
+  * `J:L`: `Nº passes com validações`, `Validações` e `Compensação total` (€).
+* **Colunas dos 11 Operadores (`M:W`)**:
+  * `CP`, `FT`, `TT`, `SL`, `ML`, `MTS`, `Carris`, `TCB`, `AT Cascais`, `AT TML - CM` e `BT Oeste`.
+
+### Bloco Direito (Colunas `Y:AI`) — Matriz de Quotas (%)
+
+* Apresenta, para as mesmas linhas de título e pela mesma ordem dos 11 operadores, a **Quota (%) por título e operador**:
+  * Nas linhas de **Passes Navegante** (`linhas 5 a 8`): contém os valores exatos em vírgula flutuante (não arredondados) lidos de `1_quotas_<mes><aa>.csv`, formatados visualmente a 4 casas decimais (`0,0000%`);
+  * Na linha **Complemento CM** (`linha 9`): quota igual a `100,0000%` (`1`) na coluna `AT TML - CM` e `0%` nos restantes;
+  * Na linha **Viver Cascais** (`linha 10`): quota igual a `100,0000%` (`1`) na coluna `AT Cascais` e `0%` nos restantes.
+
+### Fórmulas e Regra de Arredondamento na Folha 1
+
+| Linhas | Descrição | Fórmula Excel Aplicada (`M:W`) |
+| :--- | :--- | :--- |
+| **Linhas 5 a 10** | Linhas individuais de título (`Passes Navegante` + `Outros Passes`) | `=$L<row>*<col_quota><row>` *(Compensação total $\times$ Quota, sem `ROUND`)* |
+| **Linha 11** | Subtotal **`Total Passes Navegante`** | `=SUM(M5:M8)` *(soma exata sem arredondamento intermédio)* |
+| **Linha 12** | Subtotal **`Total Outros Passes`** | `=SUM(M9:M10)` *(soma exata sem arredondamento intermédio)* |
+| **Linha 13** | **`Total` Geral** | `=ROUND(SUM(M11:M12), 2)` *(arredondado a 2 casas decimais apenas no total final)* |
+
+---
+
+## Folha 2: Resumo por Operador e Congelamento Tarifário (TAT)
+
+A Folha 2 sintetiza os montantes devidos a cada um dos 11 operadores (linhas 6 a 16) e o total global (linha 17), dividindo-se visualmente em duas secções cromáticas:
+
+1. **Secção Dourada (`Colunas D:F`) — Compensação Passe Jovem (€)**:
+   * **Coluna `D` (`Passes Navegante`)**: referencia diretamente o intervalo de títulos Navegante da Folha 1 para cada operador (`=SUM(jul26!M5:M8)` até `=SUM(jul26!W5:W8)`);
+   * **Coluna `E` (`Outros Passes`)**: referencia o intervalo de Outros Passes da Folha 1 (`=SUM(jul26!M9:M10)` até `=SUM(jul26!W9:W10)`);
+   * **Coluna `F` (`TOTAL`)**: soma das duas componentes (`=D<row>+E<row>`).
+
+2. **Secção Cinzenta (`Colunas G:I`) — Compensação por Congelamento Tarifário - TAT (€)**:
+   * **Coluna `G` (`Congelamento Passes Navegante`)**: multiplica a coluna `D` pelo fator cumulativo Navegante na célula `$I$21` (`=D<row>*$I$21`);
+   * **Coluna `H` (`Congelamento Outros Passes`)**: multiplica a coluna `E` pelo fator cumulativo de Outros Passes na célula `$I$22` (`=E<row>*$I$22`);
+   * **Coluna `I` (`Congelamento TOTAL`)**: soma do congelamento (`=G<row>+H<row>`).
+
+3. **Linha `TOTAL` (`Linha 17`)**:
+   * Todas as colunas monetárias (`D` a `I`) utilizam `=ROUND(SUM(<col>6:<col>16), 2)`, garantindo consistência ao cêntimo.
+
+### Bloco de Notas e Parâmetros TAT (`Linhas 19 a 23`)
+
+Na parte inferior da Folha 2 é inserido um quadro auto-contido com os parâmetros da Taxa de Atualização Tarifária:
+
+* **Colunas `A:C` (`Linhas 21 a 23`)**: série histórica anual de taxas TAT lida de `tat.csv` (`2024`, `2025`, `2026`);
+* **Célula `I21` (`Fator Cumulativo — Congelamento Passes Navegante`)**: calculada dinamicamente pela fórmula Excel `=(1+C21)*(1+C22)*(1+C23)-1`;
+* **Célula `I22` (`Fator Cumulativo — Congelamento Outros Passes`)**: calculada dinamicamente pela fórmula Excel `=C21*(1+C22)*(1+C23)`.
+
+::: {.callout-tip}
+## Formatação Condicional de Zeros
+Em ambas as folhas, os valores iguais a zero (`== 0`) recebem formatação condicional em cinzento claro (`#A6A6A6`), facilitando a leitura imediata dos operadores com valores positivos e mantendo os painéis fixos (`freezePane`) nos cabeçalhos e colunas de identificação.
+:::
+
+---
+
+### Script: `05_exportar_anexo_reparticao.R` {.unnumbered}
+
+A função `exportar_anexo_reparticao(ano, mes, raiz)` pode ser executada isoladamente em menos de 1 segundo (desde que `04_estimar_compensacao_operadores.R` já tenha sido corrido) e gera:
+
+* `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_AnexoII_reparticao.xlsx`.
+

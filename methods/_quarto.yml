@@ -1,0 +1,60 @@
+project:
+  type: book
+  output-dir: _book
+
+lang: pt
+
+book:
+  title: "Compensações Gratuitidade Passe Jovem"
+  subtitle: "Procedimento e Metodologia de Apuramento Mensal (IMT) e Repartição pelos Operadores"
+  author: 
+    - name: "TML - Transportes Metropolitanos de Lisboa"
+    - name: "Departamento de Estudos e Planeamento"
+  date: last-modified
+  chapters:
+    - index.qmd
+    - part: "**Fase 1 — Apuramento (IMT)**"
+      chapters:
+        - 01_preparacao_dados.qmd
+        - 02_calculo_compensacoes.qmd
+        - 03_reporte_imt.qmd
+    - part: "**Fase 2 — Repartição (Operadores)**"
+      chapters:
+        - 04_reparticao_congelamento.qmd
+        - 05_anexo_reparticao.qmd
+    - part: "**Documentos**"
+      chapters:
+        - 06_documentos.qmd
+    - part: "**Anexos**"
+      chapters:
+        - anexo_execucao.qmd
+        - anexo_auxiliares.qmd
+        - references.qmd
+
+  repo-url: https://github.com/tmlmobilidade/compensacoes-passejovem
+  site-url: https://tmlmobilidade.github.io/compensacoes-passejovem
+
+  page-footer:
+    left: "TML - Transportes Metropolitanos de Lisboa"
+    right: "v0.1 (beta)"
+
+bibliography: references.bib
+link-citations: true
+citeproc: true 
+
+format:
+  html:
+    theme:
+      light: cosmo
+    filters:
+      - filters/resolve-repo-links.lua
+    toc: true
+    toc-depth: 3
+    toc-title: "Nesta página"
+    number-sections: true
+    smooth-scroll: true
+    code-copy: true
+    code-fold: show
+    code-overflow: wrap
+    html-math-method: mathjax
+

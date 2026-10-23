@@ -1,0 +1,172 @@
+---
+number-sections: false
+---
+
+# Guia de Preparação Mensal e Execução {.unnumbered}
+
+Este anexo apresenta o guia prático passo a passo e a checklist operacional para preparar e executar um novo mês de apuramento e repartição do **Passe Gratuito para Jovens**.
+
+---
+
+## 🗓️ Fase 1 — Preparação e Apuramento Mensal (IMT)
+
+Seguir rigorosamente estes passos pela ordem indicada:
+
+### 1. Criar a pasta de dados do mês (em `data/`)
+
+Criar a pasta do mês dentro de `data/` com o formato `AAAA_MM_mes` (ex.: para agosto de 2026, criar `data/2026_08_agosto/input/`).
+
+* A pasta `output/` e a subpasta `output/docs/` são criadas automaticamente pelos scripts;
+* A pasta `data/` encontra-se no `.gitignore`, pelo que os dados individuais (com NIF e documentos) nunca são enviados para o repositório Git.
+
+### 2. Colocar os ficheiros de input na pasta `input/`
+
+Colocar os ficheiros recebidos do Departamento ITS e da AT Cascais em `data/<ano>_<mm>_<mes>/input/`:
+
+```text
+data/2026_08_agosto/input/
+├── 202608_PasseJovem_ValidaçõesLimpas.xlsx   ← ITS (Folha 1: validações; Folha 2 "Azambuja": complemento)
+└── TML_agosto2026.xlsx                       ← AT Cascais (Viver Cascais)
+```
+
+| Ficheiro em `input/` | Origem | Regras de Deteção e Notas |
+| :--- | :--- | :--- |
+| `*PasseJovem*.xlsx` | Dept. ITS | O nome tem de conter `PasseJovem`. Inclui na 1.ª folha as validações e colunas de documento (`ID_DOC_NUMBER`, `ID_DOC_NUMBER_DESC`), e na 2.ª folha (`*Azambuja*`) o Complemento CP Azambuja. |
+| `TML_<mes><ano>.xlsx` | AT Cascais | O nome tem de corresponder ao padrão `TML_*.xlsx`. O script atribui `ticket_operator_code = 21`, `price = 0` e `price_ticket_base = 20`. |
+| `*Complemento_Azambuja*.csv` | Dept. ITS | Opcional. Apenas necessário se o complemento Azambuja não vier incluído numa folha do ficheiro XLSX principal. |
+
+### 3. Rever e atualizar os ficheiros auxiliares (`data/auxiliar/`)
+
+Se tiverem sido recebidas novas correções de NIF, datas de nascimento ou exceções de documentos de identificação validadas pelo Departamento de Clientes, atualizar os ficheiros em `data/auxiliar/` (ver detalhes em [**Tabelas Auxiliares e Dependências**](anexo_auxiliares.qmd)).
+
+### 4. Executar os cálculos da Fase 1 (e auditar listas de verificação)
+
+Configurar em [`code/00_config.R`](../code/00_config.R) `RUN_FASE1 <- TRUE` e `RUN_FASE2 <- FALSE` (ou passar como argumentos a `run_pipeline()`) e correr:
+
+```r
+source("code/99_run_pipeline.R")
+run_pipeline(ano = 2026, meses = 8, run_fase1 = TRUE, run_fase2 = FALSE, render_docs = FALSE)
+```
+
+Após esta primeira execução:
+
+1. Inspecionar os ficheiros gerados em `output/`:
+   * `<ano>_<mm>_a_verificar.csv` (registos sem NIF, idade 24 anos, documentos com datas de nascimento distintas);
+   * `<ano>_<mm>_age_nok.csv` (registos excluídos com 3 anos ou $\ge 25$ anos);
+   * `<ano>_<mm>_documentos_estranhos_semNIF.csv` (documentos anómalos agrupados por cartão).
+2. Caso sejam identificadas novas correções de NIF/data de nascimento ou exceções a incluir em `data/auxiliar/`, atualizar esses CSVs e **voltar a correr a Fase 1**.
+
+### 5. Atualizar referências e parâmetros documentais (`doc_params.R`)
+
+1. Registar os números de documento (`numero_informacao1` e `numero_oficio1` para `tipo = "passejovem"`) em `Compensacoes/lists/documents_nr.csv`;
+2. Editar [`code/doc_params.R`](../code/doc_params.R) com `ANO`, `MES`, `mes_nome`, `meses_pagos_ano_atual` e os dados dos pagamentos da ETF;
+3. Gerar os documentos da Fase 1 (`informacao1`, `oficio1` e `metodologia1`):
+
+```r
+render_documentos(ano = 2026, mes = 8, run_fase1 = TRUE, run_fase2 = FALSE)
+```
+
+---
+
+## 🚌 Fase 2 — Repartição pelos Operadores e Congelamento Tarifário
+
+A Fase 2 é executada quando o apuramento mensal das **quotas dinâmicas dos operadores** (`1_quotas_<mes><aa>.csv`) já se encontra concluído no repositório `Compensacoes`.
+
+### 1. Verificar os pré-requisitos em `Compensacoes`
+
+Confirmar a existência de:
+
+* `Compensacoes/data/<mm>_<mes_abrev>_<ano>/output/1_quotas_<mes_abrev><aa>.csv` (ex.: `08_ago_2026/output/1_quotas_ago26.csv`);
+* `Compensacoes/lists/titulos.csv` e `Compensacoes/lists/tat.csv`;
+* Números de documento `numero_informacao2` e `numero_oficio2` (`tipo = "passejovem"`) e `numero_informacao1` / `numero_oficio1` (`tipo = "navegante"`) em `Compensacoes/lists/documents_nr.csv`.
+
+### 2. Executar a Fase 2 e gerar o Anexo II e Documentos
+
+Por linha de comandos (se `RUN_FASE2 <- TRUE` em `00_config.R`) ou diretamente no R:
+
+```r
+source("code/99_run_pipeline.R")
+run_pipeline(ano = 2026, meses = 8, run_fase1 = FALSE, run_fase2 = TRUE, render_docs = TRUE)
+```
+
+Validar na pasta `data/<ano>_<mm>_<mes>/output/`:
+
+* Que a soma da compensação em `<ano>_<mm>_passejovem_resumo.csv` e na célula de total de `docs/<ano>_<mm>_AnexoII_reparticao.xlsx` coincide com o total reportado ao IMT na Fase 1;
+* Rever os documentos gerados em `output/docs/`:
+  * `<ano>_<mm>_AnexoI_metodologia.pdf`
+  * `<ano>_<mm>_AnexoII_reparticao.xlsx`
+  * `<ano>_<mm>_informacao2.pdf` e `.docx`
+  * `<ano>_<mm>_oficio2.pdf` e `.docx`
+
+---
+
+## 🚀 Comandos Rápidos de Execução
+
+### Linha de Comandos (PowerShell / Terminal)
+
+```powershell
+# Processar um mês específico (respeita RUN_FASE1, RUN_FASE2 e RENDER_DOCS de 00_config.R):
+Rscript code/99_run_pipeline.R 2026 7
+
+# Processar vários meses em sequência:
+Rscript code/99_run_pipeline.R 2026 5 6 7
+
+# Processar todos os meses disponíveis em data/ para um ano:
+Rscript code/99_run_pipeline.R 2026
+
+# Executar apenas um passo isolado:
+Rscript code/01_preparar_dados.R 2026 7
+Rscript code/02_calcular_compensacoes.R 2026 7
+Rscript code/03_exportar_reporte.R 2026 7
+Rscript code/10_documentos.R 2026 7
+```
+
+### Consola R / RStudio
+
+```r
+source("code/99_run_pipeline.R")
+
+# Correr pipeline completo para um mês:
+run_pipeline(ano = 2026, meses = 7)
+
+# Correr passos individuais:
+preparar_dados(2026, 7)
+calcular_compensacoes(2026, 7)
+exportar_reporte(2026, 7)
+estimar_compensacao_operadores(2026, 7)
+exportar_anexo_reparticao(2026, 7)
+render_documentos(2026, 7, run_fase1 = TRUE, run_fase2 = TRUE)
+```
+
+---
+
+## ⚙️ Parâmetros de Configuração (`code/00_config.R`) {#sec-config}
+
+| Constante / Variável | Valor Padrão | Descrição |
+| :--- | :--- | :--- |
+| `RUN_FASE1` | `TRUE` | Executa a Fase 1 (`01` a `03` + documentos 1) |
+| `RUN_FASE2` | `TRUE` | Executa a Fase 2 (`04` e `05` + documentos 2) |
+| `RENDER_DOCS` | `TRUE` | Executa `render_documentos()` no final do pipeline para as fases ativas |
+| `THRESHOLD_VAL` | `20L` | N.º mínimo de validações para pagamento de $100\%$ do título de referência na AML |
+| `PCT_VAL` | `0.05` | Percentagem do preço de referência paga por cada validação abaixo de 20 ($5\%$) |
+| `CODES_COMP` | `c(6170L, 7670L)` | Códigos de bilhete que identificam o Complemento Inter-regional CM nos registos individuais |
+| `CODE_COMP_RESUMO` | `1070L` | Código atribuído à linha consolidada do Complemento CM nas tabelas de repartição |
+| `PRECO_CASCAIS` | `20` | Preço de referência (€) atribuído aos passes *Viver Cascais* |
+| `COMPENSACOES_ROOT` | `../Compensacoes` | Caminho para o repositório local `Compensacoes` (sobreponível via variável de ambiente `COMPENSACOES_ROOT`) |
+
+---
+
+## ✅ Checklist Mensal de Fecho
+
+1. [ ] Criar `data/<ano>_<mm>_<mes>/input/` e colocar o ficheiro `*PasseJovem*.xlsx` (ITS) e `TML_<mes><ano>.xlsx` (Cascais).
+2. [ ] Atualizar `data/auxiliar/` caso existam novas correções de NIF/data de nascimento ou exceções de documentos.
+3. [ ] Correr a **Fase 1** (`run_fase1 = TRUE`, `run_fase2 = FALSE`).
+4. [ ] Auditar `a_verificar.csv`, `age_nok.csv` e `documentos_estranhos_semNIF.csv`; se houver novas correções/exceções, atualizar `data/auxiliar/` e voltar a correr a Fase 1.
+5. [ ] Validar `docs/<ano>_<mm>_reporte_AML_IMT.xlsx`.
+6. [ ] Registar `numero_informacao1` e `numero_oficio1` em `Compensacoes/lists/documents_nr.csv`, atualizar `code/doc_params.R` e compilar `informacao1`, `oficio1` e `metodologia1`.
+7. [ ] Confirmar a disponibilidade do ficheiro de quotas do mês (`1_quotas_<mes><aa>.csv`) em `Compensacoes`.
+8. [ ] Correr a **Fase 2** (`run_fase1 = FALSE`, `run_fase2 = TRUE`).
+9. [ ] Verificar que os totais de `passejovem_resumo.csv` e `docs/<ano>_<mm>_AnexoII_reparticao.xlsx` coincidem com o total apurado na Fase 1.
+10. [ ] Registar `numero_informacao2` e `numero_oficio2` em `Compensacoes/lists/documents_nr.csv`, rever parâmetros em `code/doc_params.R` e compilar `AnexoI_metodologia`, `informacao2` e `oficio2`.
+11. [ ] Efetuar commit das alterações e criar tag Git do mês (`git tag -a run-2026-08-agosto -m "Passe Jovem agosto 2026"`).
+

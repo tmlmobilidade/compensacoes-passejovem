@@ -1,0 +1,106 @@
+# Exportação do Reporte Oficial AML/IMT
+
+O terceiro e último passo de cálculo da **Fase 1** consiste no preenchimento automatizado do formulário oficial em Excel exigido pelo **IMT, I. P.** (versão 2, em vigor desde julho de 2026) e na atualização automática da série histórica mensal de compensações do Passe Jovem.
+
+---
+
+## Estrutura do Template Oficial IMT (v2)
+
+O script [`code/03_exportar_reporte.R`](../code/03_exportar_reporte.R) copia o ficheiro modelo oficial localizado em:
+
+```text
+documents/Template_PASSE GRATUITO JOVEM - REPORTE - CIM_AT para IMT (Mensal) - 2026 - V2.xlsx
+```
+
+Utilizando `openxlsx::loadWorkbook()`, o script preserva todos os estilos, logótipos e formatações originais do template e renomeia as três primeiras folhas de acordo com o ano e mês de apuramento (`< YYYY_MM >`, ex.: `2026_07`):
+
+1. **`AML_<ano>_<mm>_ComNIF`**: listagem individualizada dos titulares com NIF;
+2. **`AML_<ano>_<mm>_SemNIF`**: listagem individualizada dos titulares sem NIF (com tipo e número de documento de identificação);
+3. **`RESUMO_<ano>_<mm>_AML`**: quadro síntese com os totais por Entidade Emissora (`AT TML` e `AT CASCAIS`) e o total global da AML.
+
+Em todas as três folhas, o cabeçalho institucional (linhas 5 a 7, coluna B) é preenchido automaticamente com a identificação da Autoridade (`"AML"`), o ano (`ano`) e a designação do mês em maiúsculas (`MESES_PT_UPPER[mes]`).
+
+---
+
+## Preenchimento das Folhas de Detalhe (`ComNIF` e `SemNIF`)
+
+Os dados são escritos a partir da **linha 13** (`TEMPLATE_DATA_START_ROW = 13L`), após normalização pela função `prep_para_template()`:
+
+### Regras Comuns de Formatação
+
+* **Entidade Emissora (`emissor`)**: qualquer referência `"AT AML"` é normalizada para `"AT TML"`;
+* **Data de Nascimento (`birth_date_new`)**: gravada como data nativa do Excel com formato `dd/mm/yyyy`;
+* **PVP de Referência (`price_ticket_base_new`)** e **Compensação (`compensacao`)**: gravados como valores numéricos formatados a duas casas decimais (`#,##0.00`);
+* **Estimativa sem bilhética**: deixada vazia (`NA_real_`), uma vez que todo o apuramento da AML se baseia em contagens reais do sistema de bilhética;
+* **Categoria (`categoria`)**:
+  * `"B"` se `ticket_name_new` contém a palavra `"Complemento"` (passes com complemento inter-regional);
+  * `"A"` nos restantes casos;
+* **Fórmula de verificação na primeira linha (linha 13)**: na primeira linha de dados da coluna *Compensação*, é injetada a fórmula dinâmica do Excel para validação imediata pelo IMT:
+  * Em `ComNIF` (col. K): `=IF((I13+J13)>20, H13, H13*5%*(I13+J13))`
+  * Em `SemNIF` (col. L): `=IF((J13+K13)>20, I13, I13*5%*(J13+K13))`
+
+### Estrutura de Colunas (Template v2)
+
+| Coluna | Folha `AML_<ano>_<mm>_ComNIF` (`COLS_COMNIF_V2`) | Folha `AML_<ano>_<mm>_SemNIF` (`COLS_SEMNIF_V2`) |
+| :---: | :--- | :--- |
+| **A (1)** | Identificação AM/CIM (`"AML"`) | Identificação AM/CIM (`"AML"`) |
+| **B (2)** | Entidade emissora (`AT TML`, `AT Cascais`) | Entidade emissora (`AT TML`, `AT Cascais`) |
+| **C (3)** | Ano (`year_dist`) | Ano (`year_dist`) |
+| **D (4)** | Mês (`month_dist`) | Mês (`month_dist`) |
+| **E (5)** | **N.º NIF** (`fiscal_number`, numérico ordenado) | **Tipo de Documento** (`doc_type`) |
+| **F (6)** | Data de nascimento (`birth_date_new`) | **N.º do Documento** (`doc_number`) |
+| **G (7)** | Designação do título de referência (`nome_imt`) | Data de nascimento (`birth_date_new`) |
+| **H (8)** | PVP de referência (`price_ticket_base_new`) | Designação do título de referência (`nome_imt`) |
+| **I (9)** | N.º de validações (`numval`) | PVP de referência (`price_ticket_base_new`) |
+| **J (10)** | Estimativa sem bilhética *(vazio)* | N.º de validações (`numval`) |
+| **K (11)** | **Compensação (€)** (`compensacao`) | Estimativa sem bilhética *(vazio)* |
+| **L (12)** | Categoria (`"A"` ou `"B"`) | **Compensação (€)** (`compensacao`) |
+| **M (13)** | **N.º do cartão de suporte** (`cardserialnumber_new`) | Categoria (`"A"` ou `"B"`) |
+| **N (14)** | — | **N.º do cartão de suporte** (`cardserialnumber_new`) |
+
+* **Ordenação**: a folha `ComNIF` é ordenada numericamente por `fiscal_number`; a folha `SemNIF` é ordenada alfabeticamente por `doc_type` e `doc_number`.
+* **Número do cartão de suporte ao título de transporte**: é um campo **não solicitado**, que a TML considera ser relevante adicionar.
+
+---
+
+## Preenchimento da Folha `RESUMO`
+
+A folha `RESUMO_<ano>_<mm>_AML` agrega a compensação total (somando `comNIF` e `semNIF`) por entidade emissora nas linhas 13 a 15:
+
+* **Linha 13 (`AT TML`)**: soma de todos os títulos intermodais e metropolitanos sob gestão tarifária da TML;
+* **Linha 14 (`AT CASCAIS`)**: soma dos títulos exclusivos *Viver Cascais* emitidos pela AT Cascais;
+* **Linha 15 (`TOTAL`)**: soma global da compensação apurada na AML.
+
+Adicionalmente, a célula `E8` é atualizada com a fórmula indicativa `=SOMA.SE.S(...)` referenciando os nomes exatos das abas do mês corrente, para posterior validação.
+
+---
+
+## Atualização Automática do Histórico (`compensacao_pj_anteriores.csv`)
+
+No final da exportação do reporte Excel, o script invoca automaticamente a função `atualizar_compensacao_pj_anteriores(ano, mes, raiz)` (definida em [`code/00_config.R`](../code/00_config.R)), que atualiza ou acrescenta a linha do mês no ficheiro histórico [`data/auxiliar/compensacao_pj_anteriores.csv`](../data/auxiliar/compensacao_pj_anteriores.csv):
+
+| Coluna | Descrição |
+| :--- | :--- |
+| `ano`, `mes` | Ano e mês de referência |
+| `registos_pj` | N.º total de registos brutos antes da agregação (lido de `contagens_01.rds`) |
+| `utilizadores_pj` | N.º total de utilizadores elegíveis compensados (`nrow(dt_com) + nrow(dt_sem)`) |
+| `utilizadores_pj_semNIF` | N.º de utilizadores elegíveis sem NIF (`nrow(dt_sem)`) |
+| `validacoes_pj` | Total de validações realizadas pelos utilizadores elegíveis |
+| `validacoes_utilizador` | N.º médio de validações por utilizador ($\text{validacoes\_pj} / \text{utilizadores\_pj}$) |
+| `compensacao_valor` | Montante total de compensação apurado no mês (€, arredondado a 2 casas decimais) |
+| `compensasao_utilizador` | Compensação média por utilizador (€, arredondada a 8 casas decimais) |
+
+::: {.callout-note}
+## Consistência das Séries Homólogas e Gráficos
+Como o ficheiro `compensacao_pj_anteriores.csv` é atualizado de forma idempotente sempre que se corre o passo `03` (ou ao renderizar `metodologia1.qmd` / `informacao1.qmd`), os quadros de evolução mensal, as variações homólogas/mensais e os gráficos temporais nos documentos oficiais refletem imediatamente os valores apurados.
+:::
+
+---
+
+### Script: `03_exportar_reporte.R` {.unnumbered}
+
+A função `exportar_reporte(ano, mes, raiz)` gera:
+
+* `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_reporte_AML_IMT.xlsx`: Reporte Oficial Excel v2 pronto para submissão ao IMT;
+* `data/auxiliar/compensacao_pj_anteriores.csv`: Série histórica mensal atualizada.
+
