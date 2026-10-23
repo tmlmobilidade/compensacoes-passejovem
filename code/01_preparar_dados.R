@@ -293,7 +293,7 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
     mutate(
       age = if_else(
         !is.na(birth_date),
-        as.integer(floor(as.numeric(difftime(ref_date, birth_date, units = "days")) / 365.25)),
+        as.integer((birth_date %--% ref_date) / years(1)),
         age
       )
     ) |>

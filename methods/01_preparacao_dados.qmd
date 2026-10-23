@@ -67,9 +67,11 @@ Para corrigir erros persistentes na ficha de cliente exportada pelo sistema ITS 
 
 ### Recálculo da Idade e Tratamento de Casos-Limite
 
-Após a aplicação das correções de data de nascimento, a coluna `age` original do ITS pode estar desatualizada. O pipeline recalcula a idade para todos os registos com `birth_date` preenchida, tomando como referência o **dia 1 do mês de apuramento** ($t_{\text{ref}} = \text{ANO-MES-01}$):
+Após a aplicação das correções de data de nascimento, a coluna `age` original do ITS pode estar desatualizada. O pipeline recalcula a idade em anos civis completos (via `lubridate`, respeitando anos bissextos e 29 de fevereiro) para todos os registos com `birth_date` preenchida, tomando como referência o **dia 1 do mês de apuramento** ($t_{\text{ref}} = \text{ANO-MES-01}$):
 
-$$\text{age} = \left\lfloor \frac{t_{\text{ref}} - \text{birth\_date}}{365{,}25} \right\rfloor$$
+```r
+age = as.integer((birth_date %--% ref_date) / years(1))
+```
 
 Em seguida, corrige dois **casos-limite** decorrentes do facto de a elegibilidade mensal considerar o mês de aniversário (ignorando o dia específico do mês):
 
