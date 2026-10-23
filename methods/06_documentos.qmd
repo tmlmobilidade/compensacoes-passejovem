@@ -1,4 +1,4 @@
-# Relatórios Oficiais, Informações e Ofícios
+# Relatórios: Informações e Ofícios
 
 A etapa documental do procedimento é assegurada pelo script [`code/10_documentos.R`](../code/10_documentos.R) em articulação com [`code/doc_params.R`](../code/doc_params.R), compilando automaticamente os documentos formais de suporte à decisão interna e de comunicação externa ao IMT e aos operadores através do **Quarto**, utilizando o motor **Typst** para PDF e **Pandoc** (com pós-processamento OpenXML) para Microsoft Word (`.docx`).
 
@@ -15,7 +15,7 @@ Renderizados quando `RUN_FASE1 = TRUE`:
 1. **Informação 1 — Apuramento Mensal para o IMT** ([`code/informacao1.qmd`](../code/informacao1.qmd)):
    * **Ficheiros gerados**: `<ano>_<mm>_informacao1.pdf` e `<ano>_<mm>_informacao1.docx`;
    * **Destinatário**: Conselho de Administração da TML (`doc-tipo: interno`);
-   * **Conteúdo**: enquadramento legal, síntese do apuramento mensal (registos brutos, exclusões, utilizadores `comNIF`/`semNIF`, validações e compensação por título e entidade emissora), evolução mensal e homóloga, ponto de situação dos pagamentos da ETF (incluindo pagamentos convencionais por conta ao abrigo da Portaria n.º 287/2026/1) e proposta de envio ao IMT.
+   * **Conteúdo**: enquadramento legal, síntese do apuramento mensal (registos brutos, exclusões, utilizadores `comNIF`/`semNIF`, validações e compensação por título e entidade emissora), evolução mensal e homóloga, ponto de situação dos pagamentos da ETF (incluindo pagamentos convencionais por conta ao abrigo da Portaria n.º 287/2026/1 [-@Portaria287_2026]) e proposta de envio ao IMT.
 
 2. **Ofício 1 — Comunicação Mensal ao IMT** ([`code/oficio1.qmd`](../code/oficio1.qmd)):
    * **Ficheiros gerados**: `<ano>_<mm>_oficio1.pdf` e `<ano>_<mm>_oficio1.docx`;
@@ -23,16 +23,16 @@ Renderizados quando `RUN_FASE1 = TRUE`:
    * **Conteúdo**: ofício formal de remessa do reporte mensal (`<ano>_<mm>_reporte_AML_IMT.xlsx`) e da respetiva Nota Metodológica.
 
 3. **Anexo — Nota Metodológica (Fase 1)** ([`code/metodologia1.qmd`](../code/metodologia1.qmd)):
-   * **Ficheiro gerado**: `<ano>_<mm>_metodologia1.pdf` (apenas PDF/Typst, `render_docx = FALSE`);
+   * **Ficheiro gerado**: `<ano>_<mm>_metodologia1.pdf`;
    * **Destinatário**: IMT, I. P. (`doc-tipo: externo`);
-   * **Conteúdo**: descrição metodológica do apuramento, títulos elegíveis, contabilização de validações, quadros resumo do mês, tabela e gráfico de evolução desde janeiro de 2024 (em página paisagem) e quadro histórico de pagamentos solicitados e recebidos.
+   * **Conteúdo**: descrição metodológica do apuramento, títulos elegíveis, contabilização de validações, quadros resumo do mês, tabela e gráfico de evolução desde janeiro de 2024 e quadro resumo de pagamentos solicitados e recebidos no ano corrente.
 
 ### Documentos da Fase 2 — Repartição pelos Operadores e Congelamento
 
-Renderizados quando `RUN_FASE2 = TRUE` (requerem que os scripts `04` e `05` já tenham sido executados):
+Renderizados quando `RUN_FASE2 = TRUE` (requerem que os scripts da Fase 1 já tenham sido executados):
 
 4. **Anexo I — Nota Metodológica de Apuramento e Repartição** ([`code/metodologia2.qmd`](../code/metodologia2.qmd)):
-   * **Ficheiro gerado**: `<ano>_<mm>_AnexoI_metodologia.pdf` (apenas PDF/Typst, `out_name = "AnexoI_metodologia"`);
+   * **Ficheiro gerado**: `<ano>_<mm>_AnexoI_metodologia.pdf`;
    * **Destinatário**: Operadores de Transporte e Autoridades de Transportes (`doc-tipo: externo`);
    * **Conteúdo**: nota metodológica completa que integra o apuramento mensal remetido ao IMT com a metodologia de repartição pelos operadores (quotas dinâmicas PKM referenciadas pelo ofício Navegante `numero_oficio1_navegante`) e as fórmulas de cálculo do congelamento tarifário (TAT) para Passes Navegante e Outros Passes.
 
@@ -73,11 +73,11 @@ RENDER_DOCX <- TRUE
 
 ### Gestão Centralizada de Números de Documento (`documents_nr.csv`)
 
-Os números oficiais de registo das Informações e Ofícios são lidos automaticamente da tabela partilhada `Compensacoes/lists/documents_nr.csv` através da função `get_doc_nr(col, default, tipo)`:
+Os números oficiais de registo das Informações e Ofícios são lidos automaticamente da tabela partilhada [`compensacoes-navegante/lists/documents_nr.csv`]((../Compensacoes/lists/documents_nr.csv)) através da função `get_doc_nr(col, default, tipo)`:
 
 * Para `tipo = "passejovem"`: obtém `numero_informacao1`, `numero_oficio1`, `numero_informacao2` e `numero_oficio2`;
 * Para `tipo = "navegante"`: obtém `numero_informacao1_navegante` e `numero_oficio1_navegante` (utilizados em `informacao2.qmd`, `oficio2.qmd` e `metodologia2.qmd` para referenciar a Informação e o Ofício onde foram aprovadas e comunicadas as quotas dinâmicas do mês).
-* Caso a linha do mês ainda não esteja preenchida em `documents_nr.csv`, são utilizados placeholders (`"TML-XXXX-XXXX-INF-XXXX-DEP"`).
+* Caso a linha do mês ainda não esteja preenchida em `documents_nr.csv`, são utilizados placeholders por omissão (`"TML-XXXX-XXXX-INF-XXXX-DEP"`).
 
 ---
 

@@ -121,7 +121,7 @@ Rscript code/03_exportar_reporte.R 2026 7
 Rscript code/10_documentos.R 2026 7
 ```
 
-### Consola R / RStudio
+### Consola R
 
 ```r
 source("code/99_run_pipeline.R")
@@ -164,9 +164,10 @@ render_documentos(2026, 7, run_fase1 = TRUE, run_fase2 = TRUE)
 4. [ ] Auditar `a_verificar.csv`, `age_nok.csv` e `documentos_estranhos_semNIF.csv`; se houver novas correções/exceções, atualizar `data/auxiliar/` e voltar a correr a Fase 1.
 5. [ ] Validar `docs/<ano>_<mm>_reporte_AML_IMT.xlsx`.
 6. [ ] Registar `numero_informacao1` e `numero_oficio1` em `Compensacoes/lists/documents_nr.csv`, atualizar `code/doc_params.R` e compilar `informacao1`, `oficio1` e `metodologia1`.
-7. [ ] Confirmar a disponibilidade do ficheiro de quotas do mês (`1_quotas_<mes><aa>.csv`) em `Compensacoes`.
-8. [ ] Correr a **Fase 2** (`run_fase1 = FALSE`, `run_fase2 = TRUE`).
-9. [ ] Verificar que os totais de `passejovem_resumo.csv` e `docs/<ano>_<mm>_AnexoII_reparticao.xlsx` coincidem com o total apurado na Fase 1.
-10. [ ] Registar `numero_informacao2` e `numero_oficio2` em `Compensacoes/lists/documents_nr.csv`, rever parâmetros em `code/doc_params.R` e compilar `AnexoI_metodologia`, `informacao2` e `oficio2`.
-11. [ ] Efetuar commit das alterações e criar tag Git do mês (`git tag -a run-2026-08-agosto -m "Passe Jovem agosto 2026"`).
+7. [ ] _Subir os dados comNIF e semNIF no Oracle (se ainda for caso disso, para manter histórico)._
+8. [ ] Confirmar a disponibilidade do ficheiro de quotas do mês (`1_quotas_<mes><aa>.csv`) em `Compensacoes`.
+9. [ ] Correr a **Fase 2** (`run_fase1 = FALSE`, `run_fase2 = TRUE`).
+10. [ ] Verificar que os totais de `passejovem_resumo.csv` e `docs/<ano>_<mm>_AnexoII_reparticao.xlsx` coincidem com o total apurado na Fase 1.
+11. [ ] Registar `numero_informacao2` e `numero_oficio2` em `Compensacoes/lists/documents_nr.csv`, rever parâmetros em `code/doc_params.R` e compilar `AnexoI_metodologia`, `informacao2` e `oficio2`.
+12. [ ] Efetuar commit das alterações e criar tag Git do mês (`git tag -a run-2026-08-agosto -m "Passe Jovem agosto 2026"`).
 

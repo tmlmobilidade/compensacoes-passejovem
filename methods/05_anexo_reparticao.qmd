@@ -2,7 +2,7 @@
 
 No quinto passo do pipeline (segunda etapa da **Fase 2**), o script [`code/05_exportar_anexo_reparticao.R`](../code/05_exportar_anexo_reparticao.R) constrói o livro oficial em Excel **`<ano>_<mm>_AnexoII_reparticao.xlsx`**, que acompanha a Informação 2 e os Ofícios de comunicação da repartição aos operadores.
 
-Ao contrário de uma simples exportação de valores estáticos, este workbook incorpora **fórmulas nativas de Excel** em todas as células de repartição, subtotais, totais e fatores de congelamento, garantindo total transparência e auditabilidade pelas entidades destinatárias.
+Este workbook incorpora **fórmulas nativas de Excel** em todas as células de repartição, subtotais, totais e fatores de congelamento, garantindo total transparência e auditabilidade pelas entidades destinatárias.
 
 ---
 
@@ -39,7 +39,7 @@ A Folha 1 encontra-se organizada lado a lado em dois blocos separados pela colun
 ### Fórmulas e Regra de Arredondamento na Folha 1
 
 | Linhas | Descrição | Fórmula Excel Aplicada (`M:W`) |
-| :--- | :--- | :--- |
+| :-- | :---- | :---- |
 | **Linhas 5 a 10** | Linhas individuais de título (`Passes Navegante` + `Outros Passes`) | `=$L<row>*<col_quota><row>` *(Compensação total $\times$ Quota, sem `ROUND`)* |
 | **Linha 11** | Subtotal **`Total Passes Navegante`** | `=SUM(M5:M8)` *(soma exata sem arredondamento intermédio)* |
 | **Linha 12** | Subtotal **`Total Outros Passes`** | `=SUM(M9:M10)` *(soma exata sem arredondamento intermédio)* |
@@ -64,6 +64,12 @@ A Folha 2 sintetiza os montantes devidos a cada um dos 11 operadores (linhas 6 a
 3. **Linha `TOTAL` (`Linha 17`)**:
    * Todas as colunas monetárias (`D` a `I`) utilizam `=ROUND(SUM(<col>6:<col>16), 2)`, garantindo consistência ao cêntimo.
 
+::: {.callout-note}
+## TT e SL
+Neste documento anexo, os operadores **TT** e **SL** aparecem separadamente.
+Na informação e ofício, estes aparecem combinados como **TT SL**.
+:::
+
 ### Bloco de Notas e Parâmetros TAT (`Linhas 19 a 23`)
 
 Na parte inferior da Folha 2 é inserido um quadro auto-contido com os parâmetros da Taxa de Atualização Tarifária:
@@ -81,7 +87,7 @@ Em ambas as folhas, os valores iguais a zero (`== 0`) recebem formatação condi
 
 ### Script: `05_exportar_anexo_reparticao.R` {.unnumbered}
 
-A função `exportar_anexo_reparticao(ano, mes, raiz)` pode ser executada isoladamente em menos de 1 segundo (desde que `04_estimar_compensacao_operadores.R` já tenha sido corrido) e gera:
+A função `exportar_anexo_reparticao(ano, mes, raiz)` pode ser executada isoladamente (desde que `04_estimar_compensacao_operadores.R` já tenha sido corrido) e gera:
 
 * `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_AnexoII_reparticao.xlsx`.
 

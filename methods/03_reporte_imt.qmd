@@ -42,7 +42,7 @@ Os dados são escritos a partir da **linha 13** (`TEMPLATE_DATA_START_ROW = 13L`
 ### Estrutura de Colunas (Template v2)
 
 | Coluna | Folha `AML_<ano>_<mm>_ComNIF` (`COLS_COMNIF_V2`) | Folha `AML_<ano>_<mm>_SemNIF` (`COLS_SEMNIF_V2`) |
-| :---: | :--- | :--- |
+| :--: | :---- | :---- |
 | **A (1)** | Identificação AM/CIM (`"AML"`) | Identificação AM/CIM (`"AML"`) |
 | **B (2)** | Entidade emissora (`AT TML`, `AT Cascais`) | Entidade emissora (`AT TML`, `AT Cascais`) |
 | **C (3)** | Ano (`year_dist`) | Ano (`year_dist`) |

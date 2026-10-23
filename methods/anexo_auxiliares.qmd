@@ -14,11 +14,11 @@ A pasta `data/auxiliar/` contém cinco ficheiros CSV que asseguram a limpeza, va
 
 | Ficheiro | Estrutura / Colunas | Função e Utilização |
 | :--- | :--- | :--- |
-| `nif_repescagem2024.csv` | `card_serial_number;fiscal_number` | Base de recuperação de NIFs identificada a partir da ficha de cliente (2024). Utilizada em [`01_preparar_dados.R`](../code/01_preparar_dados.R) para preencher `fiscal_number` exclusivamente nos registos (ITS, Cascais e Azambuja) onde o NIF vem vazio (`NA`). |
-| `data_nascimento_correct.csv` | `card_serial_number;dn_errada;fiscal_number;dn_corrigida` | Lista de cartões com erro de digitação na data de nascimento validada manualmente. Utilizada em [`01_preparar_dados.R`](../code/01_preparar_dados.R) para substituir `birth_date` por `dn_corrigida` antes do recálculo da idade. |
-| `nif_correct.csv` | `card_serial_number;birth_date;fiscal_number` | Lista de cartões com NIF e/ou data de nascimento corrigidos manualmente. Aplicada em [`01_preparar_dados.R`](../code/01_preparar_dados.R) por `card_serial_number`. |
-| `id_exception.csv` | `doc_type;doc_number;motivo` | Lista de exceções de documentos de identificação nos registos `semNIF`. Utilizada em [`02_calcular_compensacoes.R`](../code/02_calcular_compensacoes.R) (`is_in_id_exception()`) para forçar o agrupamento por documento (`DOC_<tipo>_<número>`) em casos auditados manualmente e sinalizá-los em `a_verificar.csv`. Se `doc_type` estiver vazio, a correspondência é feita apenas por `doc_number`. |
-| `compensacao_pj_anteriores.csv` | `ano;mes;registos_pj;utilizadores_pj;utilizadores_pj_semNIF;validacoes_pj;validacoes_utilizador;compensacao_valor;compensasao_utilizador` | Série histórica mensal consolidada desde janeiro de 2024. Atualizada automaticamente pela função `atualizar_compensacao_pj_anteriores()` em [`00_config.R`](../code/00_config.R) / [`03_exportar_reporte.R`](../code/03_exportar_reporte.R) e lida pelos relatórios Quarto (`informacao1.qmd`, `metodologia1.qmd`, `metodologia2.qmd`). |
+| `nif_repescagem2024.csv` | `card_serial_number; fiscal_number` | Base de recuperação de NIFs identificada a partir da ficha de cliente (2024). Utilizada em [`01_preparar_dados.R`](../code/01_preparar_dados.R) para preencher `fiscal_number` exclusivamente nos registos (ITS, Cascais e Azambuja) onde o NIF vem vazio (`NA`). |
+| `data_nascimento_correct.csv` | `card_serial_number; dn_errada; fiscal_number; dn_corrigida` | Lista de cartões com erro de digitação na data de nascimento validada manualmente. Utilizada em [`01_preparar_dados.R`](../code/01_preparar_dados.R) para substituir `birth_date` por `dn_corrigida` antes do recálculo da idade. |
+| `nif_correct.csv` | `card_serial_number; birth_date; fiscal_number` | Lista de cartões com NIF e/ou data de nascimento corrigidos manualmente. Aplicada em [`01_preparar_dados.R`](../code/01_preparar_dados.R) por `card_serial_number`. |
+| `id_exception.csv` | `doc_type; doc_number; motivo` | Lista de exceções de documentos de identificação nos registos `semNIF`. Utilizada em [`02_calcular_compensacoes.R`](../code/02_calcular_compensacoes.R) (`is_in_id_exception()`) para forçar o agrupamento por documento (`DOC_<tipo>_<número>`) em casos auditados manualmente e sinalizá-los em `a_verificar.csv`. Se `doc_type` estiver vazio, a correspondência é feita apenas por `doc_number`. |
+| `compensacao_pj_anteriores.csv` | `ano; mes; registos_pj; utilizadores_pj; utilizadores_pj_semNIF; validacoes_pj; validacoes_utilizador; compensacao_valor; compensasao_utilizador` | Série histórica mensal consolidada desde janeiro de 2024. Atualizada automaticamente pela função `atualizar_compensacao_pj_anteriores()` em [`00_config.R`](../code/00_config.R) / [`03_exportar_reporte.R`](../code/03_exportar_reporte.R) e lida pelos relatórios Quarto (`informacao1.qmd`, `metodologia1.qmd`, `metodologia2.qmd`). |
 
 ---
 
@@ -27,9 +27,9 @@ A pasta `data/auxiliar/` contém cinco ficheiros CSV que asseguram a limpeza, va
 | Ficheiro em `documents/` | Descrição | Utilizado em |
 | :--- | :--- | :--- |
 | `Template_PASSE GRATUITO JOVEM - REPORTE - CIM_AT para IMT (Mensal) - 2026 - V2.xlsx` | Template oficial em Excel (versão 2, com colunas de documento para `semNIF` e número de cartão de suporte) exigido pelo IMT. | [`03_exportar_reporte.R`](../code/03_exportar_reporte.R) |
-| `2024_01_05_portaria_7a.pdf` | Portaria n.º 7-A/2024, de 5 de janeiro (versão original). | Referência legal |
-| `2024_12_Portaria 307-A_2024_1.pdf` | Portaria n.º 307-A/2024/1, de 27 de novembro (1.ª alteração). | Referência legal |
-| `2026_07_portaria_287_2026_1_passejovem.pdf` | Portaria n.º 287/2026/1, de 7 de julho (2.ª alteração — regime de pagamentos por conta). | Referência legal |
+| `2024_01_05_portaria_7a.pdf` | Portaria n.º 7-A/2024, de 5 de janeiro (versão original) [-@Portaria7A2024]. | Referência legal |
+| `2024_12_Portaria 307-A_2024_1.pdf` | Portaria n.º 307-A/2024/1, de 27 de novembro (1.ª alteração) [-@Portaria307A2024]. | Referência legal |
+| `2026_07_portaria_287_2026_1_passejovem.pdf` | Portaria n.º 287/2026/1, de 7 de julho (2.ª alteração — regime de pagamentos por conta) [-@Portaria287_2026]. | Referência legal |
 
 ---
 
@@ -42,7 +42,7 @@ A Fase 2 (`04_estimar_compensacao_operadores.R` e `05_exportar_anexo_reparticao.
 | `data/<mm>_<mes_abrev>_<ano>/output/1_quotas_<mes_abrev><aa>.csv` | Quotas mensais dinâmicas de repartição por título (`ticket_code`) e operador (`operador`). | Não (dados locais de output) |
 | [`lists/titulos.csv`](../Compensacoes/lists/titulos.csv) | Catálogo oficial dos 145 títulos Navegante com `ticket_code`, `titulo_nome`, `modalidade`, `pvp`, `titulo_nome_base` e `preco_base`. | Sim (`ler_lista_compensacoes()`) |
 | [`lists/tat.csv`](../Compensacoes/lists/tat.csv) | Taxas de Atualização Tarifária anuais (`ano;tat`) para o cálculo dos fatores cumulativos de congelamento. | Sim (`ler_lista_compensacoes()`) |
-| `lists/documents_nr.csv` | Registo centralizado dos números de referência oficial das Informações e Ofícios (`tipo`, `ano`, `mes`, `numero_informacao1`, `numero_oficio1`, `numero_informacao2`, `numero_oficio2`). | Não (lido localmente em `doc_params.R`) |
+| [`lists/documents_nr.csv`](../Compensacoes/lists/documents_nr.csv) | Registo centralizado dos números de referência oficial das Informações e Ofícios (`tipo`, `ano`, `mes`, `numero_informacao1`, `numero_oficio1`, `numero_informacao2`, `numero_oficio2`). | Não (lido localmente em `doc_params.R`) |
 
 ---
 
