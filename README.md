@@ -95,12 +95,9 @@ Rscript code/99_run_pipeline.R 2026 8
 
 # Vários meses
 Rscript code/99_run_pipeline.R 2026 8 9
-
-# Todos os meses de 2026 em data/
-Rscript code/99_run_pipeline.R 2026
 ```
 
-No R / RStudio:
+No R
 
 ```r
 source("code/99_run_pipeline.R")
@@ -114,7 +111,7 @@ Controlo das fases em `code/00_config.R` (ou como argumentos de `run_pipeline()`
 | --------------- | -------------------------------------------------------------------- |
 | `RUN_FASE1`   | `TRUE` corre a Fase 1 (`01`–`03` + documentos 1); `FALSE` salta-a |
 | `RUN_FASE2`   | `TRUE` corre a Fase 2 (`04`–`05` + documentos 2); `FALSE` salta-a |
-| `RENDER_DOCS` | `TRUE` renderiza os documentos Quarto das fases ativas             |
+| `RENDER_DOCS` | `TRUE` renderiza os documentos das fases ativas             |
 
 ```r
 # Só Fase 2 (Fase 1 já corrida), sem documentos
@@ -174,17 +171,17 @@ Em `data/AAAA_MM_mes/output/`:
 | `AAAA_MM_semNIF.csv`                         | Compensação por documento (ou cartão) para quem não tem NIF                                   |
 | `AAAA_MM_a_verificar.csv`                    | Registos suspeitos para revisão manual (exceção ID, datas distintas, sem NIF, idade > 23)      |
 | `AAAA_MM_age_nok.csv`                        | Registos excluídos por idade incompatível (3 ou ≥ 25 anos)                                     |
-| `AAAA_MM_documentos_estranhos_semNIF.csv`    | Documentos semNIF anómalos (zeros, noves, repetidos, < 6 dígitos, partilhados…)                |
+| `AAAA_MM_documentos_estranhos_semNIF.csv`    | Documentos semNIF anómalos 
 | `AAAA_MM_limpos_preagregacao.csv`            | Dados limpos antes da agregação (intermédio)                                                   |
 | `AAAA_MM_complemento_azambuja.csv`           | Complemento Azambuja normalizado                                                                  |
 | `AAAA_MM_registos_brutos.rds`                | Nº de registos brutos (para o histórico)                                                        |
 | `AAAA_MM_compensacao_por_titulo.csv`         | **Fase 2** — compensação por título, decomposta em Navegante / Complemento CM / Viver Cascais |
 | `AAAA_MM_passejovem_resumo.csv`              | **Fase 2** — compensação por título de referência e por operador (11 operadores)             |
 | `AAAA_MM_passejovem_congelamento.csv`        | **Fase 2** — Congelamento Tarifário (TAT) por operador                                          |
-| `docs/AAAA_MM_AnexoII_reparticao.xlsx`       | **Fase 2** — Anexo II: repartição e congelamento em Excel com fórmulas                        |
 | `docs/AAAA_MM_informacao1/oficio1.pdf/.docx` | **Fase 1** — Informação 1 e Ofício 1 (IMT)                                                    |
 | `docs/AAAA_MM_informacao2/oficio2.pdf/.docx` | **Fase 2** — Informação 2 e Ofício 2 (operadores)                                             |
 | `docs/AAAA_MM_AnexoI_metodologia.pdf`        | **Fase 2** — Anexo I: nota metodológica com repartição                                        |
+| `docs/AAAA_MM_AnexoII_reparticao.xlsx`       | **Fase 2** — Anexo II: repartição e congelamento em Excel com fórmulas                        |
 
 ---
 
@@ -193,8 +190,6 @@ Em `data/AAAA_MM_mes/output/`:
 Depois de validar o reporte e emitir os documentos, faz commit do código e dos parâmetros e cria uma tag:
 
 ```bash
-git add code/ README.md procedure.md
-git commit -m "feat(fecho): fecho de contas Passe Jovem agosto 2026"
 git tag -a run-2026-08-agosto -m "Passe Jovem agosto 2026"
 git push origin main --tags
 ```
