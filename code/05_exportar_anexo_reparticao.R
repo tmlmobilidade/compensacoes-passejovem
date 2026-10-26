@@ -413,10 +413,14 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   ws2 <- paste0(sufixo, "_resumo_congelamento")
   addWorksheet(wb, ws2, tabColour = cor_gold_sub)
 
+  # Na Folha 2, TT e SL surgem agregados numa única linha "TT SL"
+  ops_s2 <- c("CP", "FT", "TT SL", setdiff(ops, c("CP", "FT", "TT", "SL")))
+  n_ops_s2 <- length(ops_s2)
+
   df_s2_base <- tibble(
-    ano      = c(rep(as.integer(ano), n_ops), as.integer(ano)),
-    mes      = c(rep(as.integer(mes), n_ops), as.integer(mes)),
-    operador = c(ops, "TOTAL")
+    ano      = c(rep(as.integer(ano), n_ops_s2), as.integer(ano)),
+    mes      = c(rep(as.integer(mes), n_ops_s2), as.integer(mes)),
+    operador = c(ops_s2, "TOTAL")
   )
 
   # Títulos e sub-cabeçalhos da Folha 2 (com linha 2 de separação igual à Folha 1)
@@ -453,19 +457,38 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
 
   writeData(wb, ws2, x = df_s2_base, startRow = 6, startCol = 1, colNames = FALSE)
 
-  r_data_s2 <- 6:(5 + n_ops)
-  even_s2   <- r_data_s2[seq_len(n_ops) %% 2 == 0]
-  rw_tot_s2 <- 6 + n_ops
+  r_data_s2 <- 6:(5 + n_ops_s2)
+  even_s2   <- r_data_s2[seq_len(n_ops_s2) %% 2 == 0]
+  rw_tot_s2 <- 6 + n_ops_s2
 
   # Posições das células de Fator Cumulativo no bloco de Notas (abaixo da tabela)
   rw_meta   <- rw_tot_s2 + 2
   rw_fc_nav <- rw_meta + 2
   rw_fc_out <- rw_meta + 3
 
-  # Fórmulas nas linhas de operadores da Folha 2 (sem arredondamento intermédio)
-  cols_op_s1 <- vapply(12 + seq_len(n_ops), int2col, character(1))
-  f_s2_nav   <- sprintf("SUM(%s!%s%d:%s%d)", ws1, cols_op_s1, min(r_nav_s1), cols_op_s1, max(r_nav_s1))
-  f_s2_out   <- sprintf("SUM(%s!%s%d:%s%d)", ws1, cols_op_s1, min(r_out_s1), cols_op_s1, max(r_out_s1))
+  # Fórmulas nas linhas de operadores da Folha 2 (sem arredondamento intermédio; TT SL soma TT + SL)
+  f_s2_nav <- vapply(ops_s2, function(op_nm) {
+    if (op_nm == "TT SL") {
+      col_tt <- int2col(12 + match("TT", ops))
+      col_sl <- int2col(12 + match("SL", ops))
+      sprintf("SUM(%s!%s%d:%s%d)", ws1, col_tt, min(r_nav_s1), col_sl, max(r_nav_s1))
+    } else {
+      col_let <- int2col(12 + match(op_nm, ops))
+      sprintf("SUM(%s!%s%d:%s%d)", ws1, col_let, min(r_nav_s1), col_let, max(r_nav_s1))
+    }
+  }, character(1), USE.NAMES = FALSE)
+
+  f_s2_out <- vapply(ops_s2, function(op_nm) {
+    if (op_nm == "TT SL") {
+      col_tt <- int2col(12 + match("TT", ops))
+      col_sl <- int2col(12 + match("SL", ops))
+      sprintf("SUM(%s!%s%d:%s%d)", ws1, col_tt, min(r_out_s1), col_sl, max(r_out_s1))
+    } else {
+      col_let <- int2col(12 + match(op_nm, ops))
+      sprintf("SUM(%s!%s%d:%s%d)", ws1, col_let, min(r_out_s1), col_let, max(r_out_s1))
+    }
+  }, character(1), USE.NAMES = FALSE)
+
   f_s2_tot   <- sprintf("D%d+E%d", r_data_s2, r_data_s2)
   f_s2_cnav  <- sprintf("D%d*$I$%d", r_data_s2, rw_fc_nav)
   f_s2_cout  <- sprintf("E%d*$I$%d", r_data_s2, rw_fc_out)

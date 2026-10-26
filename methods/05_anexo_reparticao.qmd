@@ -49,34 +49,33 @@ A Folha 1 encontra-se organizada lado a lado em dois blocos separados pela colun
 
 ## Folha 2: Resumo por Operador e Congelamento Tarifário (TAT)
 
-A Folha 2 sintetiza os montantes devidos a cada um dos 11 operadores (linhas 6 a 16) e o total global (linha 17), dividindo-se visualmente em duas secções cromáticas:
+A Folha 2 sintetiza os montantes devidos aos operadores (linhas 6 a 15, com **`TT`** e **`SL`** agregados numa única linha **`TT SL`**) e o total global (linha 16), dividindo-se visualmente em duas secções cromáticas:
 
 1. **Secção Dourada (`Colunas D:F`) — Compensação Passe Jovem (€)**:
-   * **Coluna `D` (`Passes Navegante`)**: referencia diretamente o intervalo de títulos Navegante da Folha 1 para cada operador (`=SUM(jul26!M5:M8)` até `=SUM(jul26!W5:W8)`);
-   * **Coluna `E` (`Outros Passes`)**: referencia o intervalo de Outros Passes da Folha 1 (`=SUM(jul26!M9:M10)` até `=SUM(jul26!W9:W10)`);
+   * **Coluna `D` (`Passes Navegante`)**: referencia diretamente o intervalo de títulos Navegante da Folha 1 para cada operador (`=SUM(jul26!M5:M8)` até `=SUM(jul26!W5:W8)`, sendo `=SUM(jul26!O5:P8)` para `TT SL`);
+   * **Coluna `E` (`Outros Passes`)**: referencia o intervalo de Outros Passes da Folha 1 (`=SUM(jul26!M9:M10)` até `=SUM(jul26!W9:W10)`, sendo `=SUM(jul26!O9:P10)` para `TT SL`);
    * **Coluna `F` (`TOTAL`)**: soma das duas componentes (`=D<row>+E<row>`).
 
 2. **Secção Cinzenta (`Colunas G:I`) — Compensação por Congelamento Tarifário - TAT (€)**:
-   * **Coluna `G` (`Congelamento Passes Navegante`)**: multiplica a coluna `D` pelo fator cumulativo Navegante na célula `$I$21` (`=D<row>*$I$21`);
-   * **Coluna `H` (`Congelamento Outros Passes`)**: multiplica a coluna `E` pelo fator cumulativo de Outros Passes na célula `$I$22` (`=E<row>*$I$22`);
+   * **Coluna `G` (`Congelamento Passes Navegante`)**: multiplica a coluna `D` pelo fator cumulativo Navegante na célula `$I$20` (`=D<row>*$I$20`);
+   * **Coluna `H` (`Congelamento Outros Passes`)**: multiplica a coluna `E` pelo fator cumulativo de Outros Passes na célula `$I$21` (`=E<row>*$I$21`);
    * **Coluna `I` (`Congelamento TOTAL`)**: soma do congelamento (`=G<row>+H<row>`).
 
-3. **Linha `TOTAL` (`Linha 17`)**:
-   * Todas as colunas monetárias (`D` a `I`) utilizam `=ROUND(SUM(<col>6:<col>16), 2)`, garantindo consistência ao cêntimo.
+3. **Linha `TOTAL` (`Linha 16`)**:
+   * Todas as colunas monetárias (`D` a `I`) utilizam `=ROUND(SUM(<col>6:<col>15), 2)`, garantindo consistência ao cêntimo.
 
 ::: {.callout-note}
 ## TT e SL
-Neste documento anexo, os operadores **TT** e **SL** aparecem separadamente.
-Na informação e ofício, estes aparecem combinados como **TT SL**.
+Na Folha 1 (repartição por título e quotas), os operadores **TT** e **SL** aparecem separadamente; na Folha 2 (`_resumo_congelamento`), na Informação e no Ofício, surgem agregados numa única linha **`TT SL`**.
 :::
 
-### Bloco de Notas e Parâmetros TAT (`Linhas 19 a 23`)
+### Bloco de Notas e Parâmetros TAT (`Linhas 18 a 22`)
 
 Na parte inferior da Folha 2 é inserido um quadro auto-contido com os parâmetros da Taxa de Atualização Tarifária:
 
-* **Colunas `A:C` (`Linhas 21 a 23`)**: série histórica anual de taxas TAT lida de `tat.csv` (`2024`, `2025`, `2026`);
-* **Célula `I21` (`Fator Cumulativo — Congelamento Passes Navegante`)**: calculada dinamicamente pela fórmula Excel `=(1+C21)*(1+C22)*(1+C23)-1`;
-* **Célula `I22` (`Fator Cumulativo — Congelamento Outros Passes`)**: calculada dinamicamente pela fórmula Excel `=C21*(1+C22)*(1+C23)`.
+* **Colunas `A:C` (`Linhas 20 a 22`)**: série histórica anual de taxas TAT lida de `tat.csv` (`2024`, `2025`, `2026`);
+* **Célula `I20` (`Fator Cumulativo — Congelamento Passes Navegante`)**: calculada dinamicamente pela fórmula Excel `=(1+C20)*(1+C21)*(1+C22)-1`;
+* **Célula `I21` (`Fator Cumulativo — Congelamento Outros Passes`)**: calculada dinamicamente pela fórmula Excel `=C20*(1+C21)*(1+C22)`.
 
 ::: {.callout-tip}
 ## Formatação Condicional de Zeros
