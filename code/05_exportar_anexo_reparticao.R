@@ -79,30 +79,48 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   df_rows <- resumo |>
     left_join(info_tit, by = "ticket_code") |>
     mutate(
-      eh_outro   = linha %in% c("Complemento CM", "Viver Cascais"),
-      linha      = coalesce(titulo_nome, linha),
-      modalidade = if ("modalidade" %in% names(resumo)) coalesce(modalidade_tit, modalidade)
-                   else coalesce(modalidade_tit, ticket_modalidade_operador),
-      pvp        = coalesce(pvp, 0),
+      eh_cm      = ticket_code == as.character(CODE_COMP_RESUMO) | str_starts(linha, "Complemento CM"),
+      eh_cascais = coalesce(ticket_operator_code == 21L, FALSE) | str_starts(linha, "Viver Cascais"),
+      eh_outro   = eh_cm | eh_cascais,
+      linha = case_when(
+        !is.na(titulo_nome) ~ titulo_nome,
+        eh_cm               ~ "Complemento CM Sub18 +TP_Sub23 +TP",
+        eh_cascais          ~ "Viver Cascais Residente ou Estudante",
+        TRUE                ~ linha
+      ),
+      modalidade = case_when(
+        !is.na(modalidade_tit) ~ modalidade_tit,
+        eh_cm                  ~ "Sub18 +TP_Sub23 +TP",
+        eh_cascais             ~ "Residente_Estudante",
+        "modalidade" %in% names(resumo) ~ modalidade,
+        TRUE                   ~ NA_character_
+      ),
+      pvp = coalesce(pvp, 0),
+      titulo_nome_base = case_when(
+        !is.na(titulo_nome_base) ~ titulo_nome_base,
+        eh_cm                    ~ "Complemento CM",
+        eh_cascais               ~ "Viver Cascais",
+        TRUE                     ~ NA_character_
+      ),
       preco_base = case_when(
-        !is.na(preco_base)          ~ preco_base,
-        linha == "Viver Cascais"    ~ PRECO_CASCAIS,
-        linha == "Complemento CM"   ~ 20,
-        TRUE                        ~ NA_real_
+        !is.na(preco_base)       ~ preco_base,
+        eh_cascais               ~ PRECO_CASCAIS,
+        eh_cm                    ~ 20,
+        TRUE                     ~ NA_real_
       )
     ) |>
     select(
       ano, mes, ticket_operator_code, ticket_code, linha,
       modalidade, pvp, titulo_nome_base,
-      preco_base, passes, validacoes, compensacao_total, all_of(ops), eh_outro
+      preco_base, passes, validacoes, compensacao_total, all_of(ops), eh_outro, eh_cm, eh_cascais
     )
 
   n_nav_s1  <- sum(!df_rows$eh_outro)
   n_data_s1 <- nrow(df_rows)
 
-  df_rows_nav <- df_rows |> filter(!eh_outro) |> select(-eh_outro)
-  df_rows_out <- df_rows |> filter(eh_outro)  |> select(-eh_outro)
-  df_rows     <- bind_rows(df_rows_nav, df_rows_out)
+  df_rows_nav <- df_rows |> filter(!eh_outro) |> select(-eh_outro, -eh_cm, -eh_cascais)
+  df_rows_out <- df_rows |> filter(eh_outro)
+  df_rows     <- bind_rows(df_rows_nav, df_rows_out |> select(-eh_outro, -eh_cm, -eh_cascais))
 
   q_nav <- df_rows_nav |>
     select(ticket_code) |>
@@ -111,12 +129,12 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
 
   zeros_q <- as_tibble(setNames(as.list(rep(0, n_ops)), ops))
   q_out <- df_rows_out |>
-    select(linha) |>
+    select(eh_cm, eh_cascais) |>
     rowwise() |>
     reframe(
-      if (linha == "Complemento CM") {
+      if (eh_cm) {
         zeros_q |> mutate(`AT TML - CM` = 1)
-      } else if (linha == "Viver Cascais") {
+      } else if (eh_cascais) {
         zeros_q |> mutate(`AT Cascais` = 1)
       } else {
         zeros_q

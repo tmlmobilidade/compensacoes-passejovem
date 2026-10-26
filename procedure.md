@@ -308,8 +308,8 @@ Para cada título agregado, a compensação total é decomposta em:
 | Componente           | Regra de cálculo                                                                | Destino / Repartição                                                                             |
 | ---------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | **Passes Navegante** | $\text{comp\_navegante} = \text{compensacao} \times \text{base\_weight}$         | Repartido pelos 11 operadores segundo as quotas mensais do título (`ticket_code`)                 |
-| **Complemento CM**   | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | **100 % `AT TML - CM`** (`ticket_operator_code = 31`, `ticket_code = "1070"` (`CODE_COMP_RESUMO`), `preco_base = 20 €`)  |
-| **Viver Cascais**    | $\text{comp\_cascais} = \text{compensacao}$ (`base_weight = 1`)                  | **100 % `AT Cascais`** (`ticket_operator_code = 21`, `ticket_code = "129_131"` — códigos concatenados com `"_"`, `preco_base = 20 €`) |
+| **Complemento CM**   | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | **100 % `AT TML - CM`** (`ticket_operator_code = 31`, `ticket_code = "1070"` (`CODE_COMP_RESUMO`), `linha = "Complemento CM Sub18 +TP_Sub23 +TP"`, `modalidade = "Sub18 +TP_Sub23 +TP"`, `titulo_nome_base = "Complemento CM"`, `preco_base = 20 €`)  |
+| **Viver Cascais**    | $\text{comp\_cascais} = \text{compensacao}$ (`base_weight = 1`)                  | **100 % `AT Cascais`** (`ticket_operator_code = 21`, `ticket_code = "129_131"`, `linha = "Viver Cascais Residente ou Estudante"`, `modalidade = "Residente_Estudante"`, `titulo_nome_base = "Viver Cascais"`, `preco_base = 20 €`) |
 
 **Exemplos de `base_weight`:**
 

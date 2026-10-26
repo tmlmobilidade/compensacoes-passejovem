@@ -33,8 +33,8 @@ A Folha 1 encontra-se organizada lado a lado em dois blocos separados pela colun
 
 * Apresenta, para as mesmas linhas de título e pela mesma ordem dos 11 operadores, a **Quota (%) por título e operador**:
   * Nas linhas de **Passes Navegante** (`linhas 5 a 8`): contém os valores exatos em vírgula flutuante (não arredondados) lidos de `1_quotas_<mes><aa>.csv`, formatados visualmente a 4 casas decimais (`0,0000%`);
-  * Na linha **Complemento CM** (`linha 9`): quota igual a `100,0000%` (`1`) na coluna `AT TML - CM` e `0%` nos restantes;
-  * Na linha **Viver Cascais** (`linha 10`): quota igual a `100,0000%` (`1`) na coluna `AT Cascais` e `0%` nos restantes.
+  * Na linha **Complemento CM** (`linha 9`, `ticket_code = "1070"`, `Complemento CM Sub18 +TP_Sub23 +TP`): quota igual a `100,0000%` (`1`) na coluna `AT TML - CM` e `0%` nos restantes;
+  * Na linha **Viver Cascais** (`linha 10`, `ticket_code = "129_131"`, `Viver Cascais Residente ou Estudante`): quota igual a `100,0000%` (`1`) na coluna `AT Cascais` e `0%` nos restantes.
 
 ### Fórmulas e Regra de Arredondamento na Folha 1
 

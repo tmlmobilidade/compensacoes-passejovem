@@ -72,8 +72,8 @@ A compensação apurada em cada linha agregada é decomposta em três parcelas m
 | Componente | Fórmula de Decomposição | Regra de Imputação / Destino |
 | :-- | :---- | :---- |
 | **1. Passes Navegante** | $\text{comp\_navegante} = \text{compensacao} \times \text{base\_weight}$ | Agregada por `ticket_code` (`1020`, `6150`, `6180`, `6181`) e repartida pelos **operadores** segundo as quotas dinâmicas do mês |
-| **2. Complemento CM** | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | Consolidada numa linha única (`ticket_code = "1070"`, `preco_base = 20 €`) e atribuída a **$100\%$ à `AT TML - CM`** |
-| **3. Viver Cascais** | $\text{comp\_cascais} = \text{compensacao}$ | Consolidada numa linha única (`ticket_code = "129_131"`, `preco_base = 20 €`) e atribuída a **$100\%$ à `AT Cascais`** |
+| **2. Complemento CM** | $\text{comp\_complemento} = \text{compensacao} \times (1 - \text{base\_weight})$ | Consolidada numa linha única (`ticket_code = "1070"`, `linha = "Complemento CM Sub18 +TP_Sub23 +TP"`, `modalidade = "Sub18 +TP_Sub23 +TP"`, `titulo_nome_base = "Complemento CM"`, `preco_base = 20 €`) e atribuída a **$100\%$ à `AT TML - CM`** |
+| **3. Viver Cascais** | $\text{comp\_cascais} = \text{compensacao}$ | Consolidada numa linha única (`ticket_code = "129_131"`, `linha = "Viver Cascais Residente ou Estudante"`, `modalidade = "Residente_Estudante"`, `titulo_nome_base = "Viver Cascais"`, `preco_base = 20 €`) e atribuída a **$100\%$ à `AT Cascais`** |
 
 ::: {.callout-note}
 ## Contabilização de Passes e Validações por Linha
