@@ -396,7 +396,7 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   setColWidths(wb, ws1, cols = 3,     widths = 11)
   setColWidths(wb, ws1, cols = 4,     widths = 9)
   setColWidths(wb, ws1, cols = 5,     widths = 31)
-  setColWidths(wb, ws1, cols = 6,     widths = 11)
+  setColWidths(wb, ws1, cols = 6,     widths = 18)
   setColWidths(wb, ws1, cols = 7,     widths = 5)
   setColWidths(wb, ws1, cols = 8,     widths = 20)
   setColWidths(wb, ws1, cols = 9,     widths = 8)
