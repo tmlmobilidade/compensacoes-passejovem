@@ -731,7 +731,7 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   dt_ver_idade_raw <- dt_mes |>
     filter(!is.na(fiscal_number), age > 23L, !is_exc_mes, !is_multi_bd_mes)
 
-  n_idade_total <- nrow(dt_ver_idade_raw)
+  n_idade24_total <- sum(dt_ver_idade_raw$age == 24L, na.rm = TRUE)
 
   if (!is.null(dt_sub23_exc)) {
     # Suporta colunas card_serial_number / serial_number e fiscal_number
@@ -778,16 +778,20 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   dt_verificar <- bind_rows(dt_ver_exc, dt_ver_multi_bd, dt_ver_idade, dt_ver_sem) |>
     as.data.table()
 
+  n_ver_24 <- sum(dt_ver_idade$motivo == "Idade > 23")
+  n_ver_25 <- sum(dt_ver_idade$motivo == "Idade = 25")
+
   msg_sub23 <- if (n_sub23_confirmados > 0L) {
-    sprintf(" [%d confirmados sub23+1 via BD excluídos de %d]", n_sub23_confirmados, n_idade_total)
+    sprintf(" [%d confirmados sub23+1 via BD excluídos de %d]", n_sub23_confirmados, n_idade24_total)
   } else ""
 
-  message(sprintf("  A verificar: %d registos suspeitos (%d excecao ID, %d datas distintas, %d idade > 23%s, %d sem NIF)",
+  message(sprintf("  A verificar: %d registos suspeitos (%d excecao ID, %d datas distintas, %d idade > 23%s, %d idade = 25, %d sem NIF)",
                   nrow(dt_verificar),
                   if (is.null(dt_ver_exc)) 0 else nrow(dt_ver_exc),
                   if (is.null(dt_ver_multi_bd)) 0 else nrow(dt_ver_multi_bd),
-                  nrow(dt_ver_idade),
+                  n_ver_24,
                   msg_sub23,
+                  n_ver_25,
                   nrow(dt_ver_sem)))
 
 
