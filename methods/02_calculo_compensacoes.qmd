@@ -126,17 +126,37 @@ O passo `02` separa ou sinaliza automaticamente três conjuntos de registos para
 
 1. **Exclusão por Idade Incompatível (`<ano>_<mm>_age_nok.csv`)**:
    * Após o recálculo da idade e a correção dos casos-limite no passo `01`, os registos com **`age_new == 3`** (demasiado novo, $< 4$ anos) ou **`age_new >= 25`** (acima do limite máximo absoluto) são **excluídos das tabelas `comNIF` e `semNIF`** e gravados em `age_nok.csv`.
-   * *Nota:* Os jovens com **24 anos** (`age_new == 24`) permanecem nas tabelas de compensação (por poderem pertencer aos cursos universitários de exceção), mas são incluídos em `a_verificar.csv` para confirmação do comprovativo académico.
+   * *Nota:* Os jovens com **24 anos** (`age_new == 24`) permanecem nas tabelas de compensação (por poderem pertencer aos cursos universitários de exceção) e são cruzados com o ficheiro `idades23*.csv` em `input/` (perfis `127` e `130` da tabela `F_AUX_PROFILE_CARDS`). Apenas os que **não** constam nessa lista são incluídos em `a_verificar.csv` para confirmação do comprovativo académico.
 
 2. **Documentos Estranhos Sem NIF (`<ano>_<mm>_documentos_estranhos_semNIF.csv`)**:
    * Contém um registo único por cartão (`card_serial_number`) para todos os cartões `semNIF` que apresentaram qualquer anomalia no número de documento (`!is.na(motivo_doc)`).
 
 3. **Registos Suspeitos a Verificar (`<ano>_<mm>_a_verificar.csv`)**:
-   * Consolida todos os registos que requerem verificação manual, classificados segundo a seguinte ordem de precedência:
+   * Consolida todos os registos que requerem verificação manual, organizados pela seguinte ordem:
      1. `"Excecao ID (datas de nascimento distintas)"`: documento presente em `id_exception.csv`;
      2. `"Documento com datas de nascimento distintas"`: mesmo `doc_number` em `semNIF` associado a múltiplas datas de nascimento;
-     3. `"Sem NIF"`: todos os restantes titulares sem NIF válido;
-     4. `"Idade > 23"`: titulares `comNIF` com 24 anos de idade.
+     3. `"Idade > 23"`: titulares `comNIF` com 24 anos de idade **não confirmados** no ficheiro de perfis sub23+1 (`idades23*.csv`, `CARD_PROFILE_ID` `127` ou `130`). Quando o ficheiro `idades23*.csv` está presente em `input/`, os estudantes cujo `card_serial_number` ou `fiscal_number` conste nessa listagem são dispensados de verificação manual e o total de confirmados excluídos é reportado no log de execução;
+     4. `"Sem NIF"`: todos os restantes titulares sem NIF válido.
+
+::: {.callout-note collapse="true"}
+## Query SQL para Extração dos Perfis Sub23+1 ([`code/idades23-1.sql`](../code/idades23-1.sql))
+A listagem de estudantes elegíveis até aos 24 anos (perfis `127` e `130`) ativos no mês é exportada da tabela `F_AUX_PROFILE_CARDS` para `data/<ano>_<mm>_<mes>/input/idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv` através da consulta:
+
+```sql
+-- tabela com sub23+1 no mês em questão
+SELECT DISTINCT
+    FISCAL_NUMBER,
+    SERIAL_NUMBER AS card_serial_number,
+    CARD_PROFILE_ID,
+    TO_CHAR(BIRTH_DATE, 'YYYY-MM-DD') AS birth_date
+FROM F_AUX_PROFILE_CARDS
+WHERE CARD_PROFILE_ID IN (127, 130) -- sub23+1
+  AND CARD_DATE < DATE '2026-09-01' -- alterar mês e ano aqui e na seguinte (intervalo mês)
+  AND PROFILE_DATE >= DATE '2026-08-01';
+
+-- salvar em input como 'idades23-1_${table}_${timestamp}.csv'
+```
+:::
 
 ---
 

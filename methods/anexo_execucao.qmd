@@ -25,15 +25,34 @@ Colocar os ficheiros recebidos do Departamento ITS e da AT Cascais em `data/<ano
 
 ```text
 data/2026_08_agosto/input/
-├── 202608_PasseJovem_ValidaçõesLimpas.xlsx   ← ITS (Folha 1: validações; Folha 2 "Azambuja": complemento)
-└── TML_agosto2026.xlsx                       ← AT Cascais (Viver Cascais)
+├── 202608_PasseJovem_ValidaçõesLimpas.xlsx                 ← ITS (Folha 1: validações; Folha 2 "Azambuja": complemento)
+├── TML_agosto2026.xlsx                                     ← AT Cascais (Viver Cascais)
+└── idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv          ← Perfis sub23+1 (127/130) exportados da BD SQL
 ```
 
 | Ficheiro em `input/` | Origem | Regras de Deteção e Notas |
 | :--- | :--- | :--- |
 | `*PasseJovem*.xlsx` | Dept. ITS | O nome tem de conter `PasseJovem`. Inclui na 1.ª folha as validações e colunas de documento (`ID_DOC_NUMBER`, `ID_DOC_NUMBER_DESC`), e na 2.ª folha (`*Azambuja*`) o Complemento CP Azambuja. |
 | `TML_<mes><ano>.xlsx` | AT Cascais | O nome tem de corresponder ao padrão `TML_*.xlsx`. O script atribui `ticket_operator_code = 21`, `price = 0` e `price_ticket_base = 20`. |
+| `idades23*.csv` | BD SQL (`F_AUX_PROFILE_CARDS`) | Exportado com a query [`code/idades23-1.sql`](../code/idades23-1.sql) para os cartões com `CARD_PROFILE_ID IN (127, 130)` ativos no mês. Utilizado em `02_calcular_compensacoes.R` para dispensar de `a_verificar.csv` os jovens de 24 anos já confirmados no perfil sub23+1. Se houver vários ficheiros com este prefixo, usa o mais recente. |
 | `*Complemento_Azambuja*.csv` | Dept. ITS | Opcional. Apenas necessário se o complemento Azambuja não vier incluído numa folha do ficheiro XLSX principal. |
+
+Para gerar o ficheiro `idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv`, correr na base de dados SQL ([`code/idades23-1.sql`](../code/idades23-1.sql)), ajustando as datas para o mês em análise:
+
+```sql
+-- tabela com sub23+1 no mês em questão
+SELECT DISTINCT
+    FISCAL_NUMBER,
+    SERIAL_NUMBER AS card_serial_number,
+    CARD_PROFILE_ID,
+    TO_CHAR(BIRTH_DATE, 'YYYY-MM-DD') AS birth_date
+FROM F_AUX_PROFILE_CARDS
+WHERE CARD_PROFILE_ID IN (127, 130) -- sub23+1
+  AND CARD_DATE < DATE '2026-09-01' -- alterar mês e ano aqui e na seguinte (intervalo mês)
+  AND PROFILE_DATE >= DATE '2026-08-01';
+
+-- salvar em input como 'idades23-1_${table}_${timestamp}.csv'
+```
 
 ### 3. Rever e atualizar os ficheiros auxiliares (`data/auxiliar/`)
 
@@ -158,7 +177,7 @@ render_documentos(2026, 7, run_fase1 = TRUE, run_fase2 = TRUE)
 
 ## ✅ Checklist Mensal de Fecho
 
-1. [ ] Criar `data/<ano>_<mm>_<mes>/input/` e colocar o ficheiro `*PasseJovem*.xlsx` (ITS) e `TML_<mes><ano>.xlsx` (Cascais).
+1. [ ] Criar `data/<ano>_<mm>_<mes>/input/` e colocar o ficheiro `*PasseJovem*.xlsx` (ITS), `TML_<mes><ano>.xlsx` (Cascais) e `idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv` (perfis 127/130 sub23+1 exportados via `code/idades23-1.sql`).
 2. [ ] Atualizar `data/auxiliar/` caso existam novas correções de NIF/data de nascimento ou exceções de documentos.
 3. [ ] Correr a **Fase 1** (`run_fase1 = TRUE`, `run_fase2 = FALSE`).
 4. [ ] Auditar `a_verificar.csv`, `age_nok.csv` e `documentos_estranhos_semNIF.csv`; se houver novas correções/exceções, atualizar `data/auxiliar/` e voltar a correr a Fase 1.

@@ -24,6 +24,10 @@ Para cada mês de apuramento, os ficheiros de entrada são colocados na pasta `d
    * Contém as validações efetuadas no Complemento CP Azambuja-Carregado (`YEAR_DIST`, `MONTH_DIST`, `CARD_SERIAL_NUMBER`, `FISCAL_NUMBER`, `TICKET_CODE`, `COUNT_VAL`);
    * Se não existir um ficheiro CSV autónomo na pasta `input/`, o script procura automaticamente uma folha cujo nome contenha `"Azambuja"` dentro do ficheiro Excel principal `*PasseJovem*.xlsx` (`read_complemento_azambuja_xlsx()`).
 
+4. **Listagem de Perfis Sub23+1 (`idades23*.csv`, lida no Passo 02)**:
+   * Exportada da tabela `F_AUX_PROFILE_CARDS` da base de dados através da query [`code/idades23-1.sql`](../code/idades23-1.sql) para os cartões com `CARD_PROFILE_ID IN (127, 130)` válidos no mês em análise;
+   * Utilizada no Passo 02 (`02_calcular_compensacoes.R`) para identificar os estudantes de 24 anos já confirmados nos cursos universitários de exceção (Arquitetura, Medicina, Ciências Farmacêuticas, etc.), dispensando a sua inclusão na lista manual `a_verificar.csv`. Se existirem vários ficheiros `idades23*.csv` em `input/`, é selecionado automaticamente o mais recente.
+
 ::: {.callout-important}
 ## Unicidade de Ficheiros em `input/`
 Se existir mais do que um ficheiro contendo `PasseJovem` ou `TML_` na pasta `input/` do mês, o pipeline seleciona apenas o primeiro e emite um aviso (`warning`). Deve manter-se **apenas um ficheiro de cada tipo** por pasta mensal.

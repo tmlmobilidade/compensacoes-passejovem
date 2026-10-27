@@ -299,6 +299,18 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     dt_tmp[!is.na(doc_number) & nzchar(doc_number)]
   } else NULL
 
+  # Ler ficheiro de exceções sub23+1 (perfis 127/130: medicina, arquitetura, etc.)
+  # Procura em paths$input pelo ficheiro mais recente com padrão "idades23*.csv"
+  f_sub23_files <- list.files(paths$input, pattern = "^idades23.*\\.csv$",
+                              full.names = TRUE, ignore.case = TRUE)
+  dt_sub23_exc <- if (length(f_sub23_files) > 0) {
+    f_sub23 <- sort(f_sub23_files, decreasing = TRUE)[1]
+    message(sprintf("  Ficheiro de perfis sub23+1 encontrado: %s", basename(f_sub23)))
+    dt_s23 <- fread(f_sub23, colClasses = "character")
+    names(dt_s23) <- tolower(names(dt_s23))
+    dt_s23
+  } else NULL
+
 
 
   # ── Filtrar: apenas passes gratuitos do mês ───────────────────────────────
@@ -711,11 +723,45 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
       birth_date,
       age,
       ticket_name
-    )
+    )  |>
+    arrange(ticket_name, age, fiscal_number)
 
   # 4. Casos com NIF e idade > 23 (excluindo exceções de ID e com datas distintas)
-  dt_ver_idade <- dt_mes |>
-    filter(!is.na(fiscal_number), age > 23L, !is_exc_mes, !is_multi_bd_mes) |>
+  #    Se existir ficheiro de perfis 127/130 (idades23*.csv), exclui os estudantes confirmados (sub23+1)
+  dt_ver_idade_raw <- dt_mes |>
+    filter(!is.na(fiscal_number), age > 23L, !is_exc_mes, !is_multi_bd_mes)
+
+  n_idade_total <- nrow(dt_ver_idade_raw)
+
+  if (!is.null(dt_sub23_exc)) {
+    # Suporta colunas card_serial_number / serial_number e fiscal_number
+    s23_cards <- character(0)
+    if ("card_serial_number" %in% names(dt_sub23_exc)) {
+      s23_cards <- c(s23_cards, dt_sub23_exc$card_serial_number)
+    }
+    if ("serial_number" %in% names(dt_sub23_exc)) {
+      s23_cards <- c(s23_cards, dt_sub23_exc$serial_number)
+    }
+    s23_cards <- unique(s23_cards[!is.na(s23_cards) & nzchar(s23_cards)])
+
+    s23_nifs <- character(0)
+    if ("fiscal_number" %in% names(dt_sub23_exc)) {
+      s23_nifs <- dt_sub23_exc$fiscal_number
+      s23_nifs <- unique(s23_nifs[!is.na(s23_nifs) & nzchar(s23_nifs)])
+    }
+
+    # Estudante confirmado se o cartão ou o NIF constar na lista de exceção sub23+1
+    is_sub23_conf <- (as.character(dt_ver_idade_raw$card_serial_number) %in% s23_cards) |
+                     (as.character(dt_ver_idade_raw$fiscal_number) %in% s23_nifs)
+
+    n_sub23_confirmados <- sum(is_sub23_conf)
+    dt_ver_idade_filtrado <- dt_ver_idade_raw |> filter(!is_sub23_conf)
+  } else {
+    n_sub23_confirmados <- 0L
+    dt_ver_idade_filtrado <- dt_ver_idade_raw
+  }
+
+  dt_ver_idade <- dt_ver_idade_filtrado |>
     transmute(
       motivo             = "Idade > 23",
       card_serial_number = as.character(card_serial_number),
@@ -723,17 +769,23 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
       birth_date,
       age,
       ticket_name
-    )
+    ) |>
+    arrange(age, ticket_name, fiscal_number)
 
-  dt_verificar <- bind_rows(dt_ver_exc, dt_ver_multi_bd, dt_ver_sem, dt_ver_idade) |>
+  dt_verificar <- bind_rows(dt_ver_exc, dt_ver_multi_bd, dt_ver_idade, dt_ver_sem) |>
     as.data.table()
 
-  message(sprintf("  A verificar: %d registos suspeitos (%d excecao ID, %d datas distintas, %d sem NIF, %d idade > 23)",
+  msg_sub23 <- if (n_sub23_confirmados > 0L) {
+    sprintf(" [%d confirmados sub23+1 via BD excluídos de %d]", n_sub23_confirmados, n_idade_total)
+  } else ""
+
+  message(sprintf("  A verificar: %d registos suspeitos (%d excecao ID, %d datas distintas, %d idade > 23%s, %d sem NIF)",
                   nrow(dt_verificar),
                   if (is.null(dt_ver_exc)) 0 else nrow(dt_ver_exc),
                   if (is.null(dt_ver_multi_bd)) 0 else nrow(dt_ver_multi_bd),
-                  nrow(dt_ver_sem),
-                  nrow(dt_ver_idade)))
+                  nrow(dt_ver_idade),
+                  msg_sub23,
+                  nrow(dt_ver_sem)))
 
 
   # ── Registos NOK (idade incompatível após correcção) ─────────────────────

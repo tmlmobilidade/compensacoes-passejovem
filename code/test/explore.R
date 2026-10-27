@@ -126,3 +126,44 @@ julho_docs_estranhos <- read_delim("data/2026_07_julho/output/2026_07_documentos
 table(julho_docs_estranhos$motivo)
 # Casos como 00000, 000000, PCO39594 e 85205 mantêm-se isolados por cartão
 # e não foram fundidos erroneamente entre diferentes pessoas.
+
+
+# explore sub23+1 -----------------------
+
+library(tidyverse)
+library(readr)
+
+# 1. Read the verification list and filter age == 24
+dt_ver <- read_delim("data/2026_07_julho/output/2026_07_a_verificar.csv", 
+                     delim = ";", escape_double = FALSE, trim_ws = TRUE) |> 
+  mutate(age = as.integer(age)) |>
+  filter(age == 24L)
+
+# 2. Read the exported SQL CSV (adjust path/sep if needed)
+dt_sql <- read_delim("data/2026_07_julho/input/idades23-1_F_AUX_PROFILE_CARDS_202610261550.csv",
+                     delim = ",", escape_double = FALSE, trim_ws = TRUE) |>
+  rename_with(tolower)
+
+# Keep one summary row per card_serial_number from SQL
+dt_sql_cards <- dt_sql |>
+  group_by(serial_number, fiscal_number) |>
+  summarise(
+    card_profile_id = paste(unique(card_profile_id), collapse = "/"),
+    card_date  = max(card_date, na.rm = TRUE),
+    .groups    = "drop"
+  ) #why 20 were dropped?
+
+# 3. Compare: check if age == 24 cards are in the SQL list
+dt_comp <- dt_ver |>
+  left_join(dt_sql_cards, by = c("card_serial_number" = "serial_number")) |>
+  mutate(in_sql_127_130 = !is.na(card_profile_id))
+
+dt_comp_nif <- dt_ver |>
+  left_join(dt_sql_cards, by = "fiscal_number") |>
+  mutate(in_sql_127_130 = !is.na(card_profile_id))
+
+# Summary count (In list vs. Not in list)
+table(dt_comp$in_sql_127_130)
+table(dt_comp_nif$in_sql_127_130)
+
+dt_comp$card_serial_number[dt_comp$in_sql_127_130 == FALSE]
