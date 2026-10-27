@@ -67,16 +67,18 @@ Para corrigir erros persistentes na ficha de cliente exportada pelo sistema ITS 
 
 ### Recálculo da Idade e Tratamento de Casos-Limite
 
-Após a aplicação das correções de data de nascimento, a coluna `age` original do ITS pode estar desatualizada. O pipeline recalcula a idade em anos civis completos (via `lubridate`, respeitando anos bissextos e 29 de fevereiro) para todos os registos com `birth_date` preenchida, tomando como referência o **dia 1 do mês de apuramento** ($t_{\text{ref}} = \text{ANO-MES-01}$):
+Após a aplicação das correções de data de nascimento, a coluna `age` original do ITS pode estar desatualizada. O pipeline recalcula a idade em anos civis completos (via `lubridate`, respeitando anos bissextos e 29 de fevereiro) para todos os registos com `birth_date` preenchida, tomando como referência o **último dia do mês anterior ao mês de apuramento** ($t_{\text{ref}} = \text{ANO-MES-01} - 1\text{ dia}$):
 
 ```r
-age = as.integer((birth_date %--% ref_date) / years(1))
+ref_date <- as.Date(sprintf("%d-%02d-01", ano, mes)) - days(1)
+age      <- as.integer((birth_date %--% ref_date) / years(1))
 ```
 
-Em seguida, corrige dois **casos-limite** decorrentes do facto de a elegibilidade mensal considerar o mês de aniversário (ignorando o dia específico do mês):
+Deste modo, todos os jovens que completam anos durante o mês de referência (incluindo no dia 1 do mês) mantêm a idade que tinham à entrada do mês — garantindo automaticamente que quem completa 24 ou 25 anos em qualquer dia do mês preserva a elegibilidade de 23 ou 24 anos até ao final desse mês.
 
-* **Limite superior (`age == 25`)**: se o jovem aparece com 25 anos mas nasceu no próprio mês de referência ($\text{month}(\text{birth\_date}) = \text{MES}$), ainda tinha 24 anos em parte do mês $\longrightarrow$ corrige para `age = 24L`;
-* **Limite inferior (`age == 3`)**: se a criança aparece com 3 anos mas nasceu no mês de referência ($\text{month}(\text{birth\_date}) = \text{MES}$), completa 4 anos nesse mês $\longrightarrow$ corrige para `age = 4L`.
+Em seguida, corrige-se apenas o **limite inferior** de elegibilidade:
+
+* **Limite inferior (`age == 3`)**: se a criança tinha 3 anos no final do mês anterior mas nasceu no mês de referência ($\text{month}(\text{birth\_date}) = \text{MES}$), completa 4 anos nesse mês e já é elegível $\longrightarrow$ corrige para `age = 4L`.
 
 ---
 
