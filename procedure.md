@@ -96,6 +96,7 @@ PasseJovem/
 │   ├── 10_documentos.R                      # Informação, Ofícios e Anexo I Metodologia (Quarto)
 │   ├── 99_run_pipeline.R                    # Orquestrador
 │   ├── doc_params.R                         # Parâmetros de emissão dos documentos
+│   ├── idades23-1.sql                       # Query SQL (Oracle) para exportar perfis sub23+1 (127/130)
 │   ├── informacao1.qmd                      # Informação de serviço
 │   ├── oficio1.qmd                          # Ofício de envio ao IMT
 │   ├── metodologia1.qmd                     # Fase 1 — Anexo - Nota Metodológica
@@ -107,7 +108,8 @@ PasseJovem/
     └── <ano>_<mm>_<mes>/
         ├── input/
         │   ├── <ano><mm>_PasseJovem_ValidaçõesLimpas.xlsx   (folha 1 + folha Azambuja)
-        │   └── TML_<mes><ano>.xlsx                          (Cascais)
+        │   ├── TML_<mes><ano>.xlsx                          (Cascais)
+        │   └── idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv (perfis 127/130 sub23+1)
         └── output/
             ├── <ano>_<mm>_limpos_preagregacao.csv
             ├── <ano>_<mm>_complemento_azambuja.csv
@@ -220,7 +222,7 @@ numval >= 20  →  compensacao = preço_base
 Após as correções, registos com `age_new == 3` (demasiado novo) ou `age_new >= 25` são **excluídos** da compensação e guardados em `age_nok.csv`.
 
 > [!NOTE]
-> O limite legal é 23 (24 para os cursos listados). O pipeline só exclui ≥ 25; os com 24 anos entram na compensação e **têm de ser conferidos** com o documento da universidade (ver `a_verificar.csv` -> Enviados ao Departamento de Clientes).
+> O limite legal é 23 (24 para os cursos listados). O pipeline só exclui ≥ 25; os com 24 anos entram na compensação e são cruzados com o ficheiro `idades23*.csv` (perfis `127` e `130` da BD `F_AUX_PROFILE_CARDS` — estudantes sub23+1 confirmados). Apenas os 24 anos que **não** constam nessa lista ficam em `a_verificar.csv` para conferência junto do Departamento de Clientes.
 
 ## semNIF — documentos e exceções
 
@@ -245,12 +247,31 @@ Formato `doc_type;doc_number;motivo`. Se `doc_type` estiver vazio, a correspond�
 
 ## Registos a verificar (`a_verificar.csv`)
 
-Lista para confirmação manual, com os motivos (por esta ordem de precedência):
+Lista para confirmação manual, com os motivos (por esta ordem na tabela exportada):
 
 1. **Exceção ID (datas de nascimento distintas)** — documento em `id_exception.csv`;
 2. **Documento com datas de nascimento distintas** (semNIF);
-3. **Sem NIF** — titular não identificado por NIF;
-4. **Idade > 23** (com NIF) — inclui os de 24 anos (confirmar estudante elegível).
+3. **Idade > 23** (com NIF) — inclui os de 24 anos que **não** constam na exportação `idades23*.csv` (perfis `127`/`130` sub23+1 ativos no mês, extraídos de `F_AUX_PROFILE_CARDS` via `code/idades23-1.sql`). Se existirem vários ficheiros `idades23*.csv` em `input/`, o pipeline usa automaticamente o mais recente;
+4. **Sem NIF** — titular não identificado por NIF.
+
+### Query SQL para perfis sub23+1 (`code/idades23-1.sql`)
+
+Para exportar os cartões com perfil de estudante de cursos de 24 anos (`CARD_PROFILE_ID IN (127, 130)`) ativos no mês em análise (atualizando o intervalo de datas `CARD_DATE` e `PROFILE_DATE` para o mês respetivo):
+
+```sql
+-- tabela com sub23+1 no mês em questão
+SELECT DISTINCT
+    FISCAL_NUMBER,
+    SERIAL_NUMBER AS card_serial_number,
+    CARD_PROFILE_ID,
+    TO_CHAR(BIRTH_DATE, 'YYYY-MM-DD') AS birth_date
+FROM F_AUX_PROFILE_CARDS
+WHERE CARD_PROFILE_ID IN (127, 130) -- sub23+1
+  AND CARD_DATE < DATE '2026-09-01' -- alterar mês e ano aqui e na seguinte (intervalo mês)
+  AND PROFILE_DATE >= DATE '2026-08-01';
+
+-- salvar em input como 'idades23-1_${table}_${timestamp}.csv'
+```
 
 ## Passo 03 — Exportar reporte (`03_exportar_reporte.R`)
 
@@ -442,7 +463,7 @@ Atualizar `doc_params.R` a cada mês antes de gerar os documentos. Os números d
 
 **Fase 1 — Apuramento (IMT)**
 
-1. Criar `data/<ano>_<mm>_<mes>/input/` e colocar o XLSX ITS e o ficheiro Cascais.
+1. Criar `data/<ano>_<mm>_<mes>/input/` e colocar o XLSX ITS, o ficheiro Cascais e o CSV de perfis sub23+1 (`idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv`, exportado via `code/idades23-1.sql`).
 2. Atualizar `data/auxiliar/` se houver novas correções/exceções.
 3. Correr a Fase 1 (`RUN_FASE1 = TRUE`, `RUN_FASE2 = FALSE`).
 4. Rever `a_verificar.csv`, `age_nok.csv` e `documentos_estranhos_semNIF.csv`; adicionar correções/exceções e **voltar a correr**.

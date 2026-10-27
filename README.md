@@ -40,8 +40,9 @@ Cria `data/2026_08_agosto/input/` (a pasta `data/` está no `.gitignore`). A pas
 
 ```
 data/2026_08_agosto/input/
-├── 202608_PasseJovem_ValidaçõesLimpas.xlsx   ← ITS (folha 1: validações; folha "Azambuja": complemento)
-└── TML_agosto2026.xlsx                          ← Cascais (Viver Cascais)
+├── 202608_PasseJovem_ValidaçõesLimpas.xlsx                 ← ITS (folha 1: validações; folha "Azambuja": complemento)
+├── TML_agosto2026.xlsx                                     ← Cascais (Viver Cascais)
+└── idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv          ← Perfis sub23+1 (127/130) ativos no mês
 ```
 
 
@@ -49,6 +50,7 @@ data/2026_08_agosto/input/
 | -------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `*PasseJovem*.xlsx`      | ITS     | O nome tem de conter`PasseJovem`. Colunas: `YEAR_DIST, MONTH_DIST, CARD_SERIAL_NUMBER, AGE, FISCAL_NUMBER, TICKET_OPERATOR_CODE, TICKET_CODE, TICKET_NAME, PRICE, PRICE_TICKET_BASE, COUNT_VAL, BIRTH_DATE, ID_DOC_NUMBER, ID_DOC_NUMBER_DESC` |
 | `TML_<mes><ano>.xlsx`    | Cascais | Preço vem a 0; o pipeline fixa`PRECO_CASCAIS = 20` e operador `21`                                                                                                                                                                            |
+| `idades23*.csv`          | BD SQL  | Exportado da tabela `F_AUX_PROFILE_CARDS` (`code/idades23-1.sql`, perfis `127` e `130`). Exclui de `a_verificar.csv` os jovens de 24 anos já confirmados como estudantes de cursos elegíveis (sub23+1). Se houver vários, usa o mais recente |
 | `*Complemento_Azambuja*` | ITS     | Opcional. Se não existir em ficheiro separado, é lido da folha com "Azambuja" no nome do XLSX principal                                                                                                                                      |
 
 ### 3. Atualizar os ficheiros auxiliares (`data/auxiliar/`)

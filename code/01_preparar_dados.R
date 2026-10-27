@@ -287,8 +287,11 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   #     Após aplicar nif_correct e data_nascimento_correct, a birth_date pode ter
   #     mudado mas a coluna age continua com o valor original do ITS.
   #     Recalculamos age para todos os registos onde birth_date está preenchida,
-  #     usando o critério do ITS: diferença em anos completos até ao 1º do mês de referência.
-  ref_date <- as.Date(sprintf("%d-%02d-01", ano, mes))
+  #     usando o último dia do mês anterior (véspera do mês de referência).
+  #     Assim, todos os jovens que fazem anos durante o mês de referência (incluindo
+  #     no dia 1) mantêm a idade que tinham no início do mês (ex: quem faz 24 ou 25
+  #     anos em qualquer dia do mês mantém 23 ou 24 durante todo o mês).
+  ref_date <- as.Date(sprintf("%d-%02d-01", ano, mes)) - days(1)
   dt_main <- dt_main |>
     mutate(
       age = if_else(
@@ -300,21 +303,12 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
     as.data.table()
   message("  Idade recalculada a partir da birth_date corrigida.")
 
-  # 6d. Correcao pontual da idade para casos limite (mes de nascimento = mes de referencia)
-  #
-  #     O sistema ITS calcula a idade ignorando o dia (usa ano e mes).
-  #     Quando o mes de nascimento coincide com o mes de referencia, pode
-  #     devolver a idade errada por 1 unidade. Corrigimos dois casos:
-  #
-  #     Regra 1 — limite superior: se age == 25 E nasceu no mes de referencia,
-  #       a pessoa ainda nao fez 25 anos completos -> corrigir para age = 24.
-  #
-  #     Regra 2 — limite inferior: se age == 3 E nasceu no mes de referencia,
-  #       a pessoa ja fez 4 anos neste mes -> corrigir para age = 4.
+  # 6d. Correcao pontual da idade para o limite inferior (mes de nascimento = mes de referencia)
+  #     Se age == 3 E nasceu no mes de referencia, a crianca completa 4 anos
+  #     neste mes e ja e elegivel -> corrigir para age = 4.
   dt_main <- dt_main |>
     mutate(
-      age = if_else(age == 25L & lubridate::month(birth_date) == mes, 24L, age),
-      age = if_else(age == 3L  & lubridate::month(birth_date) == mes, 4L,  age)
+      age = if_else(age == 3L & lubridate::month(birth_date) == mes, 4L, age)
     ) |>
     as.data.table()
 
