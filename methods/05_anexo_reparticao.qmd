@@ -52,14 +52,14 @@ A Folha 1 encontra-se organizada lado a lado em dois blocos separados pela colun
 A Folha 2 sintetiza os montantes devidos aos operadores (linhas 6 a 15, com **`TT`** e **`SL`** agregados numa única linha **`TT SL`**) e o total global (linha 16), dividindo-se visualmente em duas secções cromáticas:
 
 1. **Secção Dourada (`Colunas D:F`) — Compensação Passe Jovem (€)**:
-   * **Coluna `D` (`Passes Navegante`)**: referencia diretamente o intervalo de títulos Navegante da Folha 1 para cada operador (`=SUM(jul26!M5:M8)` até `=SUM(jul26!W5:W8)`, sendo `=SUM(jul26!O5:P8)` para `TT SL`);
-   * **Coluna `E` (`Outros Passes`)**: referencia o intervalo de Outros Passes da Folha 1 (`=SUM(jul26!M9:M10)` até `=SUM(jul26!W9:W10)`, sendo `=SUM(jul26!O9:P10)` para `TT SL`);
-   * **Coluna `F` (`TOTAL`)**: soma das duas componentes (`=D<row>+E<row>`).
+   * **Coluna `D` (`Passes Navegante`)**: referencia diretamente a linha `Total Passes Navegante` (`linha 11`) da Folha 1 para cada operador (`='jul26'!M11` até `='jul26'!W11`, sendo `='jul26'!O11+'jul26'!P11` para `TT SL`);
+   * **Coluna `E` (`Outros Passes`)**: referencia a linha `Total Outros Passes` (`linha 12`) da Folha 1 (`='jul26'!M12` até `='jul26'!W12`, sendo `='jul26'!O12+'jul26'!P12` para `TT SL`);
+   * **Coluna `F` (`TOTAL`)**: referencia diretamente a linha `Total` (`linha 13`, já arredondada a 2 casas decimais) da Folha 1 (`='jul26'!M13` até `='jul26'!W13`, sendo `='jul26'!O13+'jul26'!P13` para `TT SL`).
 
 2. **Secção Cinzenta (`Colunas G:I`) — Compensação por Congelamento Tarifário - TAT (€)**:
    * **Coluna `G` (`Congelamento Passes Navegante`)**: multiplica a coluna `D` pelo fator cumulativo Navegante na célula `$I$20` (`=D<row>*$I$20`);
    * **Coluna `H` (`Congelamento Outros Passes`)**: multiplica a coluna `E` pelo fator cumulativo de Outros Passes na célula `$I$21` (`=E<row>*$I$21`);
-   * **Coluna `I` (`Congelamento TOTAL`)**: soma do congelamento (`=G<row>+H<row>`).
+   * **Coluna `I` (`Congelamento TOTAL`)**: soma do congelamento arredondada a 2 casas decimais (`=ROUND(G<row>+H<row>, 2)`).
 
 3. **Linha `TOTAL` (`Linha 16`)**:
    * Todas as colunas monetárias (`D` a `I`) utilizam `=ROUND(SUM(<col>6:<col>15), 2)`, garantindo consistência ao cêntimo.

@@ -466,33 +466,26 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   rw_fc_nav <- rw_meta + 2
   rw_fc_out <- rw_meta + 3
 
-  # Fórmulas nas linhas de operadores da Folha 2 (sem arredondamento intermédio; TT SL soma TT + SL)
-  f_s2_nav <- vapply(ops_s2, function(op_nm) {
-    if (op_nm == "TT SL") {
-      col_tt <- int2col(12 + match("TT", ops))
-      col_sl <- int2col(12 + match("SL", ops))
-      sprintf("SUM(%s!%s%d:%s%d)", ws1, col_tt, min(r_nav_s1), col_sl, max(r_nav_s1))
-    } else {
-      col_let <- int2col(12 + match(op_nm, ops))
-      sprintf("SUM(%s!%s%d:%s%d)", ws1, col_let, min(r_nav_s1), col_let, max(r_nav_s1))
-    }
-  }, character(1), USE.NAMES = FALSE)
+  # Fórmulas nas linhas de operadores da Folha 2 (referenciam diretamente as linhas de subtotal/total da Folha 1)
+  ref_s1 <- function(row_s1) {
+    vapply(ops_s2, function(op_nm) {
+      if (op_nm == "TT SL") {
+        col_tt <- int2col(12 + match("TT", ops))
+        col_sl <- int2col(12 + match("SL", ops))
+        sprintf("'%s'!%s%d+'%s'!%s%d", ws1, col_tt, row_s1, ws1, col_sl, row_s1)
+      } else {
+        col_let <- int2col(12 + match(op_nm, ops))
+        sprintf("'%s'!%s%d", ws1, col_let, row_s1)
+      }
+    }, character(1), USE.NAMES = FALSE)
+  }
 
-  f_s2_out <- vapply(ops_s2, function(op_nm) {
-    if (op_nm == "TT SL") {
-      col_tt <- int2col(12 + match("TT", ops))
-      col_sl <- int2col(12 + match("SL", ops))
-      sprintf("SUM(%s!%s%d:%s%d)", ws1, col_tt, min(r_out_s1), col_sl, max(r_out_s1))
-    } else {
-      col_let <- int2col(12 + match(op_nm, ops))
-      sprintf("SUM(%s!%s%d:%s%d)", ws1, col_let, min(r_out_s1), col_let, max(r_out_s1))
-    }
-  }, character(1), USE.NAMES = FALSE)
-
-  f_s2_tot   <- sprintf("D%d+E%d", r_data_s2, r_data_s2)
-  f_s2_cnav  <- sprintf("D%d*$I$%d", r_data_s2, rw_fc_nav)
-  f_s2_cout  <- sprintf("E%d*$I$%d", r_data_s2, rw_fc_out)
-  f_s2_ctot  <- sprintf("G%d+H%d", r_data_s2, r_data_s2)
+  f_s2_nav  <- ref_s1(rw_tot_nav)
+  f_s2_out  <- ref_s1(rw_tot_out)
+  f_s2_tot  <- ref_s1(rw_tot_all)
+  f_s2_cnav <- sprintf("D%d*$I$%d", r_data_s2, rw_fc_nav)
+  f_s2_cout <- sprintf("E%d*$I$%d", r_data_s2, rw_fc_out)
+  f_s2_ctot <- sprintf("ROUND(G%d+H%d, 2)", r_data_s2, r_data_s2)
 
   writeFormula(wb, ws2, x = f_s2_nav,  startCol = 4, startRow = 6)
   writeFormula(wb, ws2, x = f_s2_out,  startCol = 5, startRow = 6)

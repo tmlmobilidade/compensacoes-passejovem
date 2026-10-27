@@ -405,13 +405,13 @@ Gera o ficheiro Excel formatado `data/<ano>_<mm>_<mes>/output/docs/<ano>_<mm>_An
 
    - **Tabela principal (linhas 6 a 16, com `TT` e `SL` agregados em `TT SL`)**:
      - Colunas `D:F` (**Compensação Passe Jovem (€)**, em tons dourados):
-       - `Passes Navegante` (`D`): `=SUM(jul26!M5:M8)` .. `=SUM(jul26!W5:W8)` (e `=SUM(jul26!O5:P8)` para `TT SL`)
-       - `Outros Passes` (`E`): `=SUM(jul26!M9:M10)` .. `=SUM(jul26!W9:W10)` (e `=SUM(jul26!O9:P10)` para `TT SL`)
-       - `TOTAL` (`F`): `=D<row>+E<row>`
+       - `Passes Navegante` (`D`): `='jul26'!M11` .. `='jul26'!W11` (e `='jul26'!O11+'jul26'!P11` para `TT SL`)
+       - `Outros Passes` (`E`): `='jul26'!M12` .. `='jul26'!W12` (e `='jul26'!O12+'jul26'!P12` para `TT SL`)
+       - `TOTAL` (`F`): `='jul26'!M13` .. `='jul26'!W13` (e `='jul26'!O13+'jul26'!P13` para `TT SL`, já arredondados a 2 casas decimais na Folha 1)
      - Colunas `G:I` (**Compensação por Congelamento Tarifário — TAT (€)**, diferenciadas em tons de cinzento):
        - `Congelamento Passes Navegante` (`G`): `=D<row>*$I$20`
        - `Congelamento Outros Passes` (`H`): `=E<row>*$I$21`
-       - `Congelamento TOTAL` (`I`): `=G<row>+H<row>`
+       - `Congelamento TOTAL` (`I`): `=ROUND(G<row>+H<row>, 2)`
      - Linha `TOTAL` (`linha 16`): arredondada a 2 casas decimais em todas as colunas monetárias (`=ROUND(SUM(D6:D15), 2)` .. `=ROUND(SUM(I6:I15), 2)`).
    - **Bloco de Notas / Parâmetros TAT (linhas 18 a 22)**:
      - Apresenta a tabela anual de taxas TAT (`2024: 6,40%`, `2025: 2,02%`, `2026: 2,28%` em `C20:C22`) e calcula por fórmula os fatores cumulativos em `I20` (`=(1+C20)*(1+C21)*(1+C22)-1` $\rightarrow 11{,}0555\%$) e `I21` (`=C20*(1+C21)*(1+C22)` $\rightarrow 6{,}7095\%$).
