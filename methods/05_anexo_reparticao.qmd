@@ -43,7 +43,7 @@ A Folha 1 encontra-se organizada lado a lado em dois blocos separados pela colun
 | **Linhas 5 a 10** | Linhas individuais de título (`Passes Navegante` + `Outros Passes`) | `=$L<row>*<col_quota><row>` *(Compensação total $\times$ Quota, sem `ROUND`)* |
 | **Linha 11** | Subtotal **`Total Passes Navegante`** | `=SUM(M5:M8)` *(soma exata sem arredondamento intermédio)* |
 | **Linha 12** | Subtotal **`Total Outros Passes`** | `=SUM(M9:M10)` *(soma exata sem arredondamento intermédio)* |
-| **Linha 13** | **`Total` Geral** | `=ROUND(SUM(M11:M12), 2)` *(arredondado a 2 casas decimais apenas no total final)* |
+| **Linha 13** | **`Total` Geral** | `=ROUND(SUM(M11:M12), 2)` *(com eventual ajuste de $\pm 0{,}01\text{ €}$ pelo Método dos Maiores Restos para garantir que a soma dos operadores iguala exatamente `L13`)* |
 
 ---
 
@@ -59,7 +59,7 @@ A Folha 2 sintetiza os montantes devidos aos operadores (linhas 6 a 15, com **`T
 2. **Secção Cinzenta (`Colunas G:I`) — Compensação por Congelamento Tarifário - TAT (€)**:
    * **Coluna `G` (`Congelamento Passes Navegante`)**: multiplica a coluna `D` pelo fator cumulativo Navegante na célula `$I$20` (`=D<row>*$I$20`);
    * **Coluna `H` (`Congelamento Outros Passes`)**: multiplica a coluna `E` pelo fator cumulativo de Outros Passes na célula `$I$21` (`=E<row>*$I$21`);
-   * **Coluna `I` (`Congelamento TOTAL`)**: soma do congelamento arredondada a 2 casas decimais (`=ROUND(G<row>+H<row>, 2)`).
+   * **Coluna `I` (`Congelamento TOTAL`)**: soma do congelamento arredondada a 2 casas decimais (`=ROUND(G<row>+H<row>, 2)`, com eventual ajuste de $\pm 0{,}01\text{ €}$ pelo Método dos Maiores Restos para que a soma das 10 linhas iguale o total exato).
 
 3. **Linha `TOTAL` (`Linha 16`)**:
    * Todas as colunas monetárias (`D` a `I`) utilizam `=ROUND(SUM(<col>6:<col>15), 2)`, garantindo consistência ao cêntimo.

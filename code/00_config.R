@@ -581,3 +581,54 @@ caminho_quotas <- function(ano, mes) {
 
 
 
+#' Arredonda um vector numérico pelo Método dos Maiores Restos (Largest Remainder Method / Hare-Niemeyer)
+#' garantindo que sum(arredondar_maiores_restos(x, digits, total_alvo)) == round(total_alvo, digits).
+#'
+#' @param x           Vector numérico (com ou sem nomes)
+#' @param digits      Número de casas decimais (por omissão: 2)
+#' @param total_alvo  Total exacto a preservar (por omissão: sum(x, na.rm = TRUE))
+#' @return Vector numérico arredondado a `digits` casas decimais cuja soma coincide com `round(total_alvo, digits)`
+arredondar_maiores_restos <- function(x, digits = 2L, total_alvo = sum(x, na.rm = TRUE)) {
+  fator   <- 10^digits
+  x_clean <- ifelse(is.na(x), 0, as.numeric(x))
+  # Tolerância numérica de ponto flutuante (1e-9) para evitar que um inteiro exacto desça no floor()
+  scaled  <- x_clean * fator
+  pisos   <- floor(scaled + 1e-9)
+  restos  <- pmax(0, scaled - pisos)
+  alvo    <- round(total_alvo * fator)
+  k       <- as.integer(round(alvo - sum(pisos)))
+  if (k > 0L) {
+    idx        <- order(restos, x_clean, decreasing = TRUE)[seq_len(min(k, length(x_clean)))]
+    pisos[idx] <- pisos[idx] + 1
+  } else if (k < 0L) {
+    idx        <- order(restos, x_clean, decreasing = FALSE)[seq_len(min(abs(k), length(x_clean)))]
+    pisos[idx] <- pisos[idx] - 1
+  }
+  out <- round(pisos / fator, digits)
+  names(out) <- names(x)
+  out
+}
+
+#' Agrega os 11 operadores nos 10 operadores de reporte (fundindo TT + SL em "TT SL")
+#' e arredonda pelo Método dos Maiores Restos garantindo que a soma iguala o total exacto.
+#'
+#' @param vec_ops_11  Vector ou data.frame/tibble de 1 linha com as colunas de OPERADORES_RESUMO (11 operadores)
+#' @param total_alvo  Total exacto a preservar (por omissão: sum(vec_ops_11))
+#' @return Vector numérico com nomes para os 10 operadores ("CP", "FT", "TT SL", ...), arredondado a 2 casas decimais
+arredondar_operadores_10 <- function(vec_ops_11, total_alvo = NULL) {
+  v <- unlist(vec_ops_11)
+  if (is.null(total_alvo)) total_alvo <- sum(v, na.rm = TRUE)
+  v10 <- c(
+    "CP"          = unname(v["CP"]),
+    "FT"          = unname(v["FT"]),
+    "TT SL"       = unname(v["TT"] + v["SL"]),
+    "ML"          = unname(v["ML"]),
+    "MTS"         = unname(v["MTS"]),
+    "Carris"      = unname(v["Carris"]),
+    "TCB"         = unname(v["TCB"]),
+    "AT Cascais"  = unname(v["AT Cascais"]),
+    "AT TML - CM" = unname(v["AT TML - CM"]),
+    "BT Oeste"    = unname(v["BT Oeste"])
+  )
+  arredondar_maiores_restos(v10, digits = 2L, total_alvo = total_alvo)
+}

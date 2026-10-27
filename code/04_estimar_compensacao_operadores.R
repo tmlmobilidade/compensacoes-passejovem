@@ -293,10 +293,11 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
   tot_out <- bind_rows(r_cm, r_ca) |>
     summarise(across(all_of(ops), ~ sum(.x, na.rm = TRUE)))
 
-  # Totais gerais (para conferência) arredondados a 2 casas decimais
-  total_geral <- bind_rows(tot_nav, tot_out) |>
-    summarise(across(all_of(ops), ~ sum(.x, na.rm = TRUE))) |>
-    mutate(compensacao_total = round(rowSums(across(all_of(ops))), 2))
+  # Totais gerais (para conferência) arredondados a 2 casas decimais pelo Método dos Maiores Restos
+  tot_exact_vec <- unlist(bind_rows(tot_nav, tot_out) |> summarise(across(all_of(ops), ~ sum(.x, na.rm = TRUE))))
+  tot_lrm_vec   <- arredondar_maiores_restos(tot_exact_vec, digits = 2L)
+  total_geral   <- as_tibble(as.list(tot_lrm_vec)) |>
+    mutate(compensacao_total = round(sum(tot_lrm_vec), 2))
 
   # 6. Congelamento -----------------------------------------------------------
   fc <- fatores_congelamento(ano)
@@ -317,11 +318,12 @@ estimar_compensacao_operadores <- function(ano, mes, raiz = here_root()) {
     ) |>
     select(linha, compensacao_total, all_of(ops))
 
-  cong_tot <- bind_rows(cong_nav, cong_out) |>
-    summarise(across(all_of(ops), ~ round(sum(.x, na.rm = TRUE), 2))) |> # arredondado apenas na linha de total
+  cong_exact_vec <- unlist(bind_rows(cong_nav, cong_out) |> summarise(across(all_of(ops), ~ sum(.x, na.rm = TRUE))))
+  cong_lrm_vec   <- arredondar_maiores_restos(cong_exact_vec, digits = 2L)
+  cong_tot       <- as_tibble(as.list(cong_lrm_vec)) |> # arredondado pelo Método dos Maiores Restos na linha de total
     mutate(
       linha             = "Congelamento TOTAL",
-      compensacao_total = rowSums(across(all_of(ops)))
+      compensacao_total = round(sum(cong_lrm_vec), 2)
     ) |>
     select(linha, compensacao_total, all_of(ops))
 

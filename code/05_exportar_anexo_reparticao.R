@@ -359,7 +359,34 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
 
   # 2) Nas linhas de Total:
   #    - Total Passes Navegante e Total Outros Passes: NÃO arredondados (SUM simples)
-  #    - Total (soma dos 2 subtotais): arredondado a 2 casas decimais nos valores em €
+  #    - Total (soma dos 2 subtotais): arredondado a 2 casas decimais pelo Método dos Maiores Restos,
+  #      garantindo que a soma das colunas de operadores (e das 10 linhas na Folha 2, com TT+SL)
+  #      iguala exactamente o Total global apurado em 03_exportar_reporte.R (L13).
+  tot_comp_s1 <- sum(df_rows$compensacao_total, na.rm = TRUE)
+  op_exact_11 <- vapply(ops, function(op_nm) sum(df_rows[[op_nm]], na.rm = TRUE), numeric(1))
+  op_lrm_11   <- arredondar_maiores_restos(op_exact_11, digits = 2L, total_alvo = tot_comp_s1)
+  op_lrm_10   <- arredondar_operadores_10(op_exact_11, total_alvo = tot_comp_s1)
+  # Garantir também que TT + SL arredondados na Folha 1 coincidem exactamente com TT SL na Folha 2
+  tt_sl_diff  <- round(op_lrm_10[["TT SL"]] - (op_lrm_11[["TT"]] + op_lrm_11[["SL"]]), 2)
+  if (abs(tt_sl_diff) >= 0.01) {
+    # Ajustar entre TTSL e o operador com resto mais próximo da fronteira de 0.5 cêntimos
+    op_lrm_11[["TT"]] <- round(op_lrm_11[["TT"]] + tt_sl_diff, 2)
+    outros_ops <- setdiff(ops, c("TT", "SL"))
+    restos_11  <- (op_exact_11[outros_ops] * 100) - floor(op_exact_11[outros_ops] * 100 + 1e-9)
+    if (tt_sl_diff > 0) {
+      # Demos +0.01 a TT; retirar 0.01 ao operador que subiu com menor resto
+      cand <- outros_ops[op_lrm_11[outros_ops] > floor(op_exact_11[outros_ops] * 100 + 1e-9) / 100]
+      op_ajuste <- cand[which.min(restos_11[cand])]
+      op_lrm_11[[op_ajuste]] <- round(op_lrm_11[[op_ajuste]] - 0.01, 2)
+    } else {
+      # Demos -0.01 a TT; somar 0.01 ao operador que desceu com maior resto
+      cand <- outros_ops[op_lrm_11[outros_ops] == floor(op_exact_11[outros_ops] * 100 + 1e-9) / 100]
+      op_ajuste <- cand[which.max(restos_11[cand])]
+      op_lrm_11[[op_ajuste]] <- round(op_lrm_11[[op_ajuste]] + 0.01, 2)
+    }
+  }
+  delta_s1 <- round(op_lrm_11 - round(op_exact_11, 2), 2)
+
   for (col_idx in 10:23) {
     col_let <- int2col(col_idx)
     is_int  <- col_idx %in% 10:11
@@ -367,8 +394,13 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
     f_out <- sprintf("SUM(%s%d:%s%d)", col_let, min(r_out_s1), col_let, max(r_out_s1))
     f_all <- if (is_int) {
       sprintf("SUM(%s%d:%s%d)", col_let, rw_tot_nav, col_let, rw_tot_out)
-    } else {
+    } else if (col_idx == 12) {
       sprintf("ROUND(SUM(%s%d:%s%d), 2)", col_let, rw_tot_nav, col_let, rw_tot_out)
+    } else {
+      op_nm <- ops[col_idx - 12]
+      d_val <- delta_s1[[op_nm]]
+      suf_d <- if (d_val > 0) sprintf("+%.2f", d_val) else if (d_val < 0) sprintf("-%.2f", abs(d_val)) else ""
+      sprintf("ROUND(SUM(%s%d:%s%d), 2)%s", col_let, rw_tot_nav, col_let, rw_tot_out, suf_d)
     }
     writeFormula(wb, ws1, x = f_nav, startCol = col_idx, startRow = rw_tot_nav)
     writeFormula(wb, ws1, x = f_out, startCol = col_idx, startRow = rw_tot_out)
@@ -485,7 +517,28 @@ exportar_anexo_reparticao <- function(ano, mes, raiz = here_root()) {
   f_s2_tot  <- ref_s1(rw_tot_all)
   f_s2_cnav <- sprintf("D%d*$I$%d", r_data_s2, rw_fc_nav)
   f_s2_cout <- sprintf("E%d*$I$%d", r_data_s2, rw_fc_out)
-  f_s2_ctot <- sprintf("ROUND(G%d+H%d, 2)", r_data_s2, r_data_s2)
+
+  # Método dos Maiores Restos para a coluna I (Congelamento TOTAL por operador na Folha 2)
+  fc_nav_val <- prod(1 + tat_df$tat) - 1
+  fc_out_val <- tat_df$tat[1] * (if (nrow(tat_df) > 1) prod(1 + tat_df$tat[-1]) else 1)
+  nav_exact_11 <- vapply(ops, function(op_nm) sum(df_rows_nav[[op_nm]], na.rm = TRUE), numeric(1))
+  out_exact_11 <- vapply(ops, function(op_nm) sum(df_rows_out[[op_nm]], na.rm = TRUE), numeric(1))
+  cong_exact_11 <- nav_exact_11 * fc_nav_val + out_exact_11 * fc_out_val
+  cong_lrm_10   <- arredondar_operadores_10(cong_exact_11)
+  cong_exact_10 <- c(
+    "CP"          = cong_exact_11[["CP"]],
+    "FT"          = cong_exact_11[["FT"]],
+    "TT SL"       = cong_exact_11[["TT"]] + cong_exact_11[["SL"]],
+    cong_exact_11[setdiff(ops, c("CP", "FT", "TT", "SL"))] # os restantes
+  )
+  delta_cong_s2 <- round(cong_lrm_10[ops_s2] - round(cong_exact_10[ops_s2], 2), 2)
+
+  f_s2_ctot <- vapply(seq_along(ops_s2), function(idx_op) {
+    r_op  <- r_data_s2[idx_op]
+    d_val <- delta_cong_s2[idx_op]
+    suf_d <- if (d_val > 0) sprintf("+%.2f", d_val) else if (d_val < 0) sprintf("-%.2f", abs(d_val)) else ""
+    sprintf("ROUND(G%d+H%d, 2)%s", r_op, r_op, suf_d)
+  }, character(1))
 
   writeFormula(wb, ws2, x = f_s2_nav,  startCol = 4, startRow = 6)
   writeFormula(wb, ws2, x = f_s2_out,  startCol = 5, startRow = 6)

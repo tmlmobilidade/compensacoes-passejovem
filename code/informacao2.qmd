@@ -78,21 +78,18 @@ if (!file.exists(f_res) || !file.exists(f_cong)) {
 dt_resumo <- fread(f_res, sep = ";", dec = ",", encoding = "UTF-8")
 dt_cong   <- fread(f_cong, sep = ";", dec = ",", encoding = "UTF-8")
 
-# Totais por operador (com TT e SL agregados em "TT SL")
+# Totais por operador (com TT e SL agregados em "TT SL" e arredondamento pelo Método dos Maiores Restos)
 ops <- names(OPERADORES_RESUMO)
 
-comp_ops <- dt_resumo |>
-  summarise(across(all_of(ops), ~ round(sum(.x, na.rm = TRUE), 2))) |>
-  mutate(`TT SL` = round(TT + SL, 2), .after = FT) |>
-  select(-TT, -SL) |>
-  unlist()
+tot_comp_exato <- sum(dt_resumo$compensacao_total, na.rm = TRUE)
+comp_ops_11 <- dt_resumo |>
+  summarise(across(all_of(ops), ~ sum(.x, na.rm = TRUE)))
+comp_ops <- arredondar_operadores_10(comp_ops_11, total_alvo = tot_comp_exato)
 
-cong_ops <- dt_cong |>
-  filter(linha == "Congelamento TOTAL") |>
-  select(all_of(ops)) |>
-  mutate(`TT SL` = round(TT + SL, 2), .after = FT) |>
-  select(-TT, -SL) |>
-  unlist()
+cong_ops_11 <- dt_cong |>
+  filter(linha != "Congelamento TOTAL") |>
+  summarise(across(all_of(ops), ~ sum(.x, na.rm = TRUE)))
+cong_ops <- arredondar_operadores_10(cong_ops_11)
 
 comp_total <- round(sum(comp_ops), 2)
 cong_total <- round(sum(cong_ops), 2)

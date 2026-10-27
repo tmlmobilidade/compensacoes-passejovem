@@ -86,7 +86,7 @@ Ao abrigo do ponto 6.3 do Anexo V ao Regulamento n.º 278-A/2019 (na redação a
 
 $$\text{Compensação}_{i,j} = \text{Compensação Total Navegante}_i \times \text{quota}_{i,j}$$
 
-Os valores por título e operador são mantidos **sem arredondamento intermédio**, efetuando-se o arredondamento a duas casas decimais unicamente nas linhas de totalização final.
+Os valores por título e operador são mantidos **sem arredondamento intermédio**. Na obtenção dos montantes finais por operador (a duas casas decimais), aplica-se o **Método dos Maiores Restos** (*Largest Remainder Method* / método de Hare-Niemeyer, através de `arredondar_maiores_restos()` e `arredondar_operadores_10()` em [`code/00_config.R`](../code/00_config.R)), garantindo que a soma das parcelas arredondadas de todos os operadores coincide sempre, ao cêntimo, com o montante total exato apurado na Fase 1 (`03_exportar_reporte.R`).
 
 ---
 
