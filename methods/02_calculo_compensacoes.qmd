@@ -135,7 +135,7 @@ O passo `02` separa ou sinaliza automaticamente três conjuntos de registos para
    * Consolida todos os registos que requerem verificação manual, organizados pela seguinte ordem:
      1. `"Excecao ID (datas de nascimento distintas)"`: documento presente em `id_exception.csv`;
      2. `"Documento com datas de nascimento distintas"`: mesmo `doc_number` em `semNIF` associado a múltiplas datas de nascimento;
-     3. `"Idade > 23"`: titulares `comNIF` com 24 anos de idade **não confirmados** no ficheiro de perfis sub23+1 (`idades23*.csv`, `CARD_PROFILE_ID` `127` ou `130`). Quando o ficheiro `idades23*.csv` está presente em `input/`, os estudantes cujo `card_serial_number` ou `fiscal_number` conste nessa listagem são dispensados de verificação manual e o total de confirmados excluídos é reportado no log de execução;
+     3. `"Idade > 23"` e `"Idade = 25"`: titulares `comNIF` com idade $> 23$ **não confirmados** no ficheiro de perfis sub23+1 (`idades23*.csv`, `CARD_PROFILE_ID` `127` ou `130`), distinguindo no campo `motivo` os casos com 24 anos (`"Idade > 23"`) dos casos com 25 anos (`"Idade = 25"`). Quando o ficheiro `idades23*.csv` está presente em `input/`, os estudantes cujo `card_serial_number` ou `fiscal_number` conste nessa listagem são dispensados de verificação manual e o total de confirmados excluídos é reportado no log de execução;
      4. `"Sem NIF"`: todos os restantes titulares sem NIF válido.
 
 ::: {.callout-note collapse="true"}

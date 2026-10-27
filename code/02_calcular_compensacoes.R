@@ -763,7 +763,10 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
   dt_ver_idade <- dt_ver_idade_filtrado |>
     transmute(
-      motivo             = "Idade > 23",
+      motivo = case_when(
+        age == 25L ~ "Idade = 25",
+        TRUE       ~ "Idade > 23"
+      ),
       card_serial_number = as.character(card_serial_number),
       fiscal_number      = as.character(fiscal_number),
       birth_date,

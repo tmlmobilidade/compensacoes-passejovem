@@ -70,7 +70,7 @@ run_pipeline(ano = 2026, meses = 8, run_fase1 = TRUE, run_fase2 = FALSE, render_
 Após esta primeira execução:
 
 1. Inspecionar os ficheiros gerados em `output/`:
-   * `<ano>_<mm>_a_verificar.csv` (registos sem NIF, idade 24 anos, documentos com datas de nascimento distintas);
+   * `<ano>_<mm>_a_verificar.csv` (registos sem NIF, idade $> 23$ / $= 25$ anos, documentos com datas de nascimento distintas);
    * `<ano>_<mm>_age_nok.csv` (registos excluídos com 3 anos ou $\ge 25$ anos);
    * `<ano>_<mm>_documentos_estranhos_semNIF.csv` (documentos anómalos agrupados por cartão).
 2. Caso sejam identificadas novas correções de NIF/data de nascimento ou exceções a incluir em `data/auxiliar/`, atualizar esses CSVs e **voltar a correr a Fase 1**.
