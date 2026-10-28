@@ -1,7 +1,7 @@
 library(readr)
 library(tidyverse)
 library(dplyr)
-nif_repescagem2024 <- read_csv("data/auxiliar/nif_repescagem2024.csv", 
+nif_repescagem <- read_csv("data/auxiliar/nif_repescagem.csv", 
                                col_types = cols(fiscal_number = col_character()))
 
 
@@ -10,11 +10,11 @@ nif_repescagem202610 <- read_delim("data/auxiliar/nif_repescagem202610.csv",
                                    trim_ws = TRUE)
 
 
-nif_repescagem2024_update =  nif_repescagem2024 |> 
+nif_repescagem_update = nif_repescagem |> 
   bind_rows(nif_repescagem202610) |> 
   distinct()
 
-write.csv(nif_repescagem2024_update, "data/auxiliar/nif_repescagem2024.csv", row.names = FALSE)
+write.csv(nif_repescagem_update, "data/auxiliar/nif_repescagem.csv", row.names = FALSE)
 
 
 

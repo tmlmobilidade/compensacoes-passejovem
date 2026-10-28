@@ -58,7 +58,7 @@ data/2026_08_agosto/input/
 
 | Ficheiro                        | Conteúdo                                                                      | Quando atualizar               |
 | --------------------------------- | -------------------------------------------------------------------------------- | -------------------------------- |
-| `nif_repescagem2024.csv`        | `card_serial_number → fiscal_number` (preenche NIFs em falta)                 | Quando surgem NIFs recuperados |
+| `nif_repescagem.csv`            | `card_serial_number → fiscal_number` (preenche NIFs em falta)                 | Quando surgem NIFs recuperados |
 | `nif_correct.csv`               | `card_serial_number; birth_date; fiscal_number` (NIFs/datas errados)           | Quando se detetam erros        |
 | `data_nascimento_correct.csv`   | `card_serial_number; dn_errada; fiscal_number; dn_corrigida`                   | Idem                           |
 | `id_exception.csv`              | `doc_type; doc_number; motivo` — documentos a **agrupar** apesar de anomalias | Casos validados manualmente    |

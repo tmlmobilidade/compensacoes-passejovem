@@ -29,6 +29,7 @@ book:
       chapters:
         - anexo_execucao.qmd
         - anexo_auxiliares.qmd
+        - anexo_repescagem_nif.qmd
         - references.qmd
 
   repo-url: https://github.com/tmlmobilidade/compensacoes-passejovem

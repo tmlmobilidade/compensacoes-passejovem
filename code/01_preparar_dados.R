@@ -12,7 +12,7 @@
 #   - <ano>_<mm>_complemento_azambuja.csv  (se existir)
 #
 # Também aplica a repescagem e correções manuais de:
-#   - data/auxiliar/nif_repescagem2024.csv      (repescagem de NIFs em falta)
+#   - data/auxiliar/nif_repescagem.csv          (repescagem de NIFs em falta)
 #   - data/auxiliar/nif_correct.csv             (NIFs errados)
 #   - data/auxiliar/data_nascimento_correct.csv  (datas de nascimento erradas)
 #
@@ -136,10 +136,10 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
 
 
   # ── 4b. Preencher NIFs em falta via repescagem ───────────────────────────
-  # data/auxiliar/nif_repescagem2024.csv contém NIFs identificados para cartões
+  # data/auxiliar/nif_repescagem.csv contém NIFs identificados para cartões
   # cujo fiscal_number não consta nos dados primários.
   # Faz um left_join pelo número de cartão e preenche apenas onde o NIF está a NA.
-  f_rep <- file.path(paths$auxiliar, "nif_repescagem2024.csv")
+  f_rep <- file.path(paths$auxiliar, "nif_repescagem.csv")
   if (file.exists(f_rep)) {
 
     # Ler tabela de repescagem e limpar com um pipe dplyr

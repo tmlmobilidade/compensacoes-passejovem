@@ -168,7 +168,7 @@ Passos `01`, `02` e `03`. Resultado: reporte Excel ao IMT, listas de controlo e 
 1. **Leitura**: ficheiro `*PasseJovem*` (XLSX; CSV só como legado), `TML_*.xlsx` (Cascais) e Azambuja (ficheiro `*Complemento_Azambuja*` ou folha "Azambuja" do XLSX principal). Os nomes das colunas são normalizados para minúsculas; `ID_DOC_NUMBER → doc_number` e `ID_DOC_NUMBER_DESC → doc_type`.
 2. **Cascais**: `ticket_operator_code = 21`, `price = 0`, `price_ticket_base = 20`. Junta-se ao ficheiro principal.
 3. **Normalização do NIF**: `""`, `"0"` e `"NA"` passam a `NA`.
-4. **Repescagem de NIF** (`nif_repescagem2024.csv`): preenche `fiscal_number` apenas onde está em falta, por `card_serial_number` (também no Azambuja).
+4. **Repescagem de NIF** (`nif_repescagem.csv`): preenche `fiscal_number` apenas onde está em falta, por `card_serial_number` (também no Azambuja).
 5. **Remoção de LX-BT**: `ticket_name` a começar por `LX-BT` é excluído (mantêm-se os `NA`).
 6. **Perfil criança**: registos com `ticket_operator_code` e `ticket_code` nulos passam a Navegante 12 (`operador 31`, `ticket_code 1020`, `price 0`, `price_ticket_base 40`).
 7. Remoção de registos sem `year_dist`; aviso se existirem registos de outro ano/mês.

@@ -88,7 +88,7 @@ flowchart TD
         direction TB
         IN_ITS("**Validações Limpas ITS (.xlsx)**<br/>- Folha 1: Validações Passe Jovem<br/>- Folha 2: Complemento CP Azambuja")
         IN_CASCAIS("**Viver Cascais (TML_*.xlsx)**<br/>- Registos AT Cascais (operador 21)")
-        IN_AUX("**Tabelas Auxiliares (data/auxiliar/)**<br/>- Repescagem de NIF (2024)<br/>- Correções de NIF e Data de Nascimento<br/>- Exceções de Documentos (id_exception)")
+        IN_AUX("**Tabelas Auxiliares (data/auxiliar/)**<br/>- Repescagem cumulativa de NIF<br/>- Correções de NIF e Data de Nascimento<br/>- Exceções de Documentos (id_exception)")
         IN_COMP("**Repositório Compensacoes**<br/>- Quotas dinâmicas (1_quotas_{mes}{aa}.csv)<br/>- Catálogo titulos.csv e taxas tat.csv<br/>- Números de documento (documents_nr.csv)")
     end
 

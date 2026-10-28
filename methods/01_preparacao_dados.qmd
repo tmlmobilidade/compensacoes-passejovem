@@ -39,10 +39,10 @@ Se existir mais do que um ficheiro contendo `PasseJovem` ou `TML_` na pasta `inp
 
 O script [`code/01_preparar_dados.R`](../code/01_preparar_dados.R) executa sequencialmente as seguintes operações sobre os dados combinados (`dt_main = bind_rows(dt_pj, dt_casc)`):
 
-### Normalização e Repescagem de NIFs (`nif_repescagem2024.csv`)
+### Normalização e Repescagem de NIFs (`nif_repescagem.csv`)
 
 * **Normalização inicial** (`normalizar_nif()`): valores vazios `""`, `"0"` ou `"NA"` no campo `fiscal_number` são convertidos para `NA_character_`.
-* **Repescagem de NIFs em falta**: no âmbito de auditorias e pedidos de esclarecimento anteriores, foi constituída uma base de correspondência entre números de série de cartões e NIFs (`data/auxiliar/nif_repescagem2024.csv`), que é usada para colmatar NIFs em falta.
+* **Repescagem de NIFs em falta**: no âmbito de auditorias e pedidos de esclarecimento anteriores, foi constituída uma base cumulativa de correspondência entre números de série de cartões e NIFs (`data/auxiliar/nif_repescagem.csv`), que é usada para colmatar NIFs em falta (ver procedimento detalhado de atualização em [**Anexo — Procedimento Temporário de Repescagem de NIF**](anexo_repescagem_nif.qmd)).
 * O pipeline cruza todos os registos por `card_serial_number` e preenche o `fiscal_number` **apenas onde este se encontra ausente (`NA`)**, preservando sempre o NIF original quando já existe (`coalesce(fiscal_number, fiscal_number_rep)`).
 * A mesma regra de repescagem é aplicada à tabela do **Complemento Azambuja** (`dt_az`).
 
