@@ -183,7 +183,7 @@ read_passe_jovem <- function(path) {
     )
   } else if (ext %in% c("xlsx", "xls")) {
     # Leitura do XLSX (formato julho 2026+)
-    dt <- as.data.table(read_excel(path, sheet = 1))
+    dt <- as.data.table(read_excel(path, sheet = 1, guess_max = 100000))
     # Manter colunas extra de documento (doc_number, doc_type) se existirem
   } else {
     stop("Formato de ficheiro nao suportado: ", path)
@@ -248,7 +248,7 @@ read_complemento_azambuja_xlsx <- function(path, sheet = 2) {
   cols_needed <- c("year_dist", "month_dist", "card_serial_number",
                    "fiscal_number", "ticket_code", "count_val")
 
-  read_excel(path, sheet = sheet) |>
+  read_excel(path, sheet = sheet, guess_max = 100000) |>
     rename_with(tolower) |>
     select(any_of(cols_needed)) |>
     mutate(
@@ -277,7 +277,7 @@ read_cascais <- function(path, ano, mes) {
                  "ticket_name", "price", "price_ticket_base", "count_val",
                  "birth_date")
 
-  read_excel(path) |>
+  read_excel(path, guess_max = 100000) |>
     # Normalizar nomes das colunas para lowercase
     rename_with(tolower) |>
     mutate(
