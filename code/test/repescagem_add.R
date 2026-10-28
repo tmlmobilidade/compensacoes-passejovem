@@ -14,7 +14,7 @@ nif_repescagem2024_update =  nif_repescagem2024 |>
   bind_rows(nif_repescagem202610) |> 
   distinct()
 
-write.csv(nif_repescagem2024_update, "data/auxiliar/nif_repescagem2024_update.csv", row.names = FALSE)
+write.csv(nif_repescagem2024_update, "data/auxiliar/nif_repescagem2024.csv", row.names = FALSE)
 
 
 
@@ -29,11 +29,11 @@ apuramento_2026_08_comNIF = apuramento_2026_08_comNIF |>
   select(fiscal_number, cardserialnumber_new) |> 
   mutate(fiscal_number = as.character(fiscal_number)) 
 
-nif_compare2608_10 = nif_repescagem202610 |> semi_join(apuramento_2026_08_comNIF) # 156 NIFs are there
+nif_compare2608_10 = nif_repescagem202610 |> semi_join(apuramento_2026_08_comNIF) # 204 NIFs are there
 
 nif_compare2608_10_not = nif_repescagem202610 |>
   mutate(card_serial_number = as.character(card_serial_number)) |> 
-  anti_join(apuramento_2026_08_comNIF, by= c("card_serial_number" = "cardserialnumber_new")) # 90 card_serials
+  anti_join(apuramento_2026_08_comNIF, by= c("card_serial_number" = "cardserialnumber_new")) # 99 card_serials
 
 nif_compare2608_10_not2 = nif_repescagem202610 |>
   anti_join(apuramento_2026_08_comNIF) # 27 NIFs
@@ -63,4 +63,4 @@ semNIF_compare0807$card_serial_number
 # edit > line operations > join lines
 # copiar e meter no sql, no script repescagem_nif_outraBD
 # o resultado, copiar em csv, e voltar a correr o script no topo deste.
-# atualizad também no dep > public > nif_repescagem2024
+# atualizar também no dep > public > nif_repescagem2024
