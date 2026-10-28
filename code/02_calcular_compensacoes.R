@@ -785,7 +785,7 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     sprintf(" [%d confirmados sub23+1 via BD excluídos de %d]", n_sub23_confirmados, n_idade24_total)
   } else ""
 
-  message(sprintf("  A verificar: %d registos suspeitos (%d excecao ID, %d datas distintas, %d idade > 23%s, %d idade = 25, %d sem NIF)",
+  message(sprintf("  A verificar: %d registos suspeitos (%d excecao ID, %d datas distintas, %d com idade > 23%s, %d com idade = 25, %d sem NIF)",
                   nrow(dt_verificar),
                   if (is.null(dt_ver_exc)) 0 else nrow(dt_ver_exc),
                   if (is.null(dt_ver_multi_bd)) 0 else nrow(dt_ver_multi_bd),
