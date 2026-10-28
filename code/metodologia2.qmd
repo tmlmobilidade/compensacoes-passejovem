@@ -252,7 +252,7 @@ tml_table(t3_display, align = c("l", "r"), bold_total = TRUE, fontsize = 0.85)
 
 A @tbl-4 apresenta a evolução mensal do número de passes carregados, validações e compensações apuradas, bem como alguns indicadores, em `r ANO`.
 
-A @fig-1 apresenta graficamente a evolução mensal do número de passes carregados, validações e compensações apuradas, em `r ANO`.
+A @fig-1 apresenta graficamente a evolução mensal do número de passes carregados, validações e compensações apuradas, desde 2024.
 
 
 ::: {.content-visible when-format="docx"}

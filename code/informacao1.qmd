@@ -376,7 +376,7 @@ Este mês foram registadas as situações a seguir descritas:
 - Dos `r fmt_int(n_registos_bilhetica)` registos de passes, com pelo menos uma validação, obtidos da bilhética (pelo DITS e pela AT Cascais), apenas `r fmt_int(n_utilizadores)` foram considerados para pagamento. Excluíram-se as seguintes situações de repetição e erro:
 
     - os passes atribuídos a clientes com idade incompatível (`r fmt_int(n_idade_incompativel)` registos);
-    - o mesmo NIF em 2 cartões ou mais, que corre quando há mudança de cartão no mês, tendo-se somado o n.º de validações;
+    - o mesmo NIF em 2 cartões ou mais, que ocorre quando há mudança de cartão no mês, tendo-se somado o n.º de validações;
     - para o mesmo utilizador 2 títulos distintos, que ocorre na transição entre títulos ou perfis, como entre o Viver Cascais e o título Navegante metropolitano, mas também na transição do navegante 12 ou do antigo 4_18 para o título atual. Nestes casos são agregadas as validações e é considerado o último título carregado;
 
 - Uma vez que os dados de alguns clientes dos títulos de Cascais ainda não constam da base de dados da TML, a informação sobre os passes Viver Cascais tem vindo a ser enviada pela Autoridade de Transportes de Cascais. Este mês, foram enviados `r fmt_int(n_cascais_enviados)` registos de Viver Cascais com validações. Após limpeza de duplicados e cruzamento com os cartões com passes Navegante, contabilizaram-se `r fmt_int(n_cascais_exclusivo)` clientes que apenas utilizam este título.
@@ -471,6 +471,10 @@ No que concerne ao número de validações, registou-se em `r mes_nome` de `r AN
 
 Em `r mes_nome` de `r ANO`, em média, cada utilizador realizou `r media_validacoes_user` validações.
 
+A @tbl-4 apresenta a evolução mensal do número de passes carregados, validações e compensações apuradas, bem como alguns indicadores, em `r ANO`.
+
+A @fig-1 apresenta graficamente a evolução mensal do número de passes carregados, validações e compensações apuradas, desde 2024.
+
 As variações apontadas são coerentes com a época de verão coincidente com o período de férias escolares.
 
 ::: {.content-visible when-format="docx"}
@@ -483,7 +487,7 @@ As variações apontadas são coerentes com a época de verão coincidente com o
 #pagebreak()
 #set page(paper: "a4", flipped: true, margin: (x: 1.5cm, top: 2.2cm, bottom: 1.5cm))
 
-#set table(inset: (x: 4pt, y: 3pt))
+#set table(inset: (x: 4pt, y: 6pt))
 ```
 <!-- #set text(size: 8.5pt) -->
 
