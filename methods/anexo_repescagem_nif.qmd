@@ -7,7 +7,7 @@ number-sections: false
 Este anexo documenta o procedimento operacional de **repescagem de Números de Identificação Fiscal (NIF)** para cartões que surgem sem NIF (`semNIF`) no ficheiro mensal de validações, cruzando-os com a tabela `F_AUX_PROFILE_CARDS` noutra base de dados e atualizando o ficheiro cumulativo `data/auxiliar/nif_repescagem.csv`.
 
 ::: {.callout-warning}
-## Natureza Temporária deste Procedimento
+## Procedimento Temporário
 Este procedimento constitui uma **solução transitória**. Prevê-se que nos apuramentos futuros (a partir dos dados de setembro de 2026) a extração primária de validações já integre diretamente os NIFs atualizados na base de dados de perfis de cartões, tornando desnecessária esta pesquisa complementar mês a mês.
 :::
 
@@ -15,7 +15,7 @@ Este procedimento constitui uma **solução transitória**. Prevê-se que nos ap
 
 ## Visão Geral e Ficheiros Envolvidos
 
-O ficheiro `data/auxiliar/nif_repescagem.csv` (anteriormente designado `nif_repescagem2024.csv`) é uma **tabela cumulativa** que reúne todos os pares `(card_serial_number, fiscal_number)` recuperados desde os dados de 2024 até ao mês de referência mais recente. No Passo 01 do pipeline ([`code/01_preparar_dados.R`](../code/01_preparar_dados.R)), esta tabela é cruzada por `card_serial_number` para preencher o `fiscal_number` exclusivamente onde este vem em falta (`NA`).
+O ficheiro `data/auxiliar/nif_repescagem.csv` é uma **tabela cumulativa** que reúne todos os pares `(card_serial_number, fiscal_number)` recuperados desde os dados de 2024 até ao mês de referência mais recente. No Passo 01 do pipeline ([`code/01_preparar_dados.R`](../code/01_preparar_dados.R)), esta tabela é cruzada por `card_serial_number` para preencher o `fiscal_number` exclusivamente onde este vem em falta (`NA`).
 
 O fluxo de atualização mensal para recuperar NIFs de novos cartões `semNIF` recorre a três scripts auxiliares:
 
@@ -59,7 +59,8 @@ julho_semNIF  <- read_delim("data/2026_07_julho/output/2026_07_semNIF.csv",
 
 semNIF_compare0807 <- agosto_semNIF |>
   select(card_serial_number, doc_type, doc_number, age_new) |> 
-  anti_join(julho_semNIF |> select(card_serial_number, doc_type, doc_number, age_new)) |> 
+  anti_join(julho_semNIF |>
+    select(card_serial_number, doc_type, doc_number, age_new)) |> 
   arrange(doc_type, age_new)
 
 # Extrair o vetor de números de série de cartão sem NIF
