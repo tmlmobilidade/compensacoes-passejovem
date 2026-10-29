@@ -4,7 +4,7 @@ number-sections: false
 
 # Tabelas Auxiliares, Exceções e Dependências Externas {.unnumbered}
 
-Este anexo documenta os ficheiros auxiliares de correção, exceção e histórico residentes em `data/auxiliar/`, os templates de reporte em `documents/` e as dependências face ao repositório [`Compensacoes`](https://github.com/tmlmobilidade/compensacoes-navegante).
+Este anexo documenta os ficheiros auxiliares de correção, exceção e histórico residentes em `data/auxiliar/`, os templates de reporte em `documents/` e as dependências face ao repositório [`compensacoes-navegante`](https://github.com/tmlmobilidade/compensacoes-navegante).
 
 ---
 
@@ -33,11 +33,11 @@ A pasta `data/auxiliar/` contém cinco ficheiros CSV que asseguram a limpeza, va
 
 ---
 
-## Dependências do Repositório `Compensacoes` (Fase 2 e Documentos)
+## Dependências do Repositório `compensacoes-navegante` (Fase 2 e Documentos)
 
-A Fase 2 (`04_estimar_compensacao_operadores.R` e `05_exportar_anexo_reparticao.R`) e o ficheiro de parâmetros documentais (`doc_params.R`) leem os seguintes recursos do repositório irmão `Compensacoes` (`COMPENSACOES_ROOT`, por omissão `../Compensacoes`):
+A Fase 2 (`04_estimar_compensacao_operadores.R` e `05_exportar_anexo_reparticao.R`) e o ficheiro de parâmetros documentais (`doc_params.R`) leem os seguintes recursos do repositório irmão `compensacoes-navegante` (`COMPENSACOES_ROOT`):
 
-| Ficheiro em `Compensacoes/` | Descrição | Fallback GitHub (`COMPENSACOES_GITHUB`) |
+| Ficheiro no repo compensacoes-navegante` | Descrição | Fallback GitHub (`COMPENSACOES_GITHUB`) |
 | :--- | :--- | :---: |
 | `data/<mm>_<mes_abrev>_<ano>/output/1_quotas_<mes_abrev><aa>.csv` | Quotas mensais dinâmicas de repartição por título (`ticket_code`) e operador (`operador`). | Não (dados locais de output) |
 | [`lists/titulos.csv`](../Compensacoes/lists/titulos.csv) | Catálogo oficial dos 145 títulos Navegante com `ticket_code`, `titulo_nome`, `modalidade`, `pvp`, `titulo_nome_base` e `preco_base`. | Sim (`ler_lista_compensacoes()`) |
