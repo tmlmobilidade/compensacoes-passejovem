@@ -167,3 +167,45 @@ table(dt_comp$in_sql_127_130)
 table(dt_comp_nif$in_sql_127_130)
 
 dt_comp$card_serial_number[dt_comp$in_sql_127_130 == FALSE]
+
+
+
+
+
+# check odd validation cases ----------------------------------------------
+
+# 1 NIF com mais que um cartao, com mais de 200 validações
+julho_all = bind_rows(
+  julho_comNIF |> select(fiscal_number, numval, cardserialnumber_new),
+  julho_semNIF |> select(doc_number, numval, cardserialnumber_new) |> mutate(cardserialnumber_new = as.character(cardserialnumber_new))
+) |>
+  arrange(-numval) |> 
+  filter(cardserialnumber_new |> str_detect("_"))
+
+hist(julho_all$numval)
+
+julho_all_top10 = julho_all |> slice_head(n = 10)
+julho_all_mais200 = julho_all |> filter(numval >=200) |> select(-doc_number)
+
+write.csv(julho_all_mais200, "data/2026_07_julho/output/2026_07_validacoes_mais200.csv", row.names = FALSE)
+
+
+# agosto
+
+agosto_comNIF = read_delim("data/2026_08_agosto/output/2026_08_comNIF.csv", 
+                                           delim = ";", escape_double = FALSE, trim_ws = TRUE) 
+
+agosto_all = bind_rows(
+  agosto_comNIF |> select(fiscal_number, numval, cardserialnumber_new),
+  agosto_semNIF |> select(doc_number, numval, cardserialnumber_new) |> mutate(cardserialnumber_new = as.character(cardserialnumber_new))
+) |>
+  arrange(-numval) |> 
+  filter(cardserialnumber_new |> str_detect("_"))
+
+hist(agosto_all$numval)
+
+agosto_all_top10 = agosto_all |> slice_head(n = 10)
+agosto_all_mais200 = agosto_all |> filter(numval >=200) |> select(-doc_number)
+
+write.csv(agosto_all_mais200, "data/2026_08_agosto/output/2026_08_validacoes_mais200.csv", row.names = FALSE)
+
