@@ -7,12 +7,13 @@ nif_repescagem <- read_csv("data/auxiliar/nif_repescagem.csv",
 
 nif_repescagem202610 <- read_delim("data/auxiliar/nif_repescagem202610.csv", 
                                    delim = ";", escape_double = FALSE, col_types = cols(fiscal_number = col_character()), 
-                                   trim_ws = TRUE)
+                                   trim_ws = TRUE) |>
+  mutate(ano_mes = 202608L)
 
 
 nif_repescagem_update = nif_repescagem |> 
   bind_rows(nif_repescagem202610) |> 
-  distinct()
+  distinct(card_serial_number, fiscal_number, .keep_all = TRUE)
 
 write.csv(nif_repescagem_update, "data/auxiliar/nif_repescagem.csv", row.names = FALSE)
 

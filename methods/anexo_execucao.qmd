@@ -189,5 +189,7 @@ render_documentos(2026, 7, run_fase1 = TRUE, run_fase2 = TRUE)
 9. [ ] Correr a **Fase 2** (`run_fase1 = FALSE`, `run_fase2 = TRUE`).
 10. [ ] Verificar que os totais de `passejovem_resumo.csv` e `docs/<ano>_<mm>_AnexoII_reparticao.xlsx` coincidem com o total apurado na Fase 1.
 11. [ ] Registar `numero_informacao2` e `numero_oficio2` em `Compensacoes/lists/documents_nr.csv`, rever parâmetros em `code/doc_params.R` e compilar `AnexoI_metodologia`, `informacao2` e `oficio2`.
-12. [ ] Efetuar commit das alterações e criar tag Git do mês (`git tag -a run-2026-08-agosto -m "Passe Jovem agosto 2026"`).
+12. [ ] Congelar o snapshot das tabelas auxiliares usadas no mês executando `bloquear_auxiliares_mes(ano, mes)` (grava cópia em `data/<ano>_<mm>_<mes>/input/auxiliar_lock/`).
+13. [ ] Atualizar no Oracle (dep/public) o `nif_repescagem.csv`
+14. [ ] Efetuar commit das alterações e criar tag Git do mês (`git tag -a run-2026-08-agosto -m "Passe Jovem agosto 2026"`).
 

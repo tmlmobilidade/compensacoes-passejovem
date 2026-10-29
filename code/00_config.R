@@ -141,7 +141,8 @@ month_paths <- function(ano, mes, raiz = here_root()) {
     input    = file.path(base, "input"),
     output   = output,
     docs     = file.path(output, "docs"),
-    auxiliar = file.path(raiz, "data", "auxiliar")
+    auxiliar   = file.path(raiz, "data", "auxiliar"),
+    input_lock = file.path(base, "input", "auxiliar_lock")
   )
 }
 
@@ -149,6 +150,64 @@ month_paths <- function(ano, mes, raiz = here_root()) {
 #' Exemplo: output_filename(2026, 5, "comNIF") -> "2026_05_comNIF.csv"
 output_filename <- function(ano, mes, sufixo, ext = "csv") {
   sprintf("%d_%02d_%s.%s", ano, mes, sufixo, ext)
+}
+
+#' Devolve o caminho de um ficheiro auxiliar para o mês:
+#'   1. Se existir uma cópia bloqueada em data/<ano>_<mm>_<mes>/input/auxiliar_lock/<nome>, usa-a;
+#'   2. Caso contrário, usa data/auxiliar/<nome>.
+caminho_auxiliar <- function(paths, nome) {
+  lock_dir  <- if (!is.null(paths$input_lock)) paths$input_lock else file.path(paths$input, "auxiliar_lock")
+  f_locked  <- file.path(lock_dir, nome)
+  if (file.exists(f_locked)) {
+    message(sprintf("  [lock] A usar snapshot auxiliar bloqueado do mes: input/auxiliar_lock/%s", nome))
+    return(f_locked)
+  }
+  file.path(paths$auxiliar, nome)
+}
+
+#' Filtra uma tabela auxiliar até ao ano e mês de referência (quando contém a coluna ano_mes).
+#' Garante que registos adicionados em meses posteriores (ex: ano_mes = 202608) não alteram
+#' retroativamente o apuramento de meses anteriores (ex: 202607).
+filtrar_ate_ano_mes <- function(dt, ano, mes) {
+  if (is.null(dt) || !"ano_mes" %in% tolower(names(dt))) return(dt)
+  col_am <- names(dt)[tolower(names(dt)) == "ano_mes"][1]
+  alvo   <- as.integer(ano) * 100L + as.integer(mes)
+  vals   <- suppressWarnings(as.integer(dt[[col_am]]))
+  dt[is.na(vals) | vals <= alvo, ]
+}
+
+#' Guarda uma cópia bloqueada (snapshot) dos ficheiros auxiliares utilizados no mês
+#' dentro de data/<ano>_<mm>_<mes>/input/auxiliar_lock/, já filtrados por ano_mes <= YYYYMM.
+#'
+#' @param ano       Ano de referência (ex: 2026)
+#' @param mes       Mês de referência (1–12)
+#' @param raiz      Raiz do projecto
+#' @param overwrite Lógico; se FALSE, não substitui ficheiros já bloqueados
+bloquear_auxiliares_mes <- function(ano, mes, raiz = here_root(), overwrite = TRUE) {
+  paths    <- month_paths(ano, mes, raiz)
+  lock_dir <- paths$input_lock
+  dir.create(lock_dir, recursive = TRUE, showWarnings = FALSE)
+
+  ficheiros <- c("nif_repescagem.csv", "data_nascimento_correct.csv", "nif_correct.csv", "id_exception.csv")
+  for (f in ficheiros) {
+    src <- file.path(paths$auxiliar, f)
+    dst <- file.path(lock_dir, f)
+    if (!file.exists(src)) next
+    if (file.exists(dst) && !isTRUE(overwrite)) {
+      message(sprintf("[lock] Ja existe (mantido): %s", dst))
+      next
+    }
+    if (f == "nif_repescagem.csv") {
+      dt <- fread(src, colClasses = "character") |> filtrar_ate_ano_mes(ano, mes)
+      fwrite(dt, dst, sep = ",", quote = TRUE)
+    } else {
+      dt <- fread(src, sep = ";", colClasses = "character") |> filtrar_ate_ano_mes(ano, mes)
+      fwrite(dt, dst, sep = ";", quote = FALSE)
+    }
+    message(sprintf("[lock] Snapshot guardado (%d linhas): %s", nrow(dt), dst))
+  }
+  invisible(lock_dir)
+
 }
 
 

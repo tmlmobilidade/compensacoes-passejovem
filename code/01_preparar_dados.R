@@ -139,11 +139,12 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   # data/auxiliar/nif_repescagem.csv contém NIFs identificados para cartões
   # cujo fiscal_number não consta nos dados primários.
   # Faz um left_join pelo número de cartão e preenche apenas onde o NIF está a NA.
-  f_rep <- file.path(paths$auxiliar, "nif_repescagem.csv")
+  f_rep <- caminho_auxiliar(paths, "nif_repescagem.csv")
   if (file.exists(f_rep)) {
 
     # Ler tabela de repescagem e limpar com um pipe dplyr
     dt_rep <- fread(f_rep, colClasses = "character") |>
+      filtrar_ate_ano_mes(ano, mes) |>
       rename_with(tolower) |>
       mutate(
         fiscal_number      = normalizar_nif(fiscal_number),
@@ -235,9 +236,10 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
 
   # 6a. Correções de data de nascimento (data/auxiliar/data_nascimento_correct.csv)
   #     Corrige datas de nascimento erradas exportadas pelo sistema ITS.
-  f_dn_corr <- file.path(paths$auxiliar, "data_nascimento_correct.csv")
+  f_dn_corr <- caminho_auxiliar(paths, "data_nascimento_correct.csv")
   if (file.exists(f_dn_corr)) {
     dt_dn <- fread(f_dn_corr, sep = ";", colClasses = "character") |>
+      filtrar_ate_ano_mes(ano, mes) |>
       mutate(dn_corrigida = parse_date_safe(dn_corrigida)) |>
       filter(!is.na(dn_corrigida)) |>
       distinct(card_serial_number, .keep_all = TRUE)    # garante chave única para o join
@@ -254,9 +256,10 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   #     Formato: card_serial_number; birth_date; fiscal_number
   #     Aplica tanto o NIF corrigido como a data de nascimento (quando presente),
   #     pois NIFs errados estão muitas vezes associados a datas de nascimento erradas.
-  f_nif_corr <- file.path(paths$auxiliar, "nif_correct.csv")
+  f_nif_corr <- caminho_auxiliar(paths, "nif_correct.csv")
   if (file.exists(f_nif_corr)) {
     dt_nif <- fread(f_nif_corr, sep = ";", colClasses = "character") |>
+      filtrar_ate_ano_mes(ano, mes) |>
       mutate(
         fiscal_number   = normalizar_nif(fiscal_number),
         birth_date_corr = parse_date_safe(birth_date)

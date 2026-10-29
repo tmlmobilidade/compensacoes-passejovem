@@ -15,7 +15,9 @@ Este procedimento constitui uma **solução transitória**. Prevê-se que nos ap
 
 ## Visão Geral e Ficheiros Envolvidos
 
-O ficheiro `data/auxiliar/nif_repescagem.csv` é uma **tabela cumulativa** que reúne todos os pares `(card_serial_number, fiscal_number)` recuperados desde os dados de 2024 até ao mês de referência mais recente. No Passo 01 do pipeline ([`code/01_preparar_dados.R`](../code/01_preparar_dados.R)), esta tabela é cruzada por `card_serial_number` para preencher o `fiscal_number` exclusivamente onde este vem em falta (`NA`).
+O ficheiro `data/auxiliar/nif_repescagem.csv` é uma **tabela cumulativa** que reúne todos os pares `(card_serial_number, fiscal_number)` recuperados desde os dados de 2024 até ao mês de referência mais recente, acompanhados pela coluna **`ano_mes`** (ex.: `202412` para a base original de 2024 e `202608` para os NIFs recuperados no apuramento de agosto de 2026).
+
+No Passo 01 do pipeline ([`code/01_preparar_dados.R`](../code/01_preparar_dados.R)), esta tabela é filtrada automaticamente por `ano_mes <= ano * 100 + mes` (`filtrar_ate_ano_mes()`) e cruzada por `card_serial_number` para preencher o `fiscal_number` exclusivamente onde este vem em falta (`NA`), garantindo que novos NIFs adicionados em meses seguintes nunca alteram retroativamente os resultados de meses já encerrados. Adicionalmente, no fecho de cada mês, a função `bloquear_auxiliares_mes(ano, mes)` guarda uma cópia congelada das tabelas auxiliares em `data/<ano>_<mm>_<mes>/input/auxiliar_lock/`.
 
 O fluxo de atualização mensal para recuperar NIFs de novos cartões `semNIF` recorre a três scripts auxiliares:
 
@@ -118,11 +120,12 @@ nif_repescagem202610 <- read_delim(
   delim = ";", escape_double = FALSE,
   col_types = cols(fiscal_number = col_character()), 
   trim_ws = TRUE
-)
+) |>
+  mutate(ano_mes = 202608L) # identificar o mês de apuramento (AAAAMM)
 
 nif_repescagem_update <- nif_repescagem |> 
   bind_rows(nif_repescagem202610) |> 
-  distinct()
+  distinct(card_serial_number, fiscal_number, .keep_all = TRUE)
 
 write.csv(nif_repescagem_update, "data/auxiliar/nif_repescagem.csv", row.names = FALSE)
 ```
@@ -131,7 +134,7 @@ write.csv(nif_repescagem_update, "data/auxiliar/nif_repescagem.csv", row.names =
 ## Verificação de Sobreposição e Reexecução do Pipeline
 O script `code/test/repescagem_add.R` inclui também um bloco intermédio (`semi_join` e `anti_join` com `<ano>_<mm>_comNIF.csv`) que permite verificar quantos dos cartões/NIFs recuperados já constavam em `comNIF` (por terem outro cartão com NIF) e quantos são efetivamente novos.
 
-Após gravar `data/auxiliar/nif_repescagem.csv`, **deve voltar-se a correr a Fase 1 do pipeline** (`01_preparar_dados.R`, `02_calcular_compensacoes.R` e `03_exportar_reporte.R`) para que os cartões recuperados passem de `semNIF` para `comNIF`.
+Após gravar `data/auxiliar/nif_repescagem.csv`, **deve voltar-se a correr a Fase 1 do pipeline** (`01_preparar_dados.R`, `02_calcular_compensacoes.R` e `03_exportar_reporte.R`) para que os cartões recuperados passem de `semNIF` para `comNIF`. Quando o mês estiver validado e fechado, executar `bloquear_auxiliares_mes(ano, mes)` para congelar uma cópia exata em `data/<ano>_<mm>_<mes>/input/auxiliar_lock/`.
 :::
 
 ---

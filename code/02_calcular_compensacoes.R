@@ -292,9 +292,9 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
   # Ler lista de exceções de documentos de identificação (data/auxiliar/id_exception.csv)
   # Documentos conhecidos por serem usados por crianças diferentes (fraude / partilhado)
-  f_id_exc <- file.path(paths$auxiliar, "id_exception.csv")
+  f_id_exc <- caminho_auxiliar(paths, "id_exception.csv")
   dt_id_exc <- if (file.exists(f_id_exc)) {
-    dt_tmp <- fread(f_id_exc, colClasses = "character")
+    dt_tmp <- fread(f_id_exc, colClasses = "character") |> filtrar_ate_ano_mes(ano, mes)
     names(dt_tmp) <- tolower(names(dt_tmp))
     if (!"doc_type" %in% names(dt_tmp)) dt_tmp[, doc_type := NA_character_]
     dt_tmp[, doc_type := toupper(trimws(as.character(doc_type)))]
