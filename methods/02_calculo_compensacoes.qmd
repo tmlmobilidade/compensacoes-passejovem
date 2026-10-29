@@ -140,7 +140,7 @@ O passo `02` separa ou sinaliza automaticamente quatro conjuntos de registos par
 
 4. **Múltiplos Cartões com Elevado Número de Validações (`<ano>_<mm>_validacoes_mais200.csv`)**:
    * Identifica titulares que acumulam **mais do que um cartão de suporte no mês** (`str_detect(cardserialnumber_new, "_")`) e um total consolidado de **200 ou mais validações** (`numval >= 200`).
-   * Estes casos não são excluídos do apuramento mensal, mas configuram potenciais situações de utilização abusiva ou partilha indevida de cartões, sendo exportados por ordem decrescente de `numval` (com as colunas `fiscal_number`, `numval`, `cardserialnumber_new`, `doc_type` e `doc_number`) para envio ao Departamento de Clientes (DC) e averiguação adicional.
+   * Estes casos configuram potenciais situações de utilização abusiva ou partilha indevida de cartões, sendo exportados por ordem decrescente de `numval` (com as colunas `fiscal_number`, `numval`, `cardserialnumber_new`, `doc_type` e `doc_number`) para envio ao Departamento de Clientes (DC) e averiguação adicional.
 
 ::: {.callout-note collapse="true"}
 ## Query SQL para Extração dos Perfis Sub23+1 ([`code/idades23-1.sql`](../code/idades23-1.sql))
