@@ -3,9 +3,12 @@
 # Calcula as compensações comNIF e semNIF para um dado mês.
 #
 # Lê os ficheiros intermédios gerados por 01_preparar_dados.R e produz:
-#   - <ano>_<mm>_comNIF.csv   (agregado por NIF)
-#   - <ano>_<mm>_semNIF.csv   (agregado por número de cartão, para quem não tem NIF)
-#   - <ano>_<mm>_a_verificar.csv  (lista de pessoas com dados suspeitos)
+#   - <ano>_<mm>_comNIF.csv               (agregado por NIF)
+#   - <ano>_<mm>_semNIF.csv               (agregado por documento/cartão, para quem não tem NIF)
+#   - <ano>_<mm>_a_verificar.csv          (lista de pessoas com dados suspeitos)
+#   - <ano>_<mm>_validacoes_mais200.csv   (titulares com múltiplos cartões e >= 200 validações)
+#   - <ano>_<mm>_age_nok.csv              (registos excluídos por idade incompatível)
+#   - <ano>_<mm>_documentos_estranhos_semNIF.csv (documentos semNIF com anomalias)
 #
 # Também suporta exceções manuais de identificação de:
 #   - data/auxiliar/id_exception.csv (documentos conhecidos por serem usados por crianças diferentes)
@@ -795,6 +798,42 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
                   nrow(dt_ver_sem)))
 
 
+  # ── Registos com elevado n.º de validações (>= 200) e múltiplos cartões ──
+  # Potenciais casos de fraude / partilha indevida de cartões (não excluídos do
+  # apuramento, mas extraídos para envio e averiguação pelo Departamento de Clientes).
+  dt_com_v200 <- dt_comNIF |>
+    transmute(
+      fiscal_number        = as.character(fiscal_number),
+      doc_type             = NA_character_,
+      doc_number           = NA_character_,
+      numval               = as.integer(numval),
+      cardserialnumber_new = as.character(cardserialnumber_new)
+    )
+
+  dt_sem_v200 <- if ("cardserialnumber_new" %in% names(dt_semNIF)) {
+    dt_semNIF |>
+      transmute(
+        fiscal_number        = NA_character_,
+        doc_type             = if ("doc_type" %in% names(dt_semNIF)) as.character(doc_type) else NA_character_,
+        doc_number           = if ("doc_number" %in% names(dt_semNIF)) as.character(doc_number) else NA_character_,
+        numval               = as.integer(numval),
+        cardserialnumber_new = as.character(cardserialnumber_new)
+      )
+  } else NULL
+
+  dt_val_mais200 <- bind_rows(dt_com_v200, dt_sem_v200) |>
+    filter(
+      !is.na(cardserialnumber_new),
+      str_detect(cardserialnumber_new, "_"),
+      numval >= 200L
+    ) |>
+    arrange(desc(numval)) |>
+    select(fiscal_number, numval, cardserialnumber_new, doc_type, doc_number) |>
+    as.data.table()
+
+  message(sprintf("  Validacoes >= 200 (multiplos cartoes): %d casos detetados", nrow(dt_val_mais200)))
+
+
   # ── Registos NOK (idade incompatível após correcção) ─────────────────────
   # Após a correcção pontual em 01_preparar_dados.R (regras dos meses limite),
   # ainda podem restar registos com age_new == 3 (demasiado novo) ou age_new >= 25
@@ -810,16 +849,18 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
 
 
   # ── Gravar ficheiros de output ────────────────────────────────────────────
-  out_com  <- file.path(paths$output, output_filename(ano, mes, "comNIF"))
-  out_sem  <- file.path(paths$output, output_filename(ano, mes, "semNIF"))
-  out_ver  <- file.path(paths$output, output_filename(ano, mes, "a_verificar"))
-  out_nok  <- file.path(paths$output, output_filename(ano, mes, "age_nok"))
+  out_com     <- file.path(paths$output, output_filename(ano, mes, "comNIF"))
+  out_sem     <- file.path(paths$output, output_filename(ano, mes, "semNIF"))
+  out_ver     <- file.path(paths$output, output_filename(ano, mes, "a_verificar"))
+  out_mais200 <- file.path(paths$output, output_filename(ano, mes, "validacoes_mais200"))
+  out_nok     <- file.path(paths$output, output_filename(ano, mes, "age_nok"))
   out_estranhos <- file.path(paths$output, output_filename(ano, mes, "documentos_estranhos_semNIF"))
 
-  write_csv_pj(dt_comNIF,    out_com)
-  write_csv_pj(dt_semNIF,    out_sem)
-  write_csv_pj(dt_verificar, out_ver)
-  write_csv_pj(dt_age_nok,   out_nok)
+  write_csv_pj(dt_comNIF,      out_com)
+  write_csv_pj(dt_semNIF,      out_sem)
+  write_csv_pj(dt_verificar,   out_ver)
+  write_csv_pj(dt_val_mais200, out_mais200)
+  write_csv_pj(dt_age_nok,     out_nok)
 
   if (!is.null(dt_docs_estranhos) && nrow(dt_docs_estranhos) > 0) {
     write_csv_pj(dt_docs_estranhos, out_estranhos)
@@ -830,12 +871,15 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   message(sprintf("  Gravado: %s", basename(out_com)))
   message(sprintf("  Gravado: %s", basename(out_sem)))
   message(sprintf("  Gravado: %s", basename(out_ver)))
+  message(sprintf("  Gravado: %s (%d registos)", basename(out_mais200), nrow(dt_val_mais200)))
   message(sprintf("  Gravado: %s", basename(out_nok)))
   message(sprintf("[02] Concluido em %.1f segundos.\n", elapsed))
 
   invisible(list(
     comNIF                      = dt_comNIF,
     semNIF                      = dt_semNIF,
+    a_verificar                 = dt_verificar,
+    validacoes_mais200          = dt_val_mais200,
     age_nok                     = dt_age_nok,
     documentos_estranhos_semNIF = dt_docs_estranhos
   ))

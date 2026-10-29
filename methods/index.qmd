@@ -98,7 +98,7 @@ flowchart TD
     subgraph FASE1["2. Fase 1 — Apuramento Mensal (IMT)"]
         direction TB
         P01["**01_preparar_dados.R**<br/>- Combinação ITS + Cascais + Azambuja<br/>- Repescagem NIF e exclusão LX-BT<br/>- Conversão Perfil Criança (Nav. 12)<br/>- Correções manuais e recálculo de idade<br/>→ limpos_preagregacao.csv"]
-        P02["**02_calcular_compensacoes.R**<br/>- Agregação por titular (comNIF / semNIF)<br/>- Adição de validações Azambuja<br/>- Regra AML (5% até 20 val.)<br/>- Controlo de idade e documentos<br/>→ comNIF.csv, semNIF.csv, a_verificar.csv"]
+        P02["**02_calcular_compensacoes.R**<br/>- Agregação por titular (comNIF / semNIF)<br/>- Adição de validações Azambuja<br/>- Regra AML (5% até 20 val.)<br/>- Controlo de idade, documentos e validações (≥200)<br/>→ comNIF.csv, semNIF.csv, a_verificar.csv, validacoes_mais200.csv"]
         P03["**03_exportar_reporte.R**<br/>- Preenchimento Template Oficial IMT v2<br/>- Atualização automática do histórico<br/>→ reporte_AML_IMT.xlsx"]
 
         P01 --> P02
@@ -163,7 +163,7 @@ flowchart TD
 | :--- | :--- | :--- | :--- | :--- |
 | **Configuração** | **Constantes e Utilitários** | [`00_config.R`](../code/00_config.R), [`99_run_pipeline.R`](../code/99_run_pipeline.R) | Parâmetros de negócio, caminhos e histórico | Funções partilhadas e orquestração mensal |
 | **Fase 1 (IMT)** | **1. Preparação e Limpeza** | [`01_preparar_dados.R`](../code/01_preparar_dados.R) | `*PasseJovem*.xlsx`, `TML_*.xlsx` (Cascais), `data/auxiliar/*.csv` | `<ano>_<mm>_limpos_preagregacao.csv`, `<ano>_<mm>_complemento_azambuja.csv`, `<ano>_<mm>_contagens_01.rds` |
-| **Fase 1 (IMT)** | **2. Cálculo por Titular** | [`02_calcular_compensacoes.R`](../code/02_calcular_compensacoes.R) | `limpos_preagregacao.csv`, `complemento_azambuja.csv`, `id_exception.csv`, `idades23*.csv` (sub23+1) | `<ano>_<mm>_comNIF.csv`, `<ano>_<mm>_semNIF.csv`, `<ano>_<mm>_a_verificar.csv`, `<ano>_<mm>_age_nok.csv`, `<ano>_<mm>_documentos_estranhos_semNIF.csv` |
+| **Fase 1 (IMT)** | **2. Cálculo por Titular** | [`02_calcular_compensacoes.R`](../code/02_calcular_compensacoes.R) | `limpos_preagregacao.csv`, `complemento_azambuja.csv`, `id_exception.csv`, `idades23*.csv` (sub23+1) | `<ano>_<mm>_comNIF.csv`, `<ano>_<mm>_semNIF.csv`, `<ano>_<mm>_a_verificar.csv`, `<ano>_<mm>_validacoes_mais200.csv`, `<ano>_<mm>_age_nok.csv`, `<ano>_<mm>_documentos_estranhos_semNIF.csv` |
 | **Fase 1 (IMT)** | **3. Reporte Oficial IMT** | [`03_exportar_reporte.R`](../code/03_exportar_reporte.R) | `comNIF.csv`, `semNIF.csv`, Template IMT v2 | `docs/<ano>_<mm>_reporte_AML_IMT.xlsx`, `compensacao_pj_anteriores.csv` |
 | **Fase 2 (Operadores)** | **4. Repartição e Congelamento** | [`04_estimar_compensacao_operadores.R`](../code/04_estimar_compensacao_operadores.R) | `comNIF.csv`, `semNIF.csv`, `1_quotas_<mes><aa>.csv`, `titulos.csv`, `tat.csv` | `<ano>_<mm>_compensacao_por_titulo.csv`, `<ano>_<mm>_passejovem_resumo.csv`, `<ano>_<mm>_passejovem_congelamento.csv` |
 | **Fase 2 (Operadores)** | **5. Anexo II Excel** | [`05_exportar_anexo_reparticao.R`](../code/05_exportar_anexo_reparticao.R) | `passejovem_resumo.csv`, `1_quotas_<mes><aa>.csv`, `titulos.csv`, `tat.csv` | `docs/<ano>_<mm>_AnexoII_reparticao.xlsx` |

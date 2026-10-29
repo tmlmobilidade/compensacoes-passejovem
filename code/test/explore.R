@@ -174,10 +174,10 @@ dt_comp$card_serial_number[dt_comp$in_sql_127_130 == FALSE]
 
 # check odd validation cases ----------------------------------------------
 
-# 1 NIF com mais que um cartao, com mais de 200 validações
+# 1 NIF/documento com mais que um cartao, com mais de 200 validações
 julho_all = bind_rows(
-  julho_comNIF |> select(fiscal_number, numval, cardserialnumber_new),
-  julho_semNIF |> select(doc_number, numval, cardserialnumber_new) |> mutate(cardserialnumber_new = as.character(cardserialnumber_new))
+  julho_comNIF |> select(fiscal_number, numval, cardserialnumber_new) |> mutate(fiscal_number = as.character(fiscal_number)),
+  julho_semNIF |> select(doc_type, doc_number, numval, cardserialnumber_new) |> mutate(cardserialnumber_new = as.character(cardserialnumber_new))
 ) |>
   arrange(-numval) |> 
   filter(cardserialnumber_new |> str_detect("_"))
@@ -185,19 +185,21 @@ julho_all = bind_rows(
 hist(julho_all$numval)
 
 julho_all_top10 = julho_all |> slice_head(n = 10)
-julho_all_mais200 = julho_all |> filter(numval >=200) |> select(-doc_number)
+julho_all_mais200 = julho_all |> filter(numval >= 200)
 
-write.csv(julho_all_mais200, "data/2026_07_julho/output/2026_07_validacoes_mais200.csv", row.names = FALSE)
+write_csv_pj(julho_all_mais200, "data/2026_07_julho/output/2026_07_validacoes_mais200.csv")
 
 
 # agosto
 
 agosto_comNIF = read_delim("data/2026_08_agosto/output/2026_08_comNIF.csv", 
                                            delim = ";", escape_double = FALSE, trim_ws = TRUE) 
+agosto_semNIF = read_delim("data/2026_08_agosto/output/2026_08_semNIF.csv", 
+                                           delim = ";", escape_double = FALSE, trim_ws = TRUE) 
 
 agosto_all = bind_rows(
-  agosto_comNIF |> select(fiscal_number, numval, cardserialnumber_new),
-  agosto_semNIF |> select(doc_number, numval, cardserialnumber_new) |> mutate(cardserialnumber_new = as.character(cardserialnumber_new))
+  agosto_comNIF |> select(fiscal_number, numval, cardserialnumber_new) |> mutate(fiscal_number = as.character(fiscal_number)),
+  agosto_semNIF |> select(doc_type, doc_number, numval, cardserialnumber_new) |> mutate(cardserialnumber_new = as.character(cardserialnumber_new))
 ) |>
   arrange(-numval) |> 
   filter(cardserialnumber_new |> str_detect("_"))
@@ -205,7 +207,7 @@ agosto_all = bind_rows(
 hist(agosto_all$numval)
 
 agosto_all_top10 = agosto_all |> slice_head(n = 10)
-agosto_all_mais200 = agosto_all |> filter(numval >=200) |> select(-doc_number)
+agosto_all_mais200 = agosto_all |> filter(numval >= 200)
 
-write.csv(agosto_all_mais200, "data/2026_08_agosto/output/2026_08_validacoes_mais200.csv", row.names = FALSE)
+write_csv_pj(agosto_all_mais200, "data/2026_08_agosto/output/2026_08_validacoes_mais200.csv")
 

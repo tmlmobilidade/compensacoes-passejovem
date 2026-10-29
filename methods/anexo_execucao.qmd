@@ -71,6 +71,7 @@ Após esta primeira execução:
 
 1. Inspecionar os ficheiros gerados em `output/`:
    * `<ano>_<mm>_a_verificar.csv` (registos sem NIF, idade $> 23$ / $= 25$ anos, documentos com datas de nascimento distintas);
+   * `<ano>_<mm>_validacoes_mais200.csv` (titulares com mais do que um cartão e $\ge 200$ validações no mês, para envio e averiguação pelo Departamento de Clientes);
    * `<ano>_<mm>_age_nok.csv` (registos excluídos com 3 anos ou $\ge 25$ anos);
    * `<ano>_<mm>_documentos_estranhos_semNIF.csv` (documentos anómalos agrupados por cartão).
 2. Caso sejam identificadas novas correções de NIF/data de nascimento ou exceções a incluir em `data/auxiliar/`, atualizar esses CSVs e **voltar a correr a Fase 1**.
@@ -180,7 +181,7 @@ render_documentos(2026, 7, run_fase1 = TRUE, run_fase2 = TRUE)
 1. [ ] Criar `data/<ano>_<mm>_<mes>/input/` e colocar o ficheiro `*PasseJovem*.xlsx` (ITS), `TML_<mes><ano>.xlsx` (Cascais) e `idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv` (perfis 127/130 sub23+1 exportados via `code/idades23-1.sql`).
 2. [ ] Atualizar `data/auxiliar/` caso existam novas correções de NIF/data de nascimento ou exceções de documentos.
 3. [ ] Correr a **Fase 1** (`run_fase1 = TRUE`, `run_fase2 = FALSE`).
-4. [ ] Auditar `a_verificar.csv`, `age_nok.csv` e `documentos_estranhos_semNIF.csv`; se houver novas correções/exceções, atualizar `data/auxiliar/` e voltar a correr a Fase 1.
+4. [ ] Auditar `a_verificar.csv`, `validacoes_mais200.csv`, `age_nok.csv` e `documentos_estranhos_semNIF.csv`; se houver novas correções/exceções, atualizar `data/auxiliar/` e voltar a correr a Fase 1.
 5. [ ] Validar `docs/<ano>_<mm>_reporte_AML_IMT.xlsx`.
 6. [ ] Registar `numero_informacao1` e `numero_oficio1` em `Compensacoes/lists/documents_nr.csv`, atualizar `code/doc_params.R` e compilar `informacao1`, `oficio1` e `metodologia1`.
 7. [ ] _Subir os dados comNIF e semNIF no Oracle (se ainda for caso disso, para manter histórico)._

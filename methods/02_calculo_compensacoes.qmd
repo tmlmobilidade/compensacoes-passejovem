@@ -122,7 +122,7 @@ O ficheiro `id_exception.csv` (colunas `doc_type;doc_number;motivo`) regista cas
 
 ## Controlo de Qualidade e Listas de Auditoria
 
-O passo `02` separa ou sinaliza automaticamente três conjuntos de registos para controlo de qualidade e envio ao Departamento de Cliente (DMC):
+O passo `02` separa ou sinaliza automaticamente quatro conjuntos de registos para controlo de qualidade e envio ao Departamento de Clientes (DC):
 
 1. **Exclusão por Idade Incompatível (`<ano>_<mm>_age_nok.csv`)**:
    * Após o recálculo da idade e a correção dos casos-limite no passo `01`, os registos com **`age_new == 3`** (demasiado novo, $< 4$ anos) ou **`age_new >= 25`** (acima do limite máximo absoluto) são **excluídos das tabelas `comNIF` e `semNIF`** e gravados em `age_nok.csv`.
@@ -137,6 +137,10 @@ O passo `02` separa ou sinaliza automaticamente três conjuntos de registos para
      2. `"Documento com datas de nascimento distintas"`: mesmo `doc_number` em `semNIF` associado a múltiplas datas de nascimento;
      3. `"Idade > 23"` e `"Idade = 25"`: titulares `comNIF` com idade $> 23$ **não confirmados** no ficheiro de perfis sub23+1 (`idades23*.csv`, `CARD_PROFILE_ID` `127` ou `130`), distinguindo no campo `motivo` os casos com 24 anos (`"Idade > 23"`) dos casos com 25 anos (`"Idade = 25"`). Quando o ficheiro `idades23*.csv` está presente em `input/`, os estudantes cujo `card_serial_number` ou `fiscal_number` conste nessa listagem são dispensados de verificação manual e o total de confirmados excluídos é reportado no log de execução;
      4. `"Sem NIF"`: todos os restantes titulares sem NIF válido.
+
+4. **Múltiplos Cartões com Elevado Número de Validações (`<ano>_<mm>_validacoes_mais200.csv`)**:
+   * Identifica titulares que acumulam **mais do que um cartão de suporte no mês** (`str_detect(cardserialnumber_new, "_")`) e um total consolidado de **200 ou mais validações** (`numval >= 200`).
+   * Estes casos não são excluídos do apuramento mensal, mas configuram potenciais situações de utilização abusiva ou partilha indevida de cartões, sendo exportados por ordem decrescente de `numval` (com as colunas `fiscal_number`, `numval`, `cardserialnumber_new`, `doc_type` e `doc_number`) para envio ao Departamento de Clientes (DC) e averiguação adicional.
 
 ::: {.callout-note collapse="true"}
 ## Query SQL para Extração dos Perfis Sub23+1 ([`code/idades23-1.sql`](../code/idades23-1.sql))
@@ -167,6 +171,7 @@ A função `calcular_compensacoes(ano, mes, raiz)` grava na pasta `data/<ano>_<m
 * `<ano>_<mm>_comNIF.csv`: compensação apurada por NIF (elegíveis);
 * `<ano>_<mm>_semNIF.csv`: compensação apurada por documento/cartão para titulares sem NIF (elegíveis);
 * `<ano>_<mm>_a_verificar.csv`: listagem completa para auditoria manual;
+* `<ano>_<mm>_validacoes_mais200.csv`: titulares com múltiplos cartões e $\ge 200$ validações no mês (para averiguação pelo DC);
 * `<ano>_<mm>_age_nok.csv`: registos excluídos por idade incompatível ($3$ ou $\ge 25$ anos);
 * `<ano>_<mm>_documentos_estranhos_semNIF.csv`: documentos `semNIF` com formato inválido ou suspeito.
 
