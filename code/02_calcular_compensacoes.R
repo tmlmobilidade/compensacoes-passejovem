@@ -9,6 +9,7 @@
 #   - <ano>_<mm>_validacoes_mais200.csv   (titulares com múltiplos cartões e >= 200 validações)
 #   - <ano>_<mm>_age_nok.csv              (registos excluídos por idade incompatível)
 #   - <ano>_<mm>_documentos_estranhos_semNIF.csv (documentos semNIF com anomalias)
+#   - <ano>_<mm>_nif_multiplos_documentos_comNIF.csv (NIF com >1 documento; para o DC)
 #
 # Também suporta exceções manuais de identificação de:
 #   - data/auxiliar/id_exception.csv (documentos conhecidos por serem usados por crianças diferentes)
@@ -274,7 +275,7 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   dt_main <- fread(f_limpos, sep = ";", dec = ".",
     colClasses = list(
       character = c("card_serial_number", "fiscal_number", "ticket_name",
-                    "doc_number", "doc_type"),
+                    "doc_number", "doc_type", "customerid"),
       integer   = c("year_dist", "month_dist", "age",
                     "ticket_operator_code", "ticket_code", "count_val"),
       numeric   = c("price", "price_ticket_base"),
@@ -377,6 +378,46 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   # Filtrar apenas registos com NIF válido
   dt_com_raw <- dt_mes |> filter(!is.na(fiscal_number))
   dt_comNIF  <- agregar_por_grupo(dt_com_raw, "fiscal")
+
+  # NIF com mais do que um documento de identificação (doc_type + doc_number)
+  # Apenas para averiguação pelo Departamento de Clientes: NÃO altera a agregação
+  # do numval. Uma linha por NIF + documento.
+  dt_nif_multidoc <- NULL
+  if (all(c("doc_type", "doc_number") %in% names(dt_com_raw))) {
+    dt_nif_multidoc <- dt_com_raw |>
+      mutate(
+        doc_type   = toupper(trimws(as.character(doc_type))),
+        doc_number = trimws(as.character(doc_number))
+      ) |>
+      filter(!is.na(doc_number), nzchar(doc_number)) |>
+      group_by(fiscal_number) |>
+      filter(n_distinct(doc_type, doc_number) > 1) |>
+      group_by(fiscal_number, doc_type, doc_number) |>
+      summarise(
+        numval_doc      = sum(count_val),
+        birth_date      = paste(sort(unique(as.character(birth_date))), collapse = "|"),
+        n_cartoes       = n_distinct(card_serial_number),
+        client_id       = if ("customerid" %in% names(dt_com_raw))
+          paste(sort(unique(na.omit(as.character(customerid)))), collapse = "|") else NA_character_,
+        card_serial_number = paste(sort(unique(as.character(card_serial_number))), collapse = "|"),
+        .groups = "drop"
+      ) |>
+      group_by(fiscal_number) |>
+      mutate(
+        n_docs                   = n(),
+        n_datas_nascimento_nif   = n_distinct(birth_date),
+        numval_total_nif         = sum(numval_doc)
+      ) |>
+      ungroup() |>
+      select(client_id, fiscal_number, n_docs, numval_total_nif, n_datas_nascimento_nif,
+             doc_type, doc_number, numval_doc, birth_date, n_cartoes, card_serial_number) |>
+      arrange(desc(n_datas_nascimento_nif), desc(numval_total_nif), fiscal_number, doc_type, doc_number) |>
+      as.data.table()
+  }
+  n_nif_multidoc <- if (is.null(dt_nif_multidoc)) 0L else
+    length(unique(dt_nif_multidoc$fiscal_number))
+  message(sprintf("  comNIF: %d NIF com mais de um documento (tipo/numero) distinto",
+                  n_nif_multidoc))
 
   # Separar registos NOK (fora da faixa etária elegível) antes de os remover
   # age_new == 3  -> demasiado novo (< 4 anos)
@@ -862,6 +903,14 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   write_csv_pj(dt_val_mais200, out_mais200)
   write_csv_pj(dt_age_nok,     out_nok)
 
+  if (!is.null(dt_nif_multidoc) && nrow(dt_nif_multidoc) > 0) {
+    out_multidoc <- file.path(paths$output,
+                              output_filename(ano, mes, "nif_multiplos_documentos_comNIF"))
+    write_csv_pj(dt_nif_multidoc, out_multidoc)
+    message(sprintf("  Gravado: %s (%d NIF, %d linhas)", basename(out_multidoc),
+                    n_nif_multidoc, nrow(dt_nif_multidoc)))
+  }
+
   if (!is.null(dt_docs_estranhos) && nrow(dt_docs_estranhos) > 0) {
     write_csv_pj(dt_docs_estranhos, out_estranhos)
     message(sprintf("  Gravado: %s (%d registos)", basename(out_estranhos), nrow(dt_docs_estranhos)))
@@ -881,7 +930,8 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     a_verificar                 = dt_verificar,
     validacoes_mais200          = dt_val_mais200,
     age_nok                     = dt_age_nok,
-    documentos_estranhos_semNIF = dt_docs_estranhos
+    documentos_estranhos_semNIF = dt_docs_estranhos,
+    nif_multiplos_documentos    = dt_nif_multidoc
   ))
 }
 
