@@ -98,8 +98,9 @@ foreach ($f in $files) {
         }
 
         # Redimensionar fig-1 para a largura da pagina landscape (~9.5 pol = 8686800 EMU, 3.8 pol = 3474720 EMU)
+        # apenas quando fig-1 se encontra dentro de uma seccao landscape (ex.: PasseJovem)
         $xmlBeforeFig = $xml
-        $xml = [regex]::Replace($xml, '(<w:drawing[ >](?:(?!</w:drawing>).)*?fig-1(?:(?!</w:drawing>).)*?</w:drawing>)', {
+        $xml = [regex]::Replace($xml, '(</w:sectPr>(?:(?!</w:sectPr>).)*?<w:drawing[ >](?:(?!</w:drawing>).)*?fig-1(?:(?!</w:drawing>).)*?</w:drawing>(?:(?!</w:sectPr>).)*?w:orient="landscape")', {
             param($m)
             return [regex]::Replace($m.Groups[1].Value, 'cx="\d+" cy="\d+"', 'cx="8686800" cy="3474720"')
         }, [System.Text.RegularExpressions.RegexOptions]::Singleline)
