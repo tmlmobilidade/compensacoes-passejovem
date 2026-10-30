@@ -147,7 +147,7 @@ local pass2 = {
     local out = pandoc.List()
     local raw_p = pandoc.RawInline(
       "openxml",
-      '<w:pPr><w:pStyle w:val="PargrafodaLista"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="4"/></w:numPr><w:ind w:left="360" w:hanging="360"/></w:pPr>'
+      '<w:pPr><w:pStyle w:val="TMLLista"/><w:numPr><w:ilvl w:val="0"/><w:numId w:val="4"/></w:numPr><w:ind w:left="360" w:hanging="360"/></w:pPr>'
     )
     for _, item in ipairs(bl.content) do
       for _, block in ipairs(item) do
