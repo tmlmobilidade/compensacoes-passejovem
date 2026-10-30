@@ -378,19 +378,32 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
   # Col 2: ENTIDADE EMISSORA DE TITULOS DE TRANSPORTE ("AT TML", "AT CASCAIS", "TOTAL")
   # Col 3: ANO (2026)
   # Col 4: MÊS (7)
-  # Col 5: COMPENSAÇÃO (euros)
+  # Col 5: COMPENSAÇÃO (euros) — preenchida com fórmulas abaixo
   df_resumo <- data.frame(
     col1 = c("AML", "AML", NA_character_),
     col2 = c("AT TML", "AT CASCAIS", "TOTAL"),
     col3 = c(ano, ano, NA_integer_),
     col4 = c(mes, mes, NA_integer_),
-    col5 = c(round(comp_tml, 2), round(comp_cascais, 2), round(comp_total, 2)),
     stringsAsFactors = FALSE
   )
 
   writeData(wb, sheet_resumo, df_resumo,
             startRow = TEMPLATE_DATA_START_ROW, startCol = 1,
             colNames = FALSE)
+
+  # Fórmulas em E13, E14 e E15 da folha RESUMO (openxlsx requer sintaxe interna em inglês: SUMIFS e vírgulas)
+  formula_resumo_row <- function(r) {
+    sprintf(
+      paste0("SUMIFS('%s'!$K$13:$K$1048576,'%s'!$A$13:$A$1048576,'%s'!A%d,'%s'!$B$13:$B$1048576,'%s'!B%d)",
+             "+SUMIFS('%s'!$L$13:$L$1048576,'%s'!$A$13:$A$1048576,'%s'!A%d,'%s'!$B$13:$B$1048576,'%s'!B%d)"),
+      sheet_com, sheet_com, sheet_resumo, r, sheet_com, sheet_resumo, r,
+      sheet_sem, sheet_sem, sheet_resumo, r, sheet_sem, sheet_resumo, r
+    )
+  }
+
+  writeFormula(wb, sheet_resumo, x = formula_resumo_row(13L), startRow = 13L, startCol = 5L)
+  writeFormula(wb, sheet_resumo, x = formula_resumo_row(14L), startRow = 14L, startCol = 5L)
+  writeFormula(wb, sheet_resumo, x = "E13+E14",              startRow = 15L, startCol = 5L)
 
   # Atualizar o texto da célula E8 (fórmula indicativa em texto) com os nomes reais das abas
   texto_e8 <- sprintf(
