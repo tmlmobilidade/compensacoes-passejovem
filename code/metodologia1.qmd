@@ -63,6 +63,15 @@ fmt_pct <- function(x, acc = 0.1) {
   ifelse(is.na(x), "", scales::percent(x, accuracy = acc, decimal.mark = ","))
 }
 
+# Escolhe a palavra conforme a variação seja positiva (>= 0) ou negativa
+#   ex.: var_txt(-0.05, "superior", "inferior") -> "inferior"
+var_txt <- function(x, pos, neg) if (is.na(x) || x >= 0) pos else neg
+
+# Conjunção adversativa ("mas"/"contudo") se os sinais diferirem; aditiva caso contrário
+var_conj <- function(a, b, diff, same) {
+  if (is.na(a) || is.na(b) || (a >= 0) == (b >= 0)) same else diff
+}
+
 source(here::here("code", "utils_tables.R"))
 source(here::here("code", "utils_extenso.R"))
 
@@ -391,9 +400,9 @@ t3_display <- bind_rows(t3_res, t3_total) |>
 tml_table(t3_display, align = c("l", "r"), bold_total = TRUE, fontsize = 0.85)
 ```
 
-Em `r mes_nome` de `r ANO`, foi apurado na área metropolitana de Lisboa um valor total de compensação aos operadores/autoridades de transporte que disponibilizam o Passe Gratuito para Jovens de `r fmt_eur(comp_total)`, valor `r fmt_pct(abs(pct_comp_ant))` inferior ao do mês anterior, mas `r fmt_pct(abs(pct_comp_homo))` acima do valor do mês homólogo do ano de `r ANO - 1`.
-O número de utilizadores a compensar diminuiu `r fmt_pct(abs(pct_users_ant))` face ao mês anterior, apresentando crescimento de `r fmt_pct(abs(pct_users_homo))`, quando comparado com `r mes_nome` de `r ANO - 1`.
-No que concerne ao número de validações, registou-se em `r mes_nome` de `r ANO` menos `r fmt_pct(abs(pct_val_ant))` do que em `r mes_ant_nome` de `r ano_ant_mes`, contudo, relativamente a `r mes_nome` de `r ANO - 1`, verifica-se um aumento de `r fmt_pct(abs(pct_val_homo))`.
+Em `r mes_nome` de `r ANO`, foi apurado na área metropolitana de Lisboa um valor total de compensação aos operadores/autoridades de transporte que disponibilizam o Passe Gratuito para Jovens de `r fmt_eur(comp_total)`, valor `r fmt_pct(abs(pct_comp_ant))` `r var_txt(pct_comp_ant, "superior", "inferior")` ao do mês anterior, `r var_conj(pct_comp_ant, pct_comp_homo, "mas", "e")` `r fmt_pct(abs(pct_comp_homo))` `r var_txt(pct_comp_homo, "acima", "abaixo")` do valor do mês homólogo do ano de `r ANO - 1`.
+O número de utilizadores a compensar `r var_txt(pct_users_ant, "aumentou", "diminuiu")` `r fmt_pct(abs(pct_users_ant))` face ao mês anterior, apresentando `r var_txt(pct_users_homo, "um crescimento", "uma diminuição")` de `r fmt_pct(abs(pct_users_homo))`, quando comparado com `r mes_nome` de `r ANO - 1`.
+No que concerne ao número de validações, registou-se em `r mes_nome` de `r ANO` `r var_txt(pct_val_ant, "mais", "menos")` `r fmt_pct(abs(pct_val_ant))` do que em `r mes_ant_nome` de `r ano_ant_mes`, `r var_conj(pct_val_ant, pct_val_homo, "contudo,", "e")` relativamente a `r mes_nome` de `r ANO - 1`, verifica-se `r var_txt(pct_val_homo, "um aumento", "uma diminuição")` de `r fmt_pct(abs(pct_val_homo))`.
 
 Em `r mes_nome` de `r ANO`, em média, cada utilizador realizou `r media_validacoes_user` validações.
 
