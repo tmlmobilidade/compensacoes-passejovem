@@ -273,7 +273,8 @@ A Portaria n.º 307-A/2024/1, de 28 de novembro de 2024, procede à alteração 
 
 Conforme disposto na referida Portaria, a Transportes Metropolitanos de Lisboa (“TML”), tendo em conta o contrato de delegação e subdelegação de competências com a Área Metropolitana de Lisboa (“AML”), procede ao cálculo das compensações financeiras a atribuir aos operadores pela disponibilização destes títulos no respetivo território, remetendo ao Instituto da Mobilidade e dos Transportes, I.P. (“IMT”), até ao último dia de cada mês, com um desfasamento máximo de 3 meses, o montante da compensação financeira apurada para cada uma das entidades emissoras dos títulos de transporte.
 
-A TML deve, deste modo, enviar ao IMT, até `r data_prazo_imt`, o apuramento das compensações referentes ao mês de `r mes_nome`, com base em vendas e validações reais, e o preenchimento do Modelo de apuramento do IMT. Contudo, um problema na integração no sistema de bilhética dos dados de validações dos operadores Carris, TranstejoSoflusa e Barraqueiro Transportes, atrasou o processo de apuramento das compensações.
+A TML deve, deste modo, enviar ao IMT, até `r data_prazo_imt`, o apuramento das compensações referentes ao mês de `r mes_nome`, com base em vendas e validações reais, e o preenchimento do Modelo de apuramento do IMT.
+<!-- Contudo, um problema na integração no sistema de bilhética dos dados de validações dos operadores Carris, TranstejoSoflusa e Barraqueiro Transportes, atrasou o processo de apuramento das compensações. -->
 
 A 19 de setembro de 2025, iniciou-se a implementação de validações com cartão virtual nas linhas da Carris Metropolitana.
 Desde o mês de abril, o algoritmo de cálculo contabiliza e associa as validações pelo número de cliente no caso dos clientes que utilizem o cartão virtual.
