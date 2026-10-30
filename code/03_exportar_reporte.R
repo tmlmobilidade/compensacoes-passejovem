@@ -259,8 +259,8 @@ exportar_reporte <- function(ano, mes, raiz = here_root()) {
 
 
 
-  # ── Preencher cabeçalhos (Ano, Mês, AT) ──────────────────────────────────
-  for (s in c(sheet_com, sheet_sem, sheet_resumo)) {
+  # ── Preencher cabeçalhos (Ano, Mês, AT) nas 4 abas ───────────────────────
+  for (s in names(wb)) {
     fill_cabecalho(wb, s, ano, mes)
   }
 
