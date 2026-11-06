@@ -67,3 +67,4 @@ code/*.pdf
 !code\templates\folha_restantes.pdf
 !code\templates\folha_1.pdf
 code/*.docx
+code/test/explore.R
