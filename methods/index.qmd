@@ -37,14 +37,11 @@ Para além destes, estão ainda disponíveis os passes *Complemento Navegante su
 
 A tabela seguinte sintetiza os títulos de referência e os respetivos preços base (`NOME_IMT` em [`code/00_config.R`](../code/00_config.R)):
 
-| Preço Base (`price_ticket_base_new`) | Designação IMT (`nome_imt`) | Âmbito / Notas |
+| Preço Base (`price_ticket_base_new`) | Título de Referência (`nome_imt`) | Âmbito / Notas |
 | :---: | :--- | :--- |
+| **$40{,}00\text{ €}$** | `Navegante Metropolitano` | Inclui as modalidades Sub18+TP, Sub23+TP, 4_18, Sub23 e Navegante 12|
 | **$60{,}00\text{ €}$** | `Navegante Metropolitano + Complemento` | Navegante Metropolitano ($40\text{ €}$) + Complemento Inter-regional CM ($20\text{ €}$) |
-| **$50{,}00\text{ €}$** | `Navegante Municipal + Complemento` | Navegante Municipal ($30\text{ €}$) + Complemento Inter-regional CM ($20\text{ €}$) |
-| **$40{,}00\text{ €}$** | `Navegante Metropolitano` | Inclui Sub18+TP, Sub23+TP, 4_18, Sub23, Navegante 12 e Complemento CP Azambuja |
-| **$30{,}00\text{ €}$** | `Navegante Lisboa` | Títulos de âmbito municipal ($30\text{ €}$) |
 | **$20{,}00\text{ €}$** | `Viver Cascais` | Viver Cascais Residente / Estudante (`PRECO_CASCAIS = 20`) |
-| **$16{,}75\text{ €}$** | `MTS Passe` | Passe próprio MTS |
 
 ::: {.callout-note}
 ## Âmbito Temporal do Pipeline
