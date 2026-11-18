@@ -16,7 +16,7 @@ Para cada mês de apuramento, os ficheiros de entrada são colocados na pasta `d
 2. **Ficheiro Viver Cascais (`TML_<mes><ano>.xlsx`)**:
    * Enviado mensalmente pela Autoridade de Transportes de Cascais com as validações dos títulos *Viver Cascais Residente* e *Viver Cascais Estudante* em jovens elegíveis;
    * Como o ficheiro original vem com o preço base a zero, a função `read_cascais()` fixa automaticamente:
-     * `ticket_operator_code = 21L` (AT Cascais);
+     * `ticket_operator_code = 21` (AT Cascais);
      * `price = 0` (gratuito);
      * `price_ticket_base = 20` (`PRECO_CASCAIS`).
 
