@@ -32,7 +32,8 @@ O valor da compensação mensal por cada passe gratuito para jovens com registo 
 
 ### Títulos Elegíveis e Preços de Referência
 
-Embora a oferta tarifária jovem atual se concentre nos títulos **Navegante Metropolitano sub18+TP** e **Navegante Metropolitano sub23+TP** (tendo deixado de existir os passes municipais sub18/sub23 e o Navegante 12 autónomo), subsistem em utilização títulos de validade superior à mensal (como o *Navegante 12* e os passes *Viver Cascais*) e carregamentos residuais das modalidades *4_18* e *sub23* em máquinas automáticas ou cartões de substituição.
+Embora a oferta tarifária jovem atual na área metropolitana de Lisboa se concentre nos títulos **Navegante Metropolitano sub18+TP** e **Navegante Metropolitano sub23+TP**, subsistem em utilização outros títulos de validade superior à mensal (como o *Navegante 12*, apesar dos seus carregamentos terem cessado em janeiro de 2024, e os passes *Viver Cascais* que acumulam outras funções para além do transporte) e carregamentos residuais das modalidades *Navegante municipal 4_18/sub23* em cartões de substituição e alguns carregamentos mensais de *Navegante Metropolitano 4_18/sub23*.
+Para além destes, estão ainda disponíveis os passes *Complemento Navegante sub18+TP e sub23+TP* da Carris Metropolitana que possibilitam viajar nas linhas interregionais deste operador.
 
 A tabela seguinte sintetiza os títulos de referência e os respetivos preços base (`NOME_IMT` em [`code/00_config.R`](../code/00_config.R)):
 
