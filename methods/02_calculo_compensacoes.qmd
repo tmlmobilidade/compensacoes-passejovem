@@ -125,7 +125,7 @@ O ficheiro `id_exception.csv` (colunas `doc_type;doc_number;motivo`) regista cas
 O passo `02` separa ou sinaliza automaticamente quatro conjuntos de registos para controlo de qualidade e envio ao Departamento de Clientes (DC):
 
 1. **Exclusão por Idade Incompatível (`<ano>_<mm>_age_nok.csv`)**:
-   * Após o recálculo da idade e a correção dos casos-limite no passo `01`, os registos com **`age_new == 3`** (demasiado novo, $< 4$ anos) ou **`age_new >= 25`** (acima do limite máximo absoluto) são **excluídos das tabelas `comNIF` e `semNIF`** e gravados em `age_nok.csv`.
+   * Após o recálculo da idade e a correção dos casos-limite no passo `01`, os registos com **`age_new == 3`** (demasiado novo, $< 4$ anos) ou **`age_new >= 25`** (acima do limite máximo absoluto, com exceção do jovem que faz os 25 anos no mês de referência) são **excluídos das tabelas `comNIF` e `semNIF`** e gravados em `age_nok.csv`.
    * *Nota:* Os jovens com **24 anos** (`age_new == 24`) permanecem nas tabelas de compensação (por poderem pertencer aos cursos universitários de exceção) e são cruzados com o ficheiro `idades23*.csv` em `input/` (perfis `127` e `130` da tabela `F_AUX_PROFILE_CARDS`). Apenas os que **não** constam nessa lista são incluídos em `a_verificar.csv` para confirmação do comprovativo académico.
 
 2. **Documentos Estranhos Sem NIF (`<ano>_<mm>_documentos_estranhos_semNIF.csv`)**:

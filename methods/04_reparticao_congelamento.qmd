@@ -61,8 +61,7 @@ Cada `ticket_code` é cruzado diretamente com `titulos.csv` (`enriquecer_titulos
 
 * *Navegante Metropolitano + Complemento CM* ($\text{PTB}_{\text{new}} = 60\text{ €}$, sendo $40\text{ €}$ Navegante + $20\text{ €}$ Complemento):
   $$\text{base\_weight} = \frac{40}{60} = \frac{2}{3} \approx 0{,}6667 \implies \frac{2}{3} \text{ para Navegante e } \frac{1}{3} \text{ para Complemento CM}$$
-* *Navegante Municipal + Complemento CM* ($\text{PTB}_{\text{new}} = 50\text{ €}$, sendo $30\text{ €}$ Municipal + $20\text{ €}$ Complemento):
-  $$\text{base\_weight} = \frac{30}{50} = \frac{3}{5} = 0{,}60 \implies 60\% \text{ para Navegante e } 40\% \text{ para Complemento CM}$$
+
 * *Títulos sem complemento* (`Navegante 12`, `Navegante Metropolitano 418/sub23`, `Navegante Municipal 418/sub23`): $\text{base\_weight} = 1$ ($100\%$ Navegante).
 
 ### Separação da Compensação em 3 Componentes
@@ -90,7 +89,7 @@ Os valores por título e operador são mantidos **sem arredondamento intermédio
 
 ---
 
-## Estimativa do Congelamento Tarifário (TAT)
+## Compensação pelo Congelamento Tarifário (TAT)
 
 Para além da compensação direta pela gratuitidade dos passes jovens (calculada aos preços de referência vigentes), é apurada a compensação financeira pelo **congelamento tarifário** desses preços de referência face às **Taxas de Atualização Tarifária (TAT)** homologadas anualmente pela AMT (constantes em [`compensacoes-navegante/lists/tat.csv`](../Compensacoes/lists/tat.csv)).
 
