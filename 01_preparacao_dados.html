@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt" xml:lang="pt"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>1&nbsp; Preparação, Combinação e Limpeza de Dados – Compensações Gratuitidade Passe Jovem</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./02_calculo_compensacoes.html" rel="next">
+<link href="./index.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-c3de09f10dd778e0b4268b7d9c3359d4.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "Nenhum resultado",
+    "search-matching-documents-text": "documentos correspondentes",
+    "search-copy-link-title": "Copiar link para a busca",
+    "search-hide-matches-text": "Esconder correspondências adicionais",
+    "search-more-match-text": "mais correspondência neste documento",
+    "search-more-matches-text": "mais correspondências neste documento",
+    "search-clear-button-title": "Limpar",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancelar",
+    "search-submit-button-title": "Enviar",
+    "search-label": "Procurar"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Alternar barra lateral" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01_preparacao_dados.html"><strong>Fase 1 — Apuramento (IMT)</strong></a></li><li class="breadcrumb-item"><a href="./01_preparacao_dados.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparação, Combinação e Limpeza de Dados</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Alternar barra lateral" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Procurar" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Compensações Gratuitidade Passe Jovem</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/tmlmobilidade/compensacoes-passejovem" title="Código fonte" class="quarto-navigation-tool px-1" aria-label="Código fonte"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Procurar"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introdução e Visão Geral</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Fase 1 — Apuramento (IMT)</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01_preparacao_dados.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparação, Combinação e Limpeza de Dados</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02_calculo_compensacoes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Cálculo de Compensações e Controlo de Qualidade</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03_reporte_imt.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Exportação do Reporte Oficial AML/IMT</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Fase 2 — Repartição (Operadores)</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_reparticao_congelamento.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Repartição pelos Operadores e Congelamento Tarifário</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05_anexo_reparticao.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Exportação do Anexo II de Repartição</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Documentos</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06_documentos.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Relatórios: Informações e Ofícios</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Anexos</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_execucao.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Guia de Preparação Mensal e Execução</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_auxiliares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tabelas Auxiliares, Exceções e Dependências Externas</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_repescagem_nif.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Procedimento Temporário de Repescagem de NIF</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Legislação e Regulamentos</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Nesta página</h2>
+   
+  <ul>
+  <li><a href="#fontes-de-dados-de-entrada" id="toc-fontes-de-dados-de-entrada" class="nav-link active" data-scroll-target="#fontes-de-dados-de-entrada"><span class="header-section-number">1.1</span> Fontes de Dados de Entrada</a></li>
+  <li><a href="#sequência-de-tratamento-e-limpeza" id="toc-sequência-de-tratamento-e-limpeza" class="nav-link" data-scroll-target="#sequência-de-tratamento-e-limpeza"><span class="header-section-number">1.2</span> Sequência de Tratamento e Limpeza</a>
+  <ul class="collapse">
+  <li><a href="#normalização-e-repescagem-de-nifs-nif_repescagem.csv" id="toc-normalização-e-repescagem-de-nifs-nif_repescagem.csv" class="nav-link" data-scroll-target="#normalização-e-repescagem-de-nifs-nif_repescagem.csv"><span class="header-section-number">1.2.1</span> Normalização e Repescagem de NIFs (<code>nif_repescagem.csv</code>)</a></li>
+  <li><a href="#exclusão-de-títulos-não-elegíveis-lx-bt" id="toc-exclusão-de-títulos-não-elegíveis-lx-bt" class="nav-link" data-scroll-target="#exclusão-de-títulos-não-elegíveis-lx-bt"><span class="header-section-number">1.2.2</span> Exclusão de Títulos Não Elegíveis (<code>LX-BT</code>)</a></li>
+  <li><a href="#conversão-de-validações-por-perfil-de-criança" id="toc-conversão-de-validações-por-perfil-de-criança" class="nav-link" data-scroll-target="#conversão-de-validações-por-perfil-de-criança"><span class="header-section-number">1.2.3</span> Conversão de Validações por “Perfil de Criança”</a></li>
+  <li><a href="#aplicação-de-correções-manuais-dataauxiliar" id="toc-aplicação-de-correções-manuais-dataauxiliar" class="nav-link" data-scroll-target="#aplicação-de-correções-manuais-dataauxiliar"><span class="header-section-number">1.2.4</span> Aplicação de Correções Manuais (<code>data/auxiliar/</code>)</a></li>
+  <li><a href="#recálculo-da-idade-e-tratamento-de-casos-limite" id="toc-recálculo-da-idade-e-tratamento-de-casos-limite" class="nav-link" data-scroll-target="#recálculo-da-idade-e-tratamento-de-casos-limite"><span class="header-section-number">1.2.5</span> Recálculo da Idade e Tratamento de Casos-Limite</a></li>
+  <li><a href="#script-01_preparar_dados.r" id="toc-script-01_preparar_dados.r" class="nav-link" data-scroll-target="#script-01_preparar_dados.r">Script: <code>01_preparar_dados.R</code></a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01_preparacao_dados.html"><strong>Fase 1 — Apuramento (IMT)</strong></a></li><li class="breadcrumb-item"><a href="./01_preparacao_dados.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparação, Combinação e Limpeza de Dados</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparação, Combinação e Limpeza de Dados</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>O primeiro passo da <strong>Fase 1</strong> consiste na leitura, harmonização e limpeza dos ficheiros mensais de validações provenientes do sistema de bilhética metropolitana (DITS) e da Autoridade de Transportes de Cascais, bem como na aplicação de listas históricas de repescagem e correção “manual” de registos.</p>
+<hr>
+<section id="fontes-de-dados-de-entrada" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="fontes-de-dados-de-entrada"><span class="header-section-number">1.1</span> Fontes de Dados de Entrada</h2>
+<p>Para cada mês de apuramento, os ficheiros de entrada são colocados na pasta <code>data/&lt;ano&gt;_&lt;mm&gt;_&lt;mes&gt;/input/</code> (ex.: <code>data/2026_07_julho/input/</code>) (<em>gitignored</em>):</p>
+<ol type="1">
+<li><strong>Ficheiro Principal de Validações Passe Jovem (<code>*PasseJovem*.xlsx</code>)</strong>:
+<ul>
+<li>Fornecido pelo Departamento ITS;</li>
+<li>A <strong>1.ª folha</strong> contém os registos de validações por cartão e título com as colunas: <code>YEAR_DIST</code>, <code>MONTH_DIST</code>, <code>CARD_SERIAL_NUMBER</code>, <code>AGE</code>, <code>FISCAL_NUMBER</code>, <code>TICKET_OPERATOR_CODE</code>, <code>TICKET_CODE</code>, <code>TICKET_NAME</code>, <code>PRICE</code>, <code>PRICE_TICKET_BASE</code>, <code>COUNT_VAL</code>, <code>BIRTH_DATE</code>, <code>ID_DOC_NUMBER</code> e <code>ID_DOC_NUMBER_DESC</code>;</li>
+<li>Na leitura (<code>read_passe_jovem()</code> em <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/00_config.R"><code>code/00_config.R</code></a>), todos os nomes de colunas são convertidos para minúsculas e as colunas de documento de identificação são renomeadas para <code>doc_number</code> (<code>id_doc_number</code>) e <code>doc_type</code> (<code>id_doc_number_desc</code>).</li>
+</ul></li>
+<li><strong>Ficheiro Viver Cascais (<code>TML_&lt;mes&gt;&lt;ano&gt;.xlsx</code>)</strong>:
+<ul>
+<li>Enviado mensalmente pela Autoridade de Transportes de Cascais com as validações dos títulos <em>Viver Cascais Residente</em> e <em>Viver Cascais Estudante</em> em jovens elegíveis;</li>
+<li>Como o ficheiro original vem com o preço base a zero, a função <code>read_cascais()</code> fixa automaticamente:
+<ul>
+<li><code>ticket_operator_code = 21L</code> (AT Cascais);</li>
+<li><code>price = 0</code> (gratuito);</li>
+<li><code>price_ticket_base = 20</code> (<code>PRECO_CASCAIS</code>).</li>
+</ul></li>
+</ul></li>
+<li><strong>Complemento CP Azambuja (<code>*Complemento_Azambuja*</code> ou 2.ª folha do XLSX principal)</strong>:
+<ul>
+<li>Contém as validações efetuadas no Complemento CP Azambuja-Carregado (<code>YEAR_DIST</code>, <code>MONTH_DIST</code>, <code>CARD_SERIAL_NUMBER</code>, <code>FISCAL_NUMBER</code>, <code>TICKET_CODE</code>, <code>COUNT_VAL</code>);</li>
+<li>Se não existir um ficheiro CSV autónomo na pasta <code>input/</code>, o script procura automaticamente uma folha cujo nome contenha <code>"Azambuja"</code> dentro do ficheiro Excel principal <code>*PasseJovem*.xlsx</code> (<code>read_complemento_azambuja_xlsx()</code>).</li>
+</ul></li>
+<li><strong>Listagem de Perfis Sub23+1 (<code>idades23*.csv</code>, lida no Passo 02)</strong>:
+<ul>
+<li>Exportada da tabela <code>F_AUX_PROFILE_CARDS</code> da base de dados através da query <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/idades23-1.sql"><code>code/idades23-1.sql</code></a> para os cartões com <code>CARD_PROFILE_ID IN (127, 130)</code> válidos no mês em análise;</li>
+<li>Utilizada no Passo 02 (<code>02_calcular_compensacoes.R</code>) para identificar os estudantes de 24 anos já confirmados nos cursos universitários de exceção (Arquitetura, Medicina, Ciências Farmacêuticas, etc.), dispensando a sua inclusão na lista manual <code>a_verificar.csv</code>. Se existirem vários ficheiros <code>idades23*.csv</code> em <code>input/</code>, é selecionado automaticamente o mais recente.</li>
+</ul></li>
+</ol>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Importante</span>Unicidade de Ficheiros em <code>input/</code>
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Se existir mais do que um ficheiro contendo <code>PasseJovem</code> ou <code>TML_</code> na pasta <code>input/</code> do mês, o pipeline seleciona apenas o primeiro e emite um aviso (<code>warning</code>). Deve manter-se <strong>apenas um ficheiro de cada tipo</strong> por pasta mensal.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="sequência-de-tratamento-e-limpeza" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="sequência-de-tratamento-e-limpeza"><span class="header-section-number">1.2</span> Sequência de Tratamento e Limpeza</h2>
+<p>O script <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/01_preparar_dados.R"><code>code/01_preparar_dados.R</code></a> executa sequencialmente as seguintes operações sobre os dados combinados (<code>dt_main = bind_rows(dt_pj, dt_casc)</code>):</p>
+<section id="normalização-e-repescagem-de-nifs-nif_repescagem.csv" class="level3" data-number="1.2.1">
+<h3 data-number="1.2.1" class="anchored" data-anchor-id="normalização-e-repescagem-de-nifs-nif_repescagem.csv"><span class="header-section-number">1.2.1</span> Normalização e Repescagem de NIFs (<code>nif_repescagem.csv</code>)</h3>
+<ul>
+<li><strong>Normalização inicial</strong> (<code>normalizar_nif()</code>): valores vazios <code>""</code>, <code>"0"</code> ou <code>"NA"</code> no campo <code>fiscal_number</code> são convertidos para <code>NA_character_</code>.</li>
+<li><strong>Repescagem de NIFs em falta</strong>: no âmbito de auditorias e pedidos de esclarecimento anteriores, foi constituída uma base cumulativa de correspondência entre números de série de cartões e NIFs (<code>data/auxiliar/nif_repescagem.csv</code>), que inclui a coluna <code>ano_mes</code> (ex.: <code>202412</code> para a base original de 2024, <code>202608</code> para os NIFs recuperados no apuramento de agosto de 2026).</li>
+<li><strong>Reprodutibilidade temporal e bloqueio mensal (<code>input/auxiliar_lock/</code>)</strong>: ao processar um determinado mês <code>(ano, mes)</code>, o pipeline verifica primeiro se existe um snapshot bloqueado em <code>data/&lt;ano&gt;_&lt;mm&gt;_&lt;mes&gt;/input/auxiliar_lock/nif_repescagem.csv</code> (<code>caminho_auxiliar()</code>) e filtra apenas os registos com <code>ano_mes &lt;= ano * 100 + mes</code> (<code>filtrar_ate_ano_mes()</code>). Deste modo, novos NIFs adicionados em meses seguintes nunca alteram retroativamente os resultados de meses já fechados (ver <a href="./anexo_repescagem_nif.html"><strong>Anexo — Procedimento Temporário de Repescagem de NIF</strong></a>).</li>
+<li>O pipeline cruza todos os registos por <code>card_serial_number</code> e preenche o <code>fiscal_number</code> <strong>apenas onde este se encontra ausente (<code>NA</code>)</strong>, preservando sempre o NIF original quando já existe (<code>coalesce(fiscal_number, fiscal_number_rep)</code>).</li>
+<li>A mesma regra de repescagem é aplicada à tabela do <strong>Complemento Azambuja</strong> (<code>dt_az</code>).</li>
+</ul>
+</section>
+<section id="exclusão-de-títulos-não-elegíveis-lx-bt" class="level3" data-number="1.2.2">
+<h3 data-number="1.2.2" class="anchored" data-anchor-id="exclusão-de-títulos-não-elegíveis-lx-bt"><span class="header-section-number">1.2.2</span> Exclusão de Títulos Não Elegíveis (<code>LX-BT</code>)</h3>
+<ul>
+<li>Os bilhetes combinados inter-regionais exclusivos com designação iniciada por <code>"LX-BT"</code> (<code>remove_lxbt()</code>) não são elegíveis para compensação ao abrigo deste procedimento e são removidos de <code>dt_main</code>.</li>
+<li>Os registos <code>LX-BT</code> removidos são guardados em memória (<code>lxbt_removidos</code> em <code>contagens_01.rds</code>) para contabilizar, nos relatórios oficiais, quantos utilizadores adquiriram simultaneamente passes <code>LX-BT</code> (CIM Oeste) e passes Navegante com o mesmo NIF.</li>
+</ul>
+</section>
+<section id="conversão-de-validações-por-perfil-de-criança" class="level3" data-number="1.2.3">
+<h3 data-number="1.2.3" class="anchored" data-anchor-id="conversão-de-validações-por-perfil-de-criança"><span class="header-section-number">1.2.3</span> Conversão de Validações por “Perfil de Criança”</h3>
+<p>Em alguns operadores, mesmo quando o jovem é titular de um passe gratuito, o validador dá prioridade à validação pelo <strong>perfil de criança</strong> (&lt; 12 anos) do cartão de suporte, gerando nos dados do ITS uma linha sem operador nem código de título (<code>is.na(ticket_operator_code) &amp; is.na(ticket_code)</code>).</p>
+<p>Uma vez que as condições de acesso ao perfil criança são idênticas às do título <em>Navegante 12</em>, estes registos são reclassificados como:</p>
+<ul>
+<li><code>ticket_operator_code = 31L</code> (AT TML);</li>
+<li><code>ticket_code = 1020L</code>;</li>
+<li><code>ticket_name = "Navegante 12"</code>;</li>
+<li><code>price = 0</code> e <code>price_ticket_base = 40</code>.</li>
+</ul>
+</section>
+<section id="aplicação-de-correções-manuais-dataauxiliar" class="level3" data-number="1.2.4">
+<h3 data-number="1.2.4" class="anchored" data-anchor-id="aplicação-de-correções-manuais-dataauxiliar"><span class="header-section-number">1.2.4</span> Aplicação de Correções Manuais (<code>data/auxiliar/</code>)</h3>
+<p>Para corrigir erros persistentes na ficha de cliente exportada pelo sistema ITS (datas de nascimento mal digitadas ou NIFs incorretos validados junto do Departamento de Clientes), aplicam-se duas tabelas de correção por <code>card_serial_number</code>:</p>
+<ol type="1">
+<li><strong><code>data_nascimento_correct.csv</code></strong>: substitui <code>birth_date</code> pela data validada <code>dn_corrigida</code>;</li>
+<li><strong><code>nif_correct.csv</code></strong>: substitui <code>fiscal_number</code> e/ou <code>birth_date</code> pelos valores corrigidos.</li>
+</ol>
+</section>
+<section id="recálculo-da-idade-e-tratamento-de-casos-limite" class="level3" data-number="1.2.5">
+<h3 data-number="1.2.5" class="anchored" data-anchor-id="recálculo-da-idade-e-tratamento-de-casos-limite"><span class="header-section-number">1.2.5</span> Recálculo da Idade e Tratamento de Casos-Limite</h3>
+<p>Após a aplicação das correções de data de nascimento, a coluna <code>age</code> original do ITS pode estar desatualizada. O pipeline recalcula a idade em anos civis completos (via <code>lubridate</code>, respeitando anos bissextos e 29 de fevereiro) para todos os registos com <code>birth_date</code> preenchida, tomando como referência o <strong>último dia do mês anterior ao mês de apuramento</strong> (<span class="math inline">\(t_{\text{ref}} = \text{ANO-MES-01} - 1\text{ dia}\)</span>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>ref_date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(<span class="fu">sprintf</span>(<span class="st">"%d-%02d-01"</span>, ano, mes)) <span class="sc">-</span> <span class="fu">days</span>(<span class="dv">1</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>age      <span class="ot">&lt;-</span> <span class="fu">as.integer</span>((birth_date <span class="sc">%--%</span> ref_date) <span class="sc">/</span> <span class="fu">years</span>(<span class="dv">1</span>))</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Deste modo, todos os jovens que completam anos durante o mês de referência (incluindo no dia 1 do mês) mantêm a idade que tinham à entrada do mês — garantindo automaticamente que quem completa 24 ou 25 anos em qualquer dia do mês preserva a elegibilidade de 23 ou 24 anos até ao final desse mês.</p>
+<p>Em seguida, corrige-se apenas o <strong>limite inferior</strong> de elegibilidade:</p>
+<ul>
+<li><strong>Limite inferior (<code>age == 3</code>)</strong>: se a criança tinha 3 anos no final do mês anterior mas nasceu no mês de referência (<span class="math inline">\(\text{month}(\text{birth\_date}) = \text{MES}\)</span>), completa 4 anos nesse mês e já é elegível <span class="math inline">\(\longrightarrow\)</span> corrige para <code>age = 4L</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="script-01_preparar_dados.r" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="script-01_preparar_dados.r">Script: <code>01_preparar_dados.R</code></h3>
+<p>A função <code>preparar_dados(ano, mes, raiz)</code> executa todo o fluxo descrito acima e grava os ficheiros intermédios na pasta <code>data/&lt;ano&gt;_&lt;mm&gt;_&lt;mes&gt;/output/</code>:</p>
+<ul>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_limpos_preagregacao.csv</code>: tabela completa limpa e corrigida, pronta para a agregação por titular;</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_complemento_azambuja.csv</code>: registos normalizados do Complemento CP Azambuja (quando aplicável);</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_contagens_01.rds</code>: objeto R com metadados de auditoria (<code>n_brutos</code>, <code>n_cascais_registos</code> e <code>lxbt_removidos</code>) utilizado pelo histórico e pelos relatórios Quarto.</li>
+</ul>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copiada");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copiada");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/tmlmobilidade\.github\.io\/compensacoes-passejovem");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="Introdução e Visão Geral">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Introdução e Visão Geral</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./02_calculo_compensacoes.html" class="pagination-link" aria-label="Cálculo de Compensações e Controlo de Qualidade">
+        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Cálculo de Compensações e Controlo de Qualidade</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>TML - Transportes Metropolitanos de Lisboa</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>v0.1 (beta)</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

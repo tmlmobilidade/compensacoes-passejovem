@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt" xml:lang="pt"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>2&nbsp; Cálculo de Compensações e Controlo de Qualidade – Compensações Gratuitidade Passe Jovem</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./03_reporte_imt.html" rel="next">
+<link href="./01_preparacao_dados.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-c3de09f10dd778e0b4268b7d9c3359d4.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "Nenhum resultado",
+    "search-matching-documents-text": "documentos correspondentes",
+    "search-copy-link-title": "Copiar link para a busca",
+    "search-hide-matches-text": "Esconder correspondências adicionais",
+    "search-more-match-text": "mais correspondência neste documento",
+    "search-more-matches-text": "mais correspondências neste documento",
+    "search-clear-button-title": "Limpar",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancelar",
+    "search-submit-button-title": "Enviar",
+    "search-label": "Procurar"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Alternar barra lateral" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01_preparacao_dados.html"><strong>Fase 1 — Apuramento (IMT)</strong></a></li><li class="breadcrumb-item"><a href="./02_calculo_compensacoes.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Cálculo de Compensações e Controlo de Qualidade</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Alternar barra lateral" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Procurar" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Compensações Gratuitidade Passe Jovem</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/tmlmobilidade/compensacoes-passejovem" title="Código fonte" class="quarto-navigation-tool px-1" aria-label="Código fonte"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Procurar"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Introdução e Visão Geral</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Fase 1 — Apuramento (IMT)</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01_preparacao_dados.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparação, Combinação e Limpeza de Dados</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02_calculo_compensacoes.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Cálculo de Compensações e Controlo de Qualidade</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03_reporte_imt.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Exportação do Reporte Oficial AML/IMT</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Fase 2 — Repartição (Operadores)</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_reparticao_congelamento.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Repartição pelos Operadores e Congelamento Tarifário</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05_anexo_reparticao.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Exportação do Anexo II de Repartição</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Documentos</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06_documentos.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Relatórios: Informações e Ofícios</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Anexos</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_execucao.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Guia de Preparação Mensal e Execução</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_auxiliares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tabelas Auxiliares, Exceções e Dependências Externas</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_repescagem_nif.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Procedimento Temporário de Repescagem de NIF</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Legislação e Regulamentos</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Nesta página</h2>
+   
+  <ul>
+  <li><a href="#filtro-de-passes-elegíveis-do-mês" id="toc-filtro-de-passes-elegíveis-do-mês" class="nav-link active" data-scroll-target="#filtro-de-passes-elegíveis-do-mês"><span class="header-section-number">2.1</span> Filtro de Passes Elegíveis do Mês</a></li>
+  <li><a href="#regras-de-agregação-por-titular" id="toc-regras-de-agregação-por-titular" class="nav-link" data-scroll-target="#regras-de-agregação-por-titular"><span class="header-section-number">2.2</span> Regras de Agregação por Titular</a>
+  <ul class="collapse">
+  <li><a href="#hierarquia-de-prioridade-operador-e-título" id="toc-hierarquia-de-prioridade-operador-e-título" class="nav-link" data-scroll-target="#hierarquia-de-prioridade-operador-e-título"><span class="header-section-number">2.2.1</span> Hierarquia de Prioridade (Operador e Título)</a></li>
+  <li><a href="#determinação-do-preço-base-do-grupo-price_ticket_base_new" id="toc-determinação-do-preço-base-do-grupo-price_ticket_base_new" class="nav-link" data-scroll-target="#determinação-do-preço-base-do-grupo-price_ticket_base_new"><span class="header-section-number">2.2.2</span> Determinação do Preço Base do Grupo (<code>price_ticket_base_new</code>)</a></li>
+  <li><a href="#variáveis-agregadas-do-titular" id="toc-variáveis-agregadas-do-titular" class="nav-link" data-scroll-target="#variáveis-agregadas-do-titular"><span class="header-section-number">2.2.3</span> Variáveis Agregadas do Titular</a></li>
+  </ul></li>
+  <li><a href="#integração-do-complemento-cp-azambuja" id="toc-integração-do-complemento-cp-azambuja" class="nav-link" data-scroll-target="#integração-do-complemento-cp-azambuja"><span class="header-section-number">2.3</span> Integração do Complemento CP Azambuja</a></li>
+  <li><a href="#cálculo-da-compensação-financeira" id="toc-cálculo-da-compensação-financeira" class="nav-link" data-scroll-target="#cálculo-da-compensação-financeira"><span class="header-section-number">2.4</span> Cálculo da Compensação Financeira</a></li>
+  <li><a href="#tratamento-de-registos-semnif-e-validação-de-documentos" id="toc-tratamento-de-registos-semnif-e-validação-de-documentos" class="nav-link" data-scroll-target="#tratamento-de-registos-semnif-e-validação-de-documentos"><span class="header-section-number">2.5</span> Tratamento de Registos <code>semNIF</code> e Validação de Documentos</a></li>
+  <li><a href="#controlo-de-qualidade-e-listas-de-auditoria" id="toc-controlo-de-qualidade-e-listas-de-auditoria" class="nav-link" data-scroll-target="#controlo-de-qualidade-e-listas-de-auditoria"><span class="header-section-number">2.6</span> Controlo de Qualidade e Listas de Auditoria</a>
+  <ul class="collapse">
+  <li><a href="#script-02_calcular_compensacoes.r" id="toc-script-02_calcular_compensacoes.r" class="nav-link" data-scroll-target="#script-02_calcular_compensacoes.r">Script: <code>02_calcular_compensacoes.R</code></a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01_preparacao_dados.html"><strong>Fase 1 — Apuramento (IMT)</strong></a></li><li class="breadcrumb-item"><a href="./02_calculo_compensacoes.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Cálculo de Compensações e Controlo de Qualidade</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Cálculo de Compensações e Controlo de Qualidade</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>No segundo passo da <strong>Fase 1</strong>, o script <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/02_calcular_compensacoes.R"><code>code/02_calcular_compensacoes.R</code></a> filtra os passes elegíveis do mês, agrega múltiplos cartões ou títulos pertencentes ao mesmo jovem (<code>comNIF</code> e <code>semNIF</code>), incorpora as validações do Complemento CP Azambuja, aplica a fórmula regulamentar de compensação e produz as listas de verificação e auditoria.</p>
+<hr>
+<section id="filtro-de-passes-elegíveis-do-mês" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="filtro-de-passes-elegíveis-do-mês"><span class="header-section-number">2.1</span> Filtro de Passes Elegíveis do Mês</h2>
+<p>A partir de <code>&lt;ano&gt;_&lt;mm&gt;_limpos_preagregacao.csv</code>, são selecionados apenas os registos que cumprem cumulativamente as seguintes condições:</p>
+<ul>
+<li><code>year_dist == ano</code> e <code>month_dist == mes</code>;</li>
+<li><code>price == 0</code> (títulos gratuitos);</li>
+<li><code>!is.na(price_ticket_base)</code> (preço de referência definido);</li>
+<li><code>count_val &gt; 0L</code> (pelo menos uma validação registada no mês).</li>
+</ul>
+<p>Os registos elegíveis são então divididos em dois universos disjuntos consoante a presença de NIF válido:</p>
+<ol type="1">
+<li><strong>Universo <code>comNIF</code></strong> (<code>!is.na(fiscal_number)</code>): titulares identificados pelo NIF;</li>
+<li><strong>Universo <code>semNIF</code></strong> (<code>is.na(fiscal_number)</code>): titulares sem NIF, identificados pelo documento de identificação civil ou pelo número de série do cartão.</li>
+</ol>
+<hr>
+</section>
+<section id="regras-de-agregação-por-titular" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="regras-de-agregação-por-titular"><span class="header-section-number">2.2</span> Regras de Agregação por Titular</h2>
+<p>Um mesmo jovem pode apresentar <strong>múltiplos registos no mesmo mês</strong> — seja por substituição de cartão (mudança de <code>card_serial_number</code>), seja pela coexistência de um título base com um complemento inter-regional (ex.: <em>Navegante Metropolitano</em> + <em>Complemento CM</em>), seja ainda pela transição entre títulos (<em>Viver Cascais</em> ou <em>Navegante 12</em> para <em>Sub18+TP</em> / <em>Sub23+TP</em>).</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Dica</span>Otimização Computacional (<code>singles</code> vs.&nbsp;<code>multis</code>)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Como cerca de <span class="math inline">\(95\%\)</span> dos titulares possuem apenas um registo no mês (<code>N == 1</code>), a função <code>agregar_por_grupo()</code> separa os casos simples (<code>singles</code>), processados de forma 100% vetorizada em <code>data.table</code>/<code>dplyr</code>, dos casos com múltiplos registos (<code>multis</code>, <span class="math inline">\(\approx 5\%\)</span>), onde aplica as regras de ordenação e fusão por grupo (<code>agregar_grupo()</code>).</p>
+</div>
+</div>
+</div>
+<section id="hierarquia-de-prioridade-operador-e-título" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="hierarquia-de-prioridade-operador-e-título"><span class="header-section-number">2.2.1</span> Hierarquia de Prioridade (Operador e Título)</h3>
+<p>Quando um titular acumula vários bilhetes no mês, os códigos e nomes são concatenados (separados por <code>"_"</code> e <code>"+"</code>, respetivamente) segundo uma ordem estrita de prioridade definida em <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/00_config.R"><code>code/00_config.R</code></a>:</p>
+<ol type="1">
+<li><strong>Prioridade de Operador (<code>op_prio</code>)</strong>:
+<ul>
+<li>1.º <code>31</code> (AT TML) <span class="math inline">\(\succ\)</span> 2.º <code>0</code> <span class="math inline">\(\succ\)</span> 3.º restantes operadores (<code>21</code> AT Cascais, <code>16</code> MTS, etc.).</li>
+</ul></li>
+<li><strong>Prioridade de Código de Título (<code>code_prio</code>)</strong>:
+<ul>
+<li>1.º <code>6181</code> (Navegante Metropolitano sub23 Gratuito)</li>
+<li>2.º <code>6180</code> (Navegante Metropolitano 418 / sub18 Gratuito)</li>
+<li>3.º <code>6150</code> (Navegante Municipal 418)</li>
+<li>4.º <code>7650</code> (Navegante Municipal sub23)</li>
+<li>5.º <code>1020</code> (Navegante 12)</li>
+<li>6.º <code>6151</code> a <code>6171</code> (Complementos e combinados 418)</li>
+<li>7.º <code>7651</code> a <code>7671</code> (Complementos e combinados sub23)</li>
+<li>8.º <code>0</code> <span class="math inline">\(\succ\)</span> 9.º outros códigos.</li>
+</ul></li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Nota</span>Importância da Ordenação para a Fase 2
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Esta ordenação garante que o <strong>primeiro código</strong> de <code>ticket_code_new</code> (extraído na Fase 2 via <code>sub("_.*", "", ticket_code_new)</code>) corresponde sempre ao título principal de maior abrangência geográfica (ex.: num cartão com <code>6181</code> e complemento <code>7670</code>, o código fica registado como <code>6181_7670</code>).</p>
+</div>
+</div>
+</section>
+<section id="determinação-do-preço-base-do-grupo-price_ticket_base_new" class="level3" data-number="2.2.2">
+<h3 data-number="2.2.2" class="anchored" data-anchor-id="determinação-do-preço-base-do-grupo-price_ticket_base_new"><span class="header-section-number">2.2.2</span> Determinação do Preço Base do Grupo (<code>price_ticket_base_new</code>)</h3>
+<p>Para cada titular, o preço base de referência (<span class="math inline">\(\text{PTB}_{\text{new}}\)</span>) depende da presença de códigos de <strong>Complemento Metropolitano</strong> (<code>CODES_COMP = c(6170, 7670)</code>):</p>
+<p><span class="math display">\[
+\text{PTB}_{\text{new}} = \begin{cases}
+60\text{ €}, &amp; \text{se o grupo tem apenas 1 registo e é complemento } (6170 \text{ ou } 7670) \\[4pt]
+\max(\text{price\_ticket\_base}) + 20\text{ €}, &amp; \text{se combina outro título com complemento } (6170 \text{ ou } 7670) \\[4pt]
+\max(\text{price\_ticket\_base}), &amp; \text{se não inclui complemento metropolitano}
+\end{cases}
+\]</span></p>
+<ul>
+<li><strong>Caso especial <code>comNIF</code> com complemento isolado (<code>6170</code> ou <code>7670</code>) no operador <code>31</code></strong>: quando no ficheiro surge apenas a linha do complemento, o pipeline prefixa automaticamente o código e o nome do título base correspondente à faixa etária do jovem:
+<ul>
+<li>Idade <span class="math inline">\(&lt; 19\)</span> anos <span class="math inline">\(\longrightarrow\)</span> prefixa <code>6180_</code> e <code>"Navegante Metropolitano 418 Gratuito+"</code>;</li>
+<li>Idade <span class="math inline">\(\ge 19\)</span> anos <span class="math inline">\(\longrightarrow\)</span> prefixa <code>6181_</code> e <code>"Navegante Metropolitano sub23 Gratuito+"</code>.</li>
+</ul></li>
+</ul>
+</section>
+<section id="variáveis-agregadas-do-titular" class="level3" data-number="2.2.3">
+<h3 data-number="2.2.3" class="anchored" data-anchor-id="variáveis-agregadas-do-titular"><span class="header-section-number">2.2.3</span> Variáveis Agregadas do Titular</h3>
+<ul>
+<li><strong>Total de validações (<code>numval</code>)</strong>: soma das validações (<code>sum(count_val)</code>) de todos os cartões/títulos do titular;</li>
+<li><strong>Idade (<code>age_new</code>)</strong> e <strong>Data de nascimento (<code>birth_date_new</code>)</strong>: mínimo das idades (<code>min(age)</code>) e máximo das datas de nascimento (<code>max(birth_date)</code>);</li>
+<li><strong>Cartões de suporte (<code>cardserialnumber_new</code>)</strong>: números de série únicos ordenados e concatenados por <code>"_"</code>.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="integração-do-complemento-cp-azambuja" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="integração-do-complemento-cp-azambuja"><span class="header-section-number">2.3</span> Integração do Complemento CP Azambuja</h2>
+<p>O Complemento CP Azambuja-Carregado só pode ser adquirido em conjunto com o passe Navegante (mantendo um custo de <span class="math inline">\(0{,}50\text{ €}\)</span> suportado pelo utilizador e o preço de referência do Navegante Metropolitano de <span class="math inline">\(40\text{ €}\)</span>). As suas validações são somadas às do titular:</p>
+<ol type="1">
+<li><strong>Com NIF (<code>az_fiscal</code>)</strong>: agrupa as validações Azambuja por <code>fiscal_number</code> e junta a <code>dt_comNIF</code>, atualizando <code>numval = numval + count_val_az</code> e guardando o código em <code>compaz</code>;</li>
+<li><strong>Sem NIF (<code>az_card</code>)</strong>: agrupa as validações Azambuja sem NIF por <code>card_serial_number</code> e junta a <code>dt_semNIF</code>.</li>
+</ol>
+<hr>
+</section>
+<section id="cálculo-da-compensação-financeira" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="cálculo-da-compensação-financeira"><span class="header-section-number">2.4</span> Cálculo da Compensação Financeira</h2>
+<p>Com o número total de validações consolidadas (<span class="math inline">\(\text{numval}\)</span>, já incluindo eventuais validações Azambuja) e o preço de referência (<span class="math inline">\(\text{PTB}_{\text{new}}\)</span>), aplica-se a fórmula regulamentar da AML:</p>
+<p><span class="math display">\[
+\text{Compensação} = \begin{cases}
+5\% \times \text{PTB}_{\text{new}} \times \text{numval}, &amp; \text{se } \text{numval} &lt; 20 \\[6pt]
+\text{PTB}_{\text{new}}, &amp; \text{se } \text{numval} \ge 20
+\end{cases}
+\]</span></p>
+<hr>
+</section>
+<section id="tratamento-de-registos-semnif-e-validação-de-documentos" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="tratamento-de-registos-semnif-e-validação-de-documentos"><span class="header-section-number">2.5</span> Tratamento de Registos <code>semNIF</code> e Validação de Documentos</h2>
+<p>A partir de julho de 2026, a pedido do IMT, os registos sem NIF devem incluir o tipo (<code>doc_type</code>) e o número (<code>doc_number</code>) do documento de identificação civil (Cartão de Cidadão, Passaporte, Autorização de Residência, etc.).</p>
+<p>Para agregar corretamente vários cartões pertencentes à mesma pessoa sem NIF <strong>sem fundir pessoas diferentes</strong> que tenham números de documento fictícios/preenchidos por omissão (ex.: <code>00000000</code>, <code>99999999</code>, <code>123456</code> ou <code>teste</code>), o pipeline classifica previamente cada documento:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Situação Detetada</th>
+<th style="text-align: left;">Motivo Registado (<code>motivo_doc</code>)</th>
+<th style="text-align: left;">Chave de Agrupamento (<code>group_id</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Documento válido e sem anomalias</strong></td>
+<td style="text-align: left;">—</td>
+<td style="text-align: left;"><strong>Por Documento</strong> (<code>DOC_&lt;tipo&gt;_&lt;número&gt;</code>)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Documento na lista <code>id_exception.csv</code></strong></td>
+<td style="text-align: left;"><code>"Passaporte/Documento partilhado por jovens diferentes (fraude/excecao)"</code></td>
+<td style="text-align: left;"><strong>Por Documento</strong> (<code>DOC_&lt;tipo&gt;_&lt;número&gt;</code>)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Mesmo <code>doc_number</code> com datas de nascimento distintas</strong></td>
+<td style="text-align: left;"><code>"Documento com datas de nascimento distintas"</code></td>
+<td style="text-align: left;"><strong>Por Cartão</strong> (<code>CARD_&lt;n.º série&gt;</code>)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Cartão de Cidadão (<code>CITIZEN_CARD</code>) anómalo</strong> (só zeros, só noves, dígitos repetidos ou <span class="math inline">\(&lt; 6\)</span> dígitos)</td>
+<td style="text-align: left;"><code>"Cartao de Cidadao com ..."</code></td>
+<td style="text-align: left;"><strong>Por Cartão</strong> (<code>CARD_&lt;n.º série&gt;</code>)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Outro documento só zeros ou só noves</strong></td>
+<td style="text-align: left;"><code>"Documento com apenas zeros/noves"</code></td>
+<td style="text-align: left;"><strong>Por Cartão</strong> (<code>CARD_&lt;n.º série&gt;</code>)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Valores de teste/inválidos</strong> (<code>test</code>, <code>teste</code>, <code>null</code>, <code>none</code>, <code>na</code>, <code>xxx</code>, <code>12345</code>, <code>123456</code>)</td>
+<td style="text-align: left;"><code>"Documento com valor invalido"</code></td>
+<td style="text-align: left;"><strong>Por Cartão</strong> (<code>CARD_&lt;n.º série&gt;</code>)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Sem documento preenchido</strong></td>
+<td style="text-align: left;">—</td>
+<td style="text-align: left;"><strong>Por Cartão</strong> (<code>CARD_&lt;n.º série&gt;</code>)</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Aviso</span>Lista de Exceções de Identificação (<code>data/auxiliar/id_exception.csv</code>)
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>O ficheiro <code>id_exception.csv</code> (colunas <code>doc_type;doc_number;motivo</code>) regista casos auditados manualmente em que o mesmo documento consta com anomalias (ex.: datas de nascimento diferentes em dois cartões) mas em que se confirmou que devem ser agrupado num único titular (ou sinalizado como exceção conhecida).</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="controlo-de-qualidade-e-listas-de-auditoria" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="controlo-de-qualidade-e-listas-de-auditoria"><span class="header-section-number">2.6</span> Controlo de Qualidade e Listas de Auditoria</h2>
+<p>O passo <code>02</code> separa ou sinaliza automaticamente quatro conjuntos de registos para controlo de qualidade e envio ao Departamento de Clientes (DC):</p>
+<ol type="1">
+<li><strong>Exclusão por Idade Incompatível (<code>&lt;ano&gt;_&lt;mm&gt;_age_nok.csv</code>)</strong>:
+<ul>
+<li>Após o recálculo da idade e a correção dos casos-limite no passo <code>01</code>, os registos com <strong><code>age_new == 3</code></strong> (demasiado novo, <span class="math inline">\(&lt; 4\)</span> anos) ou <strong><code>age_new &gt;= 25</code></strong> (acima do limite máximo absoluto, com exceção do jovem que faz os 25 anos no mês de referência) são <strong>excluídos das tabelas <code>comNIF</code> e <code>semNIF</code></strong> e gravados em <code>age_nok.csv</code>.</li>
+<li><em>Nota:</em> Os jovens com <strong>24 anos</strong> (<code>age_new == 24</code>) permanecem nas tabelas de compensação (por poderem pertencer aos cursos universitários de exceção) e são cruzados com o ficheiro <code>idades23*.csv</code> em <code>input/</code> (perfis <code>127</code> e <code>130</code> da tabela <code>F_AUX_PROFILE_CARDS</code>). Apenas os que <strong>não</strong> constam nessa lista são incluídos em <code>a_verificar.csv</code> para confirmação do comprovativo académico.</li>
+</ul></li>
+<li><strong>Documentos Estranhos Sem NIF (<code>&lt;ano&gt;_&lt;mm&gt;_documentos_estranhos_semNIF.csv</code>)</strong>:
+<ul>
+<li>Contém um registo único por cartão (<code>card_serial_number</code>) para todos os cartões <code>semNIF</code> que apresentaram qualquer anomalia no número de documento (<code>!is.na(motivo_doc)</code>).</li>
+</ul></li>
+<li><strong>Registos Suspeitos a Verificar (<code>&lt;ano&gt;_&lt;mm&gt;_a_verificar.csv</code>)</strong>:
+<ul>
+<li>Consolida todos os registos que requerem verificação manual, organizados pela seguinte ordem:
+<ol type="1">
+<li><code>"Excecao ID (datas de nascimento distintas)"</code>: documento presente em <code>id_exception.csv</code>;</li>
+<li><code>"Documento com datas de nascimento distintas"</code>: mesmo <code>doc_number</code> em <code>semNIF</code> associado a múltiplas datas de nascimento;</li>
+<li><code>"Idade &gt; 23"</code> e <code>"Idade = 25"</code>: titulares <code>comNIF</code> com idade <span class="math inline">\(&gt; 23\)</span> <strong>não confirmados</strong> no ficheiro de perfis sub23+1 (<code>idades23*.csv</code>, <code>CARD_PROFILE_ID</code> <code>127</code> ou <code>130</code>), distinguindo no campo <code>motivo</code> os casos com 24 anos (<code>"Idade &gt; 23"</code>) dos casos com 25 anos (<code>"Idade = 25"</code>). Quando o ficheiro <code>idades23*.csv</code> está presente em <code>input/</code>, os estudantes cujo <code>card_serial_number</code> ou <code>fiscal_number</code> conste nessa listagem são dispensados de verificação manual e o total de confirmados excluídos é reportado no log de execução;</li>
+<li><code>"Sem NIF"</code>: todos os restantes titulares sem NIF válido.</li>
+</ol></li>
+</ul></li>
+<li><strong>Múltiplos Cartões com Elevado Número de Validações (<code>&lt;ano&gt;_&lt;mm&gt;_validacoes_mais200.csv</code>)</strong>:
+<ul>
+<li>Identifica titulares que acumulam <strong>mais do que um cartão de suporte no mês</strong> (<code>str_detect(cardserialnumber_new, "_")</code>) e um total consolidado de <strong>200 ou mais validações</strong> (<code>numval &gt;= 200</code>).</li>
+<li>Estes casos configuram potenciais situações de utilização abusiva ou partilha indevida de cartões, sendo exportados por ordem decrescente de <code>numval</code> (com as colunas <code>fiscal_number</code>, <code>numval</code>, <code>cardserialnumber_new</code>, <code>doc_type</code> e <code>doc_number</code>) para envio ao Departamento de Clientes (DC) e averiguação adicional.</li>
+</ul></li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Nota</span>Query SQL para Extração dos Perfis Sub23+1 (<a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/idades23-1.sql"><code>code/idades23-1.sql</code></a>)
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>A listagem de estudantes elegíveis até aos 24 anos (perfis <code>127</code> e <code>130</code>) ativos no mês é exportada da tabela <code>F_AUX_PROFILE_CARDS</code> para <code>data/&lt;ano&gt;_&lt;mm&gt;_&lt;mes&gt;/input/idades23-1_F_AUX_PROFILE_CARDS_&lt;timestamp&gt;.csv</code> através da consulta:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- tabela com sub23+1 no mês em questão</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="kw">DISTINCT</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    FISCAL_NUMBER,</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    SERIAL_NUMBER <span class="kw">AS</span> card_serial_number,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    CARD_PROFILE_ID,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">TO_CHAR</span>(BIRTH_DATE, <span class="st">'YYYY-MM-DD'</span>) <span class="kw">AS</span> birth_date</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> F_AUX_PROFILE_CARDS</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> CARD_PROFILE_ID <span class="kw">IN</span> (<span class="dv">127</span>, <span class="dv">130</span>) <span class="co">-- sub23+1</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> CARD_DATE <span class="op">&lt;</span> <span class="dt">DATE</span> <span class="st">'2026-09-01'</span> <span class="co">-- alterar mês e ano aqui e na seguinte (intervalo mês)</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> PROFILE_DATE <span class="op">&gt;=</span> <span class="dt">DATE</span> <span class="st">'2026-08-01'</span>;</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co">-- salvar em input como 'idades23-1_${table}_${timestamp}.csv'</span></span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</div>
+</div>
+<hr>
+<section id="script-02_calcular_compensacoes.r" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="script-02_calcular_compensacoes.r">Script: <code>02_calcular_compensacoes.R</code></h3>
+<p>A função <code>calcular_compensacoes(ano, mes, raiz)</code> grava na pasta <code>data/&lt;ano&gt;_&lt;mm&gt;_&lt;mes&gt;/output/</code>:</p>
+<ul>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_comNIF.csv</code>: compensação apurada por NIF (elegíveis);</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_semNIF.csv</code>: compensação apurada por documento/cartão para titulares sem NIF (elegíveis);</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_a_verificar.csv</code>: listagem completa para auditoria manual;</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_validacoes_mais200.csv</code>: titulares com múltiplos cartões e <span class="math inline">\(\ge 200\)</span> validações no mês (para averiguação pelo DC);</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_age_nok.csv</code>: registos excluídos por idade incompatível (<span class="math inline">\(3\)</span> ou <span class="math inline">\(\ge 25\)</span> anos);</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_documentos_estranhos_semNIF.csv</code>: documentos <code>semNIF</code> com formato inválido ou suspeito.</li>
+</ul>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copiada");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copiada");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/tmlmobilidade\.github\.io\/compensacoes-passejovem");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./01_preparacao_dados.html" class="pagination-link" aria-label="Preparação, Combinação e Limpeza de Dados">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparação, Combinação e Limpeza de Dados</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./03_reporte_imt.html" class="pagination-link" aria-label="Exportação do Reporte Oficial AML/IMT">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Exportação do Reporte Oficial AML/IMT</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>TML - Transportes Metropolitanos de Lisboa</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>v0.1 (beta)</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

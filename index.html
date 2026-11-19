@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="pt" xml:lang="pt"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="TML - Transportes Metropolitanos de Lisboa">
+<meta name="author" content="Departamento de Estudos e Planeamento">
+
+<title>Compensações Gratuitidade Passe Jovem</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./01_preparacao_dados.html" rel="next">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-c3de09f10dd778e0b4268b7d9c3359d4.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "Nenhum resultado",
+    "search-matching-documents-text": "documentos correspondentes",
+    "search-copy-link-title": "Copiar link para a busca",
+    "search-hide-matches-text": "Esconder correspondências adicionais",
+    "search-more-match-text": "mais correspondência neste documento",
+    "search-more-matches-text": "mais correspondências neste documento",
+    "search-clear-button-title": "Limpar",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancelar",
+    "search-submit-button-title": "Enviar",
+    "search-label": "Procurar"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Alternar barra lateral" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Introdução e Visão Geral</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Alternar barra lateral" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Procurar" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Compensações Gratuitidade Passe Jovem</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/tmlmobilidade/compensacoes-passejovem" title="Código fonte" class="quarto-navigation-tool px-1" aria-label="Código fonte"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Procurar"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Introdução e Visão Geral</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Fase 1 — Apuramento (IMT)</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01_preparacao_dados.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparação, Combinação e Limpeza de Dados</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02_calculo_compensacoes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Cálculo de Compensações e Controlo de Qualidade</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03_reporte_imt.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Exportação do Reporte Oficial AML/IMT</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Fase 2 — Repartição (Operadores)</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04_reparticao_congelamento.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Repartição pelos Operadores e Congelamento Tarifário</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05_anexo_reparticao.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Exportação do Anexo II de Repartição</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Documentos</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06_documentos.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Relatórios: Informações e Ofícios</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text"><strong>Anexos</strong></span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Alternar seção">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_execucao.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Guia de Preparação Mensal e Execução</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_auxiliares.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tabelas Auxiliares, Exceções e Dependências Externas</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./anexo_repescagem_nif.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Procedimento Temporário de Repescagem de NIF</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Legislação e Regulamentos</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Nesta página</h2>
+   
+  <ul>
+  <li><a href="#introdução-e-visão-geral" id="toc-introdução-e-visão-geral" class="nav-link active" data-scroll-target="#introdução-e-visão-geral">Introdução e Visão Geral</a>
+  <ul class="collapse">
+  <li><a href="#enquadramento-regulamentar" id="toc-enquadramento-regulamentar" class="nav-link" data-scroll-target="#enquadramento-regulamentar">Enquadramento Regulamentar</a>
+  <ul class="collapse">
+  <li><a href="#regras-de-elegibilidade" id="toc-regras-de-elegibilidade" class="nav-link" data-scroll-target="#regras-de-elegibilidade">Regras de Elegibilidade</a></li>
+  <li><a href="#regra-de-compensação-financeira-artigo-7.º" id="toc-regra-de-compensação-financeira-artigo-7.º" class="nav-link" data-scroll-target="#regra-de-compensação-financeira-artigo-7.º">Regra de Compensação Financeira (Artigo 7.º)</a></li>
+  <li><a href="#títulos-elegíveis-e-preços-de-referência" id="toc-títulos-elegíveis-e-preços-de-referência" class="nav-link" data-scroll-target="#títulos-elegíveis-e-preços-de-referência">Títulos Elegíveis e Preços de Referência</a></li>
+  </ul></li>
+  <li><a href="#arquitetura-em-duas-fases" id="toc-arquitetura-em-duas-fases" class="nav-link" data-scroll-target="#arquitetura-em-duas-fases">Arquitetura em Duas Fases</a></li>
+  <li><a href="#fluxograma-metodológico" id="toc-fluxograma-metodológico" class="nav-link" data-scroll-target="#fluxograma-metodológico">Fluxograma Metodológico</a></li>
+  <li><a href="#síntese-metodológica" id="toc-síntese-metodológica" class="nav-link" data-scroll-target="#síntese-metodológica">Síntese Metodológica</a></li>
+  <li><a href="#guia-de-execução" id="toc-guia-de-execução" class="nav-link" data-scroll-target="#guia-de-execução">Guia de Execução</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Compensações Gratuitidade Passe Jovem</h1>
+<p class="subtitle lead">Procedimento e Metodologia de Apuramento Mensal (IMT) e Repartição pelos Operadores</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Autores</div>
+    <div class="quarto-title-meta-contents">
+             <p>TML - Transportes Metropolitanos de Lisboa </p>
+             <p>Departamento de Estudos e Planeamento </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Data de Publicação</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">19 de novembro de 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introdução-e-visão-geral" class="level1 unnumbered">
+<h1 class="unnumbered">Introdução e Visão Geral</h1>
+<p>Este manual documenta o procedimento metodológico e operacional gerido pela <strong>TML — Transportes Metropolitanos de Lisboa</strong> para o <strong>apuramento mensal das compensações financeiras pela disponibilização dos passes gratuitos para jovens</strong> (a reportar ao <strong>IMT, I. P.</strong>) e para a subsequente <strong>repartição dessas compensações e do congelamento tarifário (TAT)</strong> pelos operadores e autoridades de transportes da Área Metropolitana de Lisboa (AML).</p>
+<p>O modelo implementado em <strong>R</strong> reproduz as regras estipuladas na Portaria n.º 7-A/2024 <span class="citation" data-cites="Portaria7A2024">(<a href="references.html#ref-Portaria7A2024" role="doc-biblioref">2024b</a>)</span>, com as alterações introduzidas pela Portaria n.º 307-A/2024/1 <span class="citation" data-cites="Portaria307A2024">(<a href="references.html#ref-Portaria307A2024" role="doc-biblioref">2024a</a>)</span> e pela Portaria n.º 287/2026/1 <span class="citation" data-cites="Portaria287_2026">(<a href="references.html#ref-Portaria287_2026" role="doc-biblioref">2026</a>)</span>, bem como os critérios de repartição estabelecidos no Regulamento da AML n.º 278-A/2019 <span class="citation" data-cites="Regulamento278A2019">(<a href="references.html#ref-Regulamento278A2019" role="doc-biblioref">2019</a>)</span>, na redação conferida pelo Regulamento n.º 1362-C/2023 <span class="citation" data-cites="Regulamento1362C2023">(<a href="references.html#ref-Regulamento1362C2023" role="doc-biblioref">2023</a>)</span>.</p>
+<hr>
+<section id="enquadramento-regulamentar" class="level2">
+<h2 class="anchored" data-anchor-id="enquadramento-regulamentar">Enquadramento Regulamentar</h2>
+<section id="regras-de-elegibilidade" class="level3">
+<h3 class="anchored" data-anchor-id="regras-de-elegibilidade">Regras de Elegibilidade</h3>
+<p>De acordo com a legislação aplicável, são abrangidos pelo regime de gratuitidade:</p>
+<ul>
+<li><strong>Jovens até aos 23 anos (inclusive)</strong>, identificados com Número de Identificação Fiscal (NIF) e data de nascimento;</li>
+<li><strong>Exceção até aos 24 anos (inclusive)</strong> para estudantes inscritos nos ciclos de estudos de <em>Arquitetura e Urbanismo</em>, <em>Ciências Farmacêuticas</em>, <em>Medicina</em>, <em>Medicina Dentária</em> e <em>Medicina Veterinária</em>, mediante entrega de comprovativo de matrícula da instituição de ensino superior;</li>
+<li><strong>Unicidade de benefício</strong>: cada jovem não pode usufruir de mais do que um passe gratuito a nível nacional (ex.: acumular Navegante na AML e Andante na AMP), sendo essa verificação assegurada pelo IMT após cruzamento das listagens de NIF submetidas pelas Autoridades de Transportes;</li>
+<li><strong>Liberdade de escolha geográfica</strong>: não é obrigatório adquirir o passe correspondente à área de residência, podendo igualmente adquirir passes interregionais, nesse caso justificando que reside e estuda ou trabalha em regiões distintas (ex.: Complemento Carris Metropolitana / Passes Lx - BT da CIM Oeste);</li>
+<li><strong>Validade ativa</strong>: o título ou perfil associado ao cartão de suporte tem de se encontrar dentro do prazo de validade e ter registado pelo menos uma validação no mês de referência.</li>
+</ul>
+</section>
+<section id="regra-de-compensação-financeira-artigo-7.º" class="level3">
+<h3 class="anchored" data-anchor-id="regra-de-compensação-financeira-artigo-7.º">Regra de Compensação Financeira (Artigo 7.º)</h3>
+<p>O valor da compensação mensal por cada passe gratuito para jovens com registo de validações é determinado em função da tarifa de venda ao público do título de referência (<span class="math inline">\(\text{Preço}_{\text{base}}\)</span>) e do número de validações efetuadas no mês (<span class="math inline">\(n_{\text{val}}\)</span>):</p>
+<ul>
+<li><strong>a) Nas Áreas Metropolitanas (AM)</strong> — regra aplicável à AML (<code>THRESHOLD_VAL = 20</code>, <code>PCT_VAL = 0.05</code>):
+<ul>
+<li><ol type="i">
+<li>Cada validação corresponde a <strong><span class="math inline">\(5\%\)</span> do valor do título de referência</strong>, pagando-se esse valor multiplicado pelo número de validações realizadas até se atingir <strong>20 validações</strong>: <span class="math display">\[\text{Compensação} = 0{,}05 \times \text{Preço}_{\text{base}} \times n_{\text{val}}, \quad \text{se } 1 \le n_{\text{val}} &lt; 20\]</span></li>
+</ol></li>
+<li><ol start="2" type="i">
+<li>Atingidas <strong>20 validações, inclusive</strong>, é pago o valor do título de referência por inteiro: <span class="math display">\[\text{Compensação} = \text{Preço}_{\text{base}}, \quad \text{se } n_{\text{val}} \ge 20\]</span></li>
+</ol></li>
+</ul></li>
+<li><strong>b) Nas Comunidades Intermunicipais (CIM)</strong>: cada validação corresponde a <span class="math inline">\(10\%\)</span> do valor do título de referência até 10 validações (atingidas 10 validações, é pago o título por inteiro);</li>
+<li><strong>c) Sem validações</strong>: os passes que não registem qualquer validação no mês (<span class="math inline">\(n_{\text{val}} = 0\)</span>) não conferem direito a compensação.</li>
+</ul>
+</section>
+<section id="títulos-elegíveis-e-preços-de-referência" class="level3">
+<h3 class="anchored" data-anchor-id="títulos-elegíveis-e-preços-de-referência">Títulos Elegíveis e Preços de Referência</h3>
+<p>Embora a oferta tarifária jovem atual na área metropolitana de Lisboa se concentre nos títulos <strong>Navegante Metropolitano sub18+TP</strong> e <strong>Navegante Metropolitano sub23+TP</strong>, subsistem em utilização outros títulos de validade superior à mensal (como o <em>Navegante 12</em>, apesar dos seus carregamentos terem cessado em janeiro de 2024, e os passes <em>Viver Cascais</em> que acumulam outras funções para além do transporte) e carregamentos residuais das modalidades <em>Navegante municipal 4_18/sub23</em> em cartões de substituição e alguns carregamentos mensais de <em>Navegante Metropolitano 4_18/sub23</em>. Para além destes, estão ainda disponíveis os passes <em>Complemento Navegante sub18+TP e sub23+TP</em> da Carris Metropolitana que possibilitam viajar nas linhas interregionais deste operador.</p>
+<p>A tabela seguinte sintetiza os títulos de referência e os respetivos preços base (<code>NOME_IMT</code> em <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/00_config.R"><code>code/00_config.R</code></a>):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 38%">
+<col style="width: 30%">
+<col style="width: 30%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Preço Base (<code>price_ticket_base_new</code>)</th>
+<th style="text-align: left;">Título de Referência (<code>nome_imt</code>)</th>
+<th style="text-align: left;">Âmbito / Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;"><strong><span class="math inline">\(40{,}00\text{ €}\)</span></strong></td>
+<td style="text-align: left;"><code>Navegante Metropolitano</code></td>
+<td style="text-align: left;">Inclui as modalidades Sub18+TP, Sub23+TP, 4_18, Sub23 e Navegante 12</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;"><strong><span class="math inline">\(60{,}00\text{ €}\)</span></strong></td>
+<td style="text-align: left;"><code>Navegante Metropolitano + Complemento</code></td>
+<td style="text-align: left;">Navegante Metropolitano (<span class="math inline">\(40\text{ €}\)</span>) + Complemento Inter-regional CM (<span class="math inline">\(20\text{ €}\)</span>)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;"><strong><span class="math inline">\(20{,}00\text{ €}\)</span></strong></td>
+<td style="text-align: left;"><code>Viver Cascais</code></td>
+<td style="text-align: left;">Viver Cascais Residente / Estudante (<code>PRECO_CASCAIS = 20</code>)</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Nota</span>Âmbito Temporal do Pipeline
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>O procedimento documentado neste livro aplica-se aos meses <strong>a partir de julho de 2026</strong> (inclusive), tirando partido do formato de entrada em Excel (<code>.xlsx</code>) com identificação documental (<code>ID_DOC_NUMBER</code> / <code>ID_DOC_NUMBER_DESC</code>) e do <strong>Template Oficial IMT v2</strong>. O processamento corre integralmente em R via <code>data.table</code> e <code>dplyr</code> (10 a 60 segundos por mês para ~450 000 registos), sem dependência de bases de dados externas (PostgreSQL/DBeaver).</p>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="arquitetura-em-duas-fases" class="level2">
+<h2 class="anchored" data-anchor-id="arquitetura-em-duas-fases">Arquitetura em Duas Fases</h2>
+<p>O procedimento mensal encontra-se estruturado em <strong>duas fases sequenciais</strong>, que podem ser executadas de forma conjunta ou independente através das flags <code>RUN_FASE1</code> e <code>RUN_FASE2</code> em <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/00_config.R"><code>code/00_config.R</code></a>:</p>
+<ol type="1">
+<li><strong>Fase 1 — Apuramento Mensal (IMT)</strong>:
+<ul>
+<li>Processa os ficheiros de validações do DITS/ITS, da AT Cascais e do Complemento CP Azambuja;</li>
+<li>Aplica limpezas, repescagem de NIFs e correções manuais, agrega as validações por titular (<code>comNIF</code> e <code>semNIF</code>) e calcula a compensação individual;</li>
+<li>Exporta as listas de auditoria/verificação, preenche o <strong>Reporte Oficial Excel v2</strong> para o IMT e gera os documentos da 1.ª fase (<code>informacao1</code>, <code>oficio1</code> e <code>metodologia1</code>).</li>
+</ul></li>
+<li><strong>Fase 2 — Repartição pelos Operadores e Congelamento Tarifário</strong>:
+<ul>
+<li>Executada após a conclusão da Fase 1 e assim que o ficheiro mensal de quotas dinâmicas (<code>1_quotas_&lt;mes&gt;&lt;aa&gt;.csv</code>) se encontra apurado no repositório <a href="https://github.com/tmlmobilidade/compensacoes-navegante"><code>Compensacoes</code></a>;</li>
+<li>Decompõe a compensação por título nas três componentes (<strong>Passes Navegante</strong>, <strong>Complemento CM</strong> e <strong>Viver Cascais</strong>), reparte a componente Navegante pelos <strong>11 operadores/autoridades</strong> e estima o <strong>Congelamento Tarifário (TAT)</strong>;</li>
+<li>Gera o livro Excel oficial <strong>Anexo II de Repartição</strong> (com fórmulas dinâmicas) e compila os documentos da 2.ª fase (<code>metodologia2</code> / Anexo I, <code>informacao2</code> e <code>oficio2</code>).</li>
+</ul></li>
+</ol>
+<hr>
+</section>
+<section id="fluxograma-metodológico" class="level2">
+<h2 class="anchored" data-anchor-id="fluxograma-metodológico">Fluxograma Metodológico</h2>
+<p>O diagrama seguinte ilustra o fluxo completo de dados e scripts em R, desde as fontes primárias até aos relatórios finais das Fases 1 e 2:</p>
+<div class="cell" data-layout-align="default">
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">---
+config:
+  flowchart:
+    curve: basis
+    nodeSpacing: 40
+    rankSpacing: 50
+---
+flowchart TD
+    %% -------------------------------------------------------------------------
+    %% 1. FONTES DE DADOS E ENTRADAS
+    %% -------------------------------------------------------------------------
+    subgraph IN["1. Fontes de Dados e Tabelas Auxiliares"]
+        direction TB
+        IN_ITS("**Validações Limpas ITS (.xlsx)**&lt;br/&gt;- Folha 1: Validações Passe Jovem&lt;br/&gt;- Folha 2: Complemento CP Azambuja")
+        IN_CASCAIS("**Viver Cascais (TML_*.xlsx)**&lt;br/&gt;- Registos AT Cascais (operador 21)")
+        IN_AUX("**Tabelas Auxiliares (data/auxiliar/)**&lt;br/&gt;- Repescagem cumulativa de NIF&lt;br/&gt;- Correções de NIF e Data de Nascimento&lt;br/&gt;- Exceções de Documentos (id_exception)")
+        IN_COMP("**Repositório Compensacoes**&lt;br/&gt;- Quotas dinâmicas (1_quotas_{mes}{aa}.csv)&lt;br/&gt;- Catálogo titulos.csv e taxas tat.csv&lt;br/&gt;- Números de documento (documents_nr.csv)")
+    end
+
+    %% -------------------------------------------------------------------------
+    %% 2. FASE 1 - APURAMENTO MENSAL (IMT)
+    %% -------------------------------------------------------------------------
+    subgraph FASE1["2. Fase 1 — Apuramento Mensal (IMT)"]
+        direction TB
+        P01["**01_preparar_dados.R**&lt;br/&gt;- Combinação ITS + Cascais + Azambuja&lt;br/&gt;- Repescagem NIF e exclusão LX-BT&lt;br/&gt;- Conversão Perfil Criança (Nav. 12)&lt;br/&gt;- Correções manuais e recálculo de idade&lt;br/&gt;→ limpos_preagregacao.csv"]
+        P02["**02_calcular_compensacoes.R**&lt;br/&gt;- Agregação por titular (comNIF / semNIF)&lt;br/&gt;- Adição de validações Azambuja&lt;br/&gt;- Regra AML (5% até 20 val.)&lt;br/&gt;- Controlo de idade, documentos e validações (≥200)&lt;br/&gt;→ comNIF.csv, semNIF.csv, a_verificar.csv, validacoes_mais200.csv"]
+        P03["**03_exportar_reporte.R**&lt;br/&gt;- Preenchimento Template Oficial IMT v2&lt;br/&gt;- Atualização automática do histórico&lt;br/&gt;→ reporte_AML_IMT.xlsx"]
+
+        P01 --&gt; P02
+        P02 --&gt; P03
+    end
+
+    %% -------------------------------------------------------------------------
+    %% 3. FASE 2 - REPARTIÇÃO PELOS OPERADORES
+    %% -------------------------------------------------------------------------
+    subgraph FASE2["3. Fase 2 — Repartição pelos Operadores e TAT"]
+        direction TB
+        P04["**04_estimar_compensacao_operadores.R**&lt;br/&gt;- Agregação por título e cruzamento com titulos.csv&lt;br/&gt;- Decomposição: Navegante / Complemento CM / Cascais&lt;br/&gt;- Repartição pelos 11 operadores (Quotas PKM)&lt;br/&gt;- Estimativa Congelamento Tarifário (TAT)&lt;br/&gt;→ passejovem_resumo.csv, passejovem_congelamento.csv"]
+        P05["**05_exportar_anexo_reparticao.R**&lt;br/&gt;- Construção do Workbook&lt;br/&gt;- Folha 1: Distribuição e Quotas&lt;br/&gt;- Folha 2: Resumo Operadores e Congelamento&lt;br/&gt;→ AnexoII_reparticao.xlsx"]
+
+        P04 --&gt; P05
+    end
+
+    %% -------------------------------------------------------------------------
+    %% 4. PRODUTOS FINAIS E DOCUMENTOS OFICIAIS
+    %% -------------------------------------------------------------------------
+    subgraph OUT_STEP["4. Produtos Finais e Documentos (10_documentos.R)"]
+        direction TB
+        OUT_F1["**Documentos Fase 1 (IMT)**&lt;br/&gt;- reporte_AML_IMT.xlsx&lt;br/&gt;- informacao1 (.pdf / .docx)&lt;br/&gt;- oficio1 (.pdf / .docx)&lt;br/&gt;- metodologia1 (.pdf)"]
+        OUT_F2["**Documentos Fase 2 (Operadores)**&lt;br/&gt;- AnexoII_reparticao.xlsx&lt;br/&gt;- AnexoI_metodologia (.pdf)&lt;br/&gt;- informacao2 (.pdf / .docx)&lt;br/&gt;- oficio2 (.pdf / .docx)"]
+    end
+
+    %% Ligações principais
+    IN_ITS --&gt; P01
+    IN_CASCAIS --&gt; P01
+    IN_AUX --&gt; P01
+    IN_AUX --&gt; P02
+
+    P02 --&gt; P04
+    IN_COMP --&gt; P04
+    IN_COMP --&gt; P05
+
+    P03 --&gt; OUT_F1
+    P05 --&gt; OUT_F2
+
+    %% Styling
+    classDef inputStyle fill:#e1f5ff,stroke:#0288d1,stroke-width:2px,color:#111827
+    classDef processStyle fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#111827
+    classDef calcStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#111827
+    classDef outputStyle fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#111827
+
+    class IN_ITS,IN_CASCAIS,IN_AUX,IN_COMP inputStyle
+    class P01,P02,P03 processStyle
+    class P04,P05 calcStyle
+    class OUT_F1,OUT_F2 outputStyle
+
+    style IN fill:none,stroke:#d0d7de,stroke-width:1.5px,color:#111827
+    style FASE1 fill:none,stroke:#d0d7de,stroke-width:1.5px,color:#111827
+    style FASE2 fill:none,stroke:#d0d7de,stroke-width:1.5px,color:#111827
+    style OUT_STEP fill:none,stroke:#d0d7de,stroke-width:1.5px,color:#111827
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="síntese-metodológica" class="level2">
+<h2 class="anchored" data-anchor-id="síntese-metodológica">Síntese Metodológica</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Fase</th>
+<th style="text-align: left;">Etapa</th>
+<th style="text-align: left;">Script(s)</th>
+<th style="text-align: left;">Entradas Principais</th>
+<th style="text-align: left;">Saídas Principais</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Configuração</strong></td>
+<td style="text-align: left;"><strong>Constantes e Utilitários</strong></td>
+<td style="text-align: left;"><a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/00_config.R"><code>00_config.R</code></a>, <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/99_run_pipeline.R"><code>99_run_pipeline.R</code></a></td>
+<td style="text-align: left;">Parâmetros de negócio, caminhos e histórico</td>
+<td style="text-align: left;">Funções partilhadas e orquestração mensal</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Fase 1 (IMT)</strong></td>
+<td style="text-align: left;"><strong>1. Preparação e Limpeza</strong></td>
+<td style="text-align: left;"><a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/01_preparar_dados.R"><code>01_preparar_dados.R</code></a></td>
+<td style="text-align: left;"><code>*PasseJovem*.xlsx</code>, <code>TML_*.xlsx</code> (Cascais), <code>data/auxiliar/*.csv</code></td>
+<td style="text-align: left;"><code>&lt;ano&gt;_&lt;mm&gt;_limpos_preagregacao.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_complemento_azambuja.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_contagens_01.rds</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Fase 1 (IMT)</strong></td>
+<td style="text-align: left;"><strong>2. Cálculo por Titular</strong></td>
+<td style="text-align: left;"><a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/02_calcular_compensacoes.R"><code>02_calcular_compensacoes.R</code></a></td>
+<td style="text-align: left;"><code>limpos_preagregacao.csv</code>, <code>complemento_azambuja.csv</code>, <code>id_exception.csv</code>, <code>idades23*.csv</code> (sub23+1)</td>
+<td style="text-align: left;"><code>&lt;ano&gt;_&lt;mm&gt;_comNIF.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_semNIF.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_a_verificar.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_validacoes_mais200.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_age_nok.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_documentos_estranhos_semNIF.csv</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Fase 1 (IMT)</strong></td>
+<td style="text-align: left;"><strong>3. Reporte Oficial IMT</strong></td>
+<td style="text-align: left;"><a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/03_exportar_reporte.R"><code>03_exportar_reporte.R</code></a></td>
+<td style="text-align: left;"><code>comNIF.csv</code>, <code>semNIF.csv</code>, Template IMT v2</td>
+<td style="text-align: left;"><code>docs/&lt;ano&gt;_&lt;mm&gt;_reporte_AML_IMT.xlsx</code>, <code>compensacao_pj_anteriores.csv</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Fase 2 (Operadores)</strong></td>
+<td style="text-align: left;"><strong>4. Repartição e Congelamento</strong></td>
+<td style="text-align: left;"><a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/04_estimar_compensacao_operadores.R"><code>04_estimar_compensacao_operadores.R</code></a></td>
+<td style="text-align: left;"><code>comNIF.csv</code>, <code>semNIF.csv</code>, <code>1_quotas_&lt;mes&gt;&lt;aa&gt;.csv</code>, <code>titulos.csv</code>, <code>tat.csv</code></td>
+<td style="text-align: left;"><code>&lt;ano&gt;_&lt;mm&gt;_compensacao_por_titulo.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_passejovem_resumo.csv</code>, <code>&lt;ano&gt;_&lt;mm&gt;_passejovem_congelamento.csv</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Fase 2 (Operadores)</strong></td>
+<td style="text-align: left;"><strong>5. Anexo II Excel</strong></td>
+<td style="text-align: left;"><a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/05_exportar_anexo_reparticao.R"><code>05_exportar_anexo_reparticao.R</code></a></td>
+<td style="text-align: left;"><code>passejovem_resumo.csv</code>, <code>1_quotas_&lt;mes&gt;&lt;aa&gt;.csv</code>, <code>titulos.csv</code>, <code>tat.csv</code></td>
+<td style="text-align: left;"><code>docs/&lt;ano&gt;_&lt;mm&gt;_AnexoII_reparticao.xlsx</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Ambas</strong></td>
+<td style="text-align: left;"><strong>6. Documentos Oficiais</strong></td>
+<td style="text-align: left;"><a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/10_documentos.R"><code>10_documentos.R</code></a>, <a href="https://github.com/tmlmobilidade/compensacoes-passejovem/blob/main/code/doc_params.R"><code>doc_params.R</code></a></td>
+<td style="text-align: left;">Tabelas de output, histórico, <code>documents_nr.csv</code></td>
+<td style="text-align: left;"><code>informacao1</code>, <code>oficio1</code>, <code>metodologia1</code> (Fase 1); <code>AnexoI_metodologia</code>, <code>informacao2</code>, <code>oficio2</code> (Fase 2)</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="guia-de-execução" class="level2">
+<h2 class="anchored" data-anchor-id="guia-de-execução">Guia de Execução</h2>
+<p>Ver <a href="./anexo_execucao.html"><strong>Guia de Preparação Mensal e Execução</strong></a> para instruções passo a passo sobre como preparar e correr um novo mês.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-Regulamento278A2019" class="csl-entry" role="listitem">
+República Portuguesa. 2019. <em>Regulamento n.º 278-A/2019, de 27 de março — Regulamento Metropolitano das Regras Gerais para a Implementação do Sistema Tarifário na Área Metropolitana de Lisboa</em>. Diário da República. <a href="https://diariodarepublica.pt/dr/detalhe/regulamento/278-a-2019-121665699">https://diariodarepublica.pt/dr/detalhe/regulamento/278-a-2019-121665699</a>.
+</div>
+<div id="ref-Regulamento1362C2023" class="csl-entry" role="listitem">
+República Portuguesa. 2023. <em>Regulamento n.º 1362-C/2023, de 27 de dezembro — Regulamento Metropolitano das Regras Gerais para a Implementação do Sistema Tarifário na Área Metropolitana de Lisboa: Sexta alteração ao Regulamento da AML n.º 278-A/2019, de 19 de março</em>. Diário da República. <a href="https://diariodarepublica.pt/dr/detalhe/regulamento/1362-c-2023-835674356">https://diariodarepublica.pt/dr/detalhe/regulamento/1362-c-2023-835674356</a>.
+</div>
+<div id="ref-Portaria307A2024" class="csl-entry" role="listitem">
+República Portuguesa. 2024a. <em>Portaria n.º 307-A/2024/1, de 28 de novembro — Primeira alteração à Portaria n.º 7-A/2024, de 5 de janeiro, alargando a gratuitidade dos passes a todos os jovens até aos 23 anos</em>. Diário da República. <a href="https://diariodarepublica.pt/dr/detalhe/portaria/307-a-2024-898320378">https://diariodarepublica.pt/dr/detalhe/portaria/307-a-2024-898320378</a>.
+</div>
+<div id="ref-Portaria7A2024" class="csl-entry" role="listitem">
+República Portuguesa. 2024b. <em>Portaria n.º 7-A/2024, de 5 de janeiro — Condições de atribuição dos passes gratuitos para jovens estudantes nas modalidades sub-18+TP e estudante sub-23+TP e procedimentos relativos à sua operacionalização e compensação</em>. Diário da República. <a href="https://diariodarepublica.pt/dr/detalhe/portaria/7-a-2024-836205473">https://diariodarepublica.pt/dr/detalhe/portaria/7-a-2024-836205473</a>.
+</div>
+<div id="ref-Portaria287_2026" class="csl-entry" role="listitem">
+República Portuguesa. 2026. <em>Portaria n.º 287/2026/1, de 7 de julho — Segunda alteração à Portaria n.º 7-A/2024, de 5 de janeiro, reforçando o regime do pagamento convencional por conta às entidades emissoras de títulos de transporte</em>. Diário da República. <a href="https://diariodarepublica.pt/dr/detalhe/portaria/287-2026-1144685810">https://diariodarepublica.pt/dr/detalhe/portaria/287-2026-1144685810</a>.
+</div>
+</div>
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copiada");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copiada");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/tmlmobilidade\.github\.io\/compensacoes-passejovem");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./01_preparacao_dados.html" class="pagination-link" aria-label="Preparação, Combinação e Limpeza de Dados">
+        <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Preparação, Combinação e Limpeza de Dados</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>TML - Transportes Metropolitanos de Lisboa</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>v0.1 (beta)</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
