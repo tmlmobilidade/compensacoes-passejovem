@@ -90,7 +90,7 @@ Com o número total de validações consolidadas ($\text{numval}$, já incluindo
 
 $$
 \text{Compensação} = \begin{cases}
-5\text{%} \times \text{PTB}_{\text{new}} \times \text{numval}, & \text{se } \text{numval} < 20 \\[6pt]
+5\% \times \text{PTB}_{\text{new}} \times \text{numval}, & \text{se } \text{numval} < 20 \\[6pt]
 \text{PTB}_{\text{new}}, & \text{se } \text{numval} \ge 20
 \end{cases}
 $$
