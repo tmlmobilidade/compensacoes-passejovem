@@ -1,0 +1,153 @@
+---
+lang: pt
+doc-tipo: externo #oficio
+format:
+  typst:
+    papersize: a4
+    linestretch: 1.5
+    numbering: "I"
+    margin:
+      x: 3.0cm
+      y: 3.0cm
+      top: 4.0cm
+      bottom: 3.0cm
+    include-in-header:
+      - templates/custom_styles.typ
+  docx:
+    reference-doc: templates/TML_Informacao_pandoc.docx
+    number-sections: false # a numeração dos títulos vem do estilo Word (Título 1/2/3)
+    fig-dpi: 300
+filters:
+  - templates/linebreaks.lua
+  - quarto
+  - templates/docx_styles.lua
+number-sections: true
+section-numbering: 1.1.1.
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: params
+
+# Parâmetros de emissão centralizados — editar code/doc_params.R
+source(here::here("code", "doc_params.R"))
+```
+
+```{r}
+#| label: setup
+
+# =============================================================================
+# CARREGAMENTO DE DADOS DO OFÍCIO PASSE JOVEM
+# =============================================================================
+
+source(here::here("code", "00_config.R"))
+source(here::here("code", "utils_extenso.R"))
+
+# Formatação em euros
+fmt_eur <- function(x) {
+  ifelse(is.na(x), "", scales::number(x, accuracy = 0.01, big.mark = "\u00a0", decimal.mark = ",", suffix = "\u00a0€"))
+}
+
+# Mês de referência
+mes_nome <- tolower(MESES_PT[MES])
+
+# Compensação total do mês
+paths <- month_paths(ANO, MES)
+f_com <- file.path(paths$output, output_filename(ANO, MES, "comNIF"))
+f_sem <- file.path(paths$output, output_filename(ANO, MES, "semNIF"))
+
+if (file.exists(f_com) && file.exists(f_sem)) {
+  comp_total <- sum(data.table::fread(f_com, select = "compensacao")$compensacao, na.rm = TRUE) +
+                sum(data.table::fread(f_sem, select = "compensacao")$compensacao, na.rm = TRUE)
+} else {
+  f_ant  <- file.path(paths$auxiliar, "compensacao_pj_anteriores.csv")
+  df_ant <- utils::read.csv2(f_ant, stringsAsFactors = FALSE, dec = ",")
+  idx    <- which(df_ant$ano == ANO & df_ant$mes == MES)
+  if (length(idx) == 0 || is.na(df_ant$compensacao_valor[idx])) {
+    stop("Outputs comNIF/semNIF não encontrados em: ", paths$output)
+  }
+  comp_total <- df_ant$compensacao_valor[idx]
+}
+```
+
+::: {.content-visible when-format="docx"}
+
+::: {custom-style="Bloco Pequeno"}
+**N/Ref.ª - `r numero_oficio1`**\
+**Estudos e Planeamento `r data_documento`**
+:::
+
+::: {custom-style="Subject"}
+Assunto: Compensação financeira pela disponibilização de Passes Gratuitos para Jovens no mês de `r mes_nome` de `r ANO` na área metropolitana de Lisboa
+:::
+:::
+
+::: {.content-visible when-format="typst"}
+:::::: {style="font-size: 0.7em;"}
+::::: {layout-ncol="2"}
+::: {}
+<!-- blank -->
+:::
+
+::: {}
+Exmo. Senhores\
+Presidente do Conselho Diretivo do Instituto da Mobilidade e dos Transportes, I.P.\
+
+CC/ Área Metropolitana de Lisboa
+:::
+:::::
+::::::
+
+```{=typst}
+#align(left)[
+  #heading(level: 3, numbering: none)[
+    #text(size: 10pt)[N/Ref.ª - `r numero_oficio1`]\
+    #text(size: 10pt)[Estudos e Planeamento `r data_documento`]
+  ]
+]
+#v(0.8cm)
+```
+ <!-- italic not working in typst -->
+_Forma de envio:_\
+Correio eletrónico
+
+```{=typst}
+#par(hanging-indent: 46pt)[
+    #set text(weight: "bold")
+Assunto: Compensação financeira pela disponibilização de Passes Gratuitos para Jovens no mês de `r mes_nome` de `r ANO` na área metropolitana de Lisboa
+]
+```
+:::
+
+```{=typst}
+#v(1cm)
+#set list(marker: [–])
+```
+
+Nos termos do disposto do disposto no n.º 2 do art.º 9.º da Portaria n.º 7-A/2024, de 5 de janeiro, atualizada pela Portaria n.º 307-A/2024/1, de 28 de novembro, da Presidência do Conselho de Ministros, Finanças, Infraestruturas e Habitação, Ambiente e Energia e Juventude e Modernização e no âmbito da delegação e subdelegação de competências da Área Metropolitana de Lisboa, vem pelo presente, a TML – Transportes Metropolitanos de Lisboa, E.M.T., S.A., comunicar o valor apurado de compensação para o mês de **`r mes_nome` de `r ANO`** pela disponibilização dos novos Passes Gratuitos para Jovens na área metropolitana de Lisboa, com base em dados de vendas e validações disponíveis à data, num total de **`r fmt_eur(comp_total)`** (`r numero_por_extenso(comp_total)`).
+
+Ressalva-se que estes valores podem vir a ser corrigidos com dados finais do sistema de bilhética, sendo possível a existência de acertos em próximos procedimentos.
+
+Devido à metodologia de distribuição das receitas do Regulamento n.º 278-A/2019 da AML, tendo em conta fatores a apurar mensalmente com base em dados reais como os passageiros.km, não é possível ter nesta fase o apuramento dos valores de compensação por operador.
+
+Em anexo, remete-se um documento com metodologia de apuramento dos valores de compensação e o Modelo de reporte solicitado, na sua versão mais recente, devidamente preenchido com os dados de compensação por passe.
+A informação relativa à situação contributiva perante a Administração Tributária e a Segurança Social dos operadores já foi previamente enviada. 
+
+Estamos disponíveis para eventuais questões através da caixa de correio eletrónico [transportes@tmlmobilidade.pt](mailto:transportes@tmlmobilidade.pt).
+Mais se informa que do presente Ofício é dado conhecimento à Área Metropolitana de Lisboa.
+
+Com os melhores cumprimentos,
+
+
+```{=typst}
+#v(1.5cm)
+#pad(left: 200pt)[
+  #set text(size: 9pt)
+  *`r para_pessoa_nome`*\
+  *`r paste(para_cargo, para_divisao)`*\
+  Ao abrigo do Despacho de subdelegação de competências do PCA de 13/03/2026
+]
+```
