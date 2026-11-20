@@ -33,25 +33,61 @@ df_docs <- if (file.exists(docs_nr_path)) {
   data.frame()
 }
 
-get_doc_nr <- function(col, default, tipo = "passejovem") {
-  if (nrow(df_docs) > 0 && col %in% names(df_docs)) {
-    row <- df_docs[df_docs$tipo == tipo & df_docs$ano == ANO & df_docs$mes == MES, ]
+get_doc_nr <- function(doc_type, default, grp = "passejovem") {
+  if (nrow(df_docs) > 0 && all(c("group", "ano", "mes", "type", "numero") %in% names(df_docs))) {
+    doc_type <- sub("^numero_", "", doc_type)
+    row <- df_docs[df_docs$group == grp & df_docs$ano == ANO & df_docs$mes == MES & df_docs$type == doc_type, ]
     if (nrow(row) > 0) {
-      val <- trimws(as.character(row[[col]][1]))
+      val <- trimws(as.character(row$numero[1]))
       if (!is.na(val) && nzchar(val)) return(val)
     }
   }
   default
 }
 
+get_doc_date <- function(doc_type, default = NA_character_, grp = "passejovem", num_fallback = "") {
+  doc_type <- sub("^numero_", "", doc_type)
+  if (nrow(df_docs) > 0 && all(c("group", "ano", "mes", "type") %in% names(df_docs))) {
+    row <- df_docs[df_docs$group == grp & df_docs$ano == ANO & df_docs$mes == MES & df_docs$type == doc_type, ]
+    if (nrow(row) > 0) {
+      if ("date" %in% names(row)) {
+        val <- trimws(as.character(row$date[1]))
+        if (!is.na(val) && nzchar(val)) return(val)
+      }
+      if ("numero" %in% names(row) && !nzchar(num_fallback)) {
+        num_fallback <- trimws(as.character(row$numero[1]))
+      }
+    }
+  }
+  m <- regmatches(num_fallback, regexpr("\\b20\\d{6}\\b", num_fallback))
+  if (length(m) == 1 && nzchar(m)) {
+    return(sprintf("%s-%s-%s", substr(m, 1, 4), substr(m, 5, 6), substr(m, 7, 8)))
+  }
+  default
+}
+
+format_date_pt <- function(date_str, default = "XX de XXXX de 2026") {
+  if (is.na(date_str) || !nzchar(date_str)) return(default)
+  d_obj <- tryCatch(as.Date(date_str), error = function(e) NA)
+  if (is.na(d_obj)) return(default)
+  meses_nm <- c("janeiro", "fevereiro", "março", "abril", "maio", "junho",
+                "julho", "agosto", "setembro", "outubro", "novembro", "dezembro")
+  sprintf("%d de %s de %d",
+          as.integer(format(d_obj, "%d")),
+          meses_nm[as.integer(format(d_obj, "%m"))],
+          as.integer(format(d_obj, "%Y")))
+}
+
 # fallback defaults for document numbers if not found in documents_nr.csv
-numero_informacao1           <- get_doc_nr("numero_informacao1", "TML-XXXX-XXXX-INF-XXXX-DEP", "passejovem")  # Nº da Informação IMT
-numero_oficio1               <- get_doc_nr("numero_oficio1",     "TML-XXXX-XXXX-OF-XXXX-DEP",  "passejovem")  # Nº do Ofício IMT
-numero_informacao2           <- get_doc_nr("numero_informacao2", "TML-YYYY-YYYY-INF-YYYY-DEP", "passejovem")  # Nº da Informação Operadores
-numero_oficio2               <- get_doc_nr("numero_oficio2",     "TML-YYYY-YYYY-OF-YYYY-DEP",  "passejovem")  # Nº do Ofício Operadores
-numero_informacao1_navegante <- get_doc_nr("numero_informacao1", "TML-XXXX-XXXX-INF-XXXX-DEP", "navegante")   # Nº da Informação 1 quotas Navegante
-numero_oficio1_navegante     <- get_doc_nr("numero_oficio1",     "TML-XXXX-XXXX-OF-XXXX-DEP",  "navegante")   # Nº do Ofício 1 quotas Navegante
+numero_informacao1           <- get_doc_nr("informacao1", "TML-XXXX-XXXX-INF-XXXX-DEP", "passejovem")  # Nº da Informação IMT
+numero_oficio1               <- get_doc_nr("oficio1",     "TML-XXXX-XXXX-OF-XXXX-DEP",  "passejovem")  # Nº do Ofício IMT
+numero_informacao2           <- get_doc_nr("informacao2", "TML-YYYY-YYYY-INF-YYYY-DEP", "passejovem")  # Nº da Informação Operadores
+numero_oficio2               <- get_doc_nr("oficio2",     "TML-YYYY-YYYY-OF-YYYY-DEP",  "passejovem")  # Nº do Ofício Operadores
+numero_informacao1_navegante <- get_doc_nr("informacao1", "TML-XXXX-XXXX-INF-XXXX-DEP", "navegante")   # Nº da Informação 1 quotas Navegante
+numero_oficio1_navegante     <- get_doc_nr("oficio1",     "TML-XXXX-XXXX-OF-XXXX-DEP",  "navegante")   # Nº do Ofício 1 quotas Navegante
 data_documento               <- format(Sys.Date(), "%d/%m/%Y")  # ou fixar manualmente: "24/09/2026"
+data_oficio1                 <- format_date_pt(get_doc_date("oficio1", grp = "passejovem", num_fallback = numero_oficio1))
+data_oficio1_navegante       <- format_date_pt(get_doc_date("oficio1", grp = "navegante",  num_fallback = numero_oficio1_navegante))
 
 # ---- Autores / Intervenientes ------------------------------------------------
 de_pessoa1_nome  <- "Ana Isabel Capote Fernandes Rosado"
