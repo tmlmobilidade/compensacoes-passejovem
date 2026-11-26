@@ -557,6 +557,11 @@ window.Quarto = {
 <li>Identifica titulares que acumulam <strong>mais do que um cartão de suporte no mês</strong> (<code>str_detect(cardserialnumber_new, "_")</code>) e um total consolidado de <strong>200 ou mais validações</strong> (<code>numval &gt;= 200</code>).</li>
 <li>Estes casos configuram potenciais situações de utilização abusiva ou partilha indevida de cartões, sendo exportados por ordem decrescente de <code>numval</code> (com as colunas <code>fiscal_number</code>, <code>numval</code>, <code>cardserialnumber_new</code>, <code>doc_type</code> e <code>doc_number</code>) para envio ao Departamento de Clientes (DC) e averiguação adicional.</li>
 </ul></li>
+<li><strong>Clientes Passe Jovem com Título <code>LX-BT</code> em Simultâneo (<code>&lt;ano&gt;_&lt;mm&gt;_lxbt_simultaneos.csv</code>)</strong>:
+<ul>
+<li>Cruza os registos <code>LX-BT</code> removidos no passo <code>01</code> (<code>lxbt_removidos</code> em <code>contagens_01.rds</code>) com os titulares de passes Navegante elegíveis (<code>comNIF</code> e <code>semNIF</code>), quer por <code>fiscal_number</code> (NIF), quer por <code>card_serial_number</code> (incluindo cartões múltiplos concatenados em <code>cardserialnumber_new</code>).</li>
+<li>Exporta a lista detalhada dos clientes que acumulam simultaneamente passe Navegante e título <code>LX-BT</code> no mesmo mês (indicando se os títulos foram validados no mesmo cartão ou em cartões distintos, bem como as validações e compensação do passe Navegante).</li>
+</ul></li>
 </ol>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
@@ -596,7 +601,8 @@ window.Quarto = {
 <li><code>&lt;ano&gt;_&lt;mm&gt;_a_verificar.csv</code>: listagem completa para auditoria manual;</li>
 <li><code>&lt;ano&gt;_&lt;mm&gt;_validacoes_mais200.csv</code>: titulares com múltiplos cartões e <span class="math inline">\(\ge 200\)</span> validações no mês (para averiguação pelo DC);</li>
 <li><code>&lt;ano&gt;_&lt;mm&gt;_age_nok.csv</code>: registos excluídos por idade incompatível (<span class="math inline">\(3\)</span> ou <span class="math inline">\(\ge 25\)</span> anos);</li>
-<li><code>&lt;ano&gt;_&lt;mm&gt;_documentos_estranhos_semNIF.csv</code>: documentos <code>semNIF</code> com formato inválido ou suspeito.</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_documentos_estranhos_semNIF.csv</code>: documentos <code>semNIF</code> com formato inválido ou suspeito;</li>
+<li><code>&lt;ano&gt;_&lt;mm&gt;_lxbt_simultaneos.csv</code>: titulares de passe Navegante (<code>comNIF</code> ou <code>semNIF</code>) com registo simultâneo de título <code>LX-BT</code> no mês.</li>
 </ul>
 
 

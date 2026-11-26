@@ -401,7 +401,7 @@ window.Quarto = {
 <h3 data-number="1.2.2" class="anchored" data-anchor-id="exclusão-de-títulos-não-elegíveis-lx-bt"><span class="header-section-number">1.2.2</span> Exclusão de Títulos Não Elegíveis (<code>LX-BT</code>)</h3>
 <ul>
 <li>Os bilhetes combinados inter-regionais exclusivos com designação iniciada por <code>"LX-BT"</code> (<code>remove_lxbt()</code>) não são elegíveis para compensação ao abrigo deste procedimento e são removidos de <code>dt_main</code>.</li>
-<li>Os registos <code>LX-BT</code> removidos são guardados em memória (<code>lxbt_removidos</code> em <code>contagens_01.rds</code>) para contabilizar, nos relatórios oficiais, quantos utilizadores adquiriram simultaneamente passes <code>LX-BT</code> (CIM Oeste) e passes Navegante com o mesmo NIF.</li>
+<li>Os registos <code>LX-BT</code> removidos são guardados em memória (<code>lxbt_removidos</code> em <code>contagens_01.rds</code>) para contabilizar, nos relatórios oficiais, e exportar no Passo 02 (<code>&lt;ano&gt;_&lt;mm&gt;_lxbt_simultaneos.csv</code>), os utilizadores que adquiriram simultaneamente passes <code>LX-BT</code> (CIM Oeste) e passes Navegante com o mesmo NIF ou número de série de cartão.</li>
 </ul>
 </section>
 <section id="conversão-de-validações-por-perfil-de-criança" class="level3" data-number="1.2.3">
