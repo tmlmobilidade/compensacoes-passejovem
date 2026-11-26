@@ -10,6 +10,7 @@
 #   - <ano>_<mm>_age_nok.csv              (registos excluídos por idade incompatível)
 #   - <ano>_<mm>_documentos_estranhos_semNIF.csv (documentos semNIF com anomalias)
 #   - <ano>_<mm>_nif_multiplos_documentos_comNIF.csv (NIF com >1 documento; para o DC)
+#   - <ano>_<mm>_lxbt_simultaneos.csv     (clientes Passe Jovem com registo simultâneo LX-BT)
 #
 # Também suporta exceções manuais de identificação de:
 #   - data/auxiliar/id_exception.csv (documentos conhecidos por serem usados por crianças diferentes)
@@ -242,6 +243,135 @@ agregar_por_grupo <- function(dt, por = c("fiscal", "card")) {
   }
 
   rbindlist(list(res_single, res_multi), use.names = TRUE, fill = TRUE)
+}
+
+
+# =============================================================================
+#' Cruza os registos LX-BT removidos em 01_preparar_dados.R com os titulares
+#' de passe Navegante elegíveis (comNIF e semNIF), quer por NIF (fiscal_number),
+#' quer por número de série do cartão (card_serial_number).
+#'
+#' @param lx_raw    data.frame/data.table com os registos LX-BT removidos (cont_01$lxbt_removidos)
+#' @param dt_comNIF data.table com os passes elegíveis comNIF do mês
+#' @param dt_semNIF data.table com os passes elegíveis semNIF do mês
+#' @param ano       Ano de referência
+#' @param mes       Mês de referência
+#' @return data.table com os clientes que acumulam simultaneamente Navegante e LX-BT
+construir_lxbt_simultaneos <- function(lx_raw, dt_comNIF, dt_semNIF, ano, mes) {
+  if (is.null(lx_raw) || nrow(lx_raw) == 0) return(data.table())
+
+  lx_df <- as_tibble(lx_raw) |>
+    mutate(
+      fiscal_number      = normalizar_nif(as.character(fiscal_number)),
+      card_serial_number = as.character(card_serial_number)
+    )
+
+  # Garantir colunas opcionais caso contagens_01.rds tenha sido gerado por versão anterior
+  for (col_opt in c("doc_type", "doc_number", "ticket_name")) {
+    if (!col_opt %in% names(lx_df)) lx_df[[col_opt]] <- NA_character_
+  }
+  for (col_int in c("year_dist", "month_dist", "age", "ticket_code", "count_val")) {
+    if (!col_int %in% names(lx_df)) lx_df[[col_int]] <- NA_integer_
+  }
+  if (!"birth_date" %in% names(lx_df)) lx_df$birth_date <- as.Date(NA)
+
+  # Passes Navegante elegíveis em comNIF e semNIF
+  nav_com <- dt_comNIF |>
+    as_tibble() |>
+    filter(grepl("^Navegante", nome_imt)) |>
+    transmute(
+      tipo_pj                    = "comNIF",
+      fiscal_number_pj           = as.character(fiscal_number),
+      doc_type_pj                = NA_character_,
+      doc_number_pj              = NA_character_,
+      cardserialnumber_navegante = if ("cardserialnumber_new" %in% names(dt_comNIF))
+        as.character(cardserialnumber_new) else NA_character_,
+      birth_date_pj              = as.Date(birth_date_new),
+      age_pj                     = as.integer(age_new),
+      nome_imt                   = as.character(nome_imt),
+      ticket_code_navegante      = as.character(ticket_code_new),
+      ticket_name_navegante      = as.character(ticket_name_new),
+      numval_navegante           = as.integer(numval),
+      compensacao_navegante      = as.numeric(compensacao)
+    )
+
+  nav_sem <- dt_semNIF |>
+    as_tibble() |>
+    filter(grepl("^Navegante", nome_imt)) |>
+    transmute(
+      tipo_pj                    = "semNIF",
+      fiscal_number_pj           = NA_character_,
+      doc_type_pj                = if ("doc_type" %in% names(dt_semNIF)) as.character(doc_type) else NA_character_,
+      doc_number_pj              = if ("doc_number" %in% names(dt_semNIF)) as.character(doc_number) else NA_character_,
+      cardserialnumber_navegante = if ("cardserialnumber_new" %in% names(dt_semNIF))
+        as.character(cardserialnumber_new) else as.character(card_serial_number),
+      birth_date_pj              = as.Date(birth_date_new),
+      age_pj                     = as.integer(age_new),
+      nome_imt                   = as.character(nome_imt),
+      ticket_code_navegante      = as.character(ticket_code_new),
+      ticket_name_navegante      = as.character(ticket_name_new),
+      numval_navegante           = as.integer(numval),
+      compensacao_navegante      = as.numeric(compensacao)
+    )
+
+  nav_all <- bind_rows(nav_com, nav_sem) |>
+    mutate(nav_row_id = row_number())
+
+  # Mapa de cada cartão individual para o registo Navegante (suporta múltiplos cartões separados por "_")
+  nav_has_cards <- nav_all |>
+    select(nav_row_id, cardserialnumber_navegante) |>
+    filter(!is.na(cardserialnumber_navegante), nzchar(cardserialnumber_navegante))
+  cards_split <- strsplit(nav_has_cards$cardserialnumber_navegante, "_", fixed = TRUE)
+  nav_cards_map <- tibble(
+    card_serial_number = unlist(cards_split, use.names = FALSE),
+    nav_row_id_card    = rep(nav_has_cards$nav_row_id, lengths(cards_split))
+  ) |>
+    distinct(card_serial_number, .keep_all = TRUE)
+
+  nav_nif_map <- nav_all |>
+    filter(!is.na(fiscal_number_pj), nzchar(fiscal_number_pj)) |>
+    distinct(fiscal_number_pj, .keep_all = TRUE) |>
+    select(fiscal_number = fiscal_number_pj, nav_row_id_nif = nav_row_id)
+
+  # Associar primeiro por NIF e, em alternativa, por número de série do cartão
+  lx_df |>
+    left_join(nav_nif_map, by = "fiscal_number") |>
+    left_join(nav_cards_map, by = "card_serial_number") |>
+    mutate(
+      nav_row_id = coalesce(nav_row_id_nif, nav_row_id_card),
+      match_por  = case_when(
+        !is.na(nav_row_id_nif) & !is.na(nav_row_id_card) ~ "NIF+Cartao",
+        !is.na(nav_row_id_nif)                           ~ "NIF",
+        !is.na(nav_row_id_card)                          ~ "Cartao",
+        TRUE                                             ~ NA_character_
+      )
+    ) |>
+    filter(!is.na(nav_row_id)) |>
+    left_join(nav_all, by = "nav_row_id") |>
+    transmute(
+      year_dist                  = coalesce(as.integer(year_dist), as.integer(ano)),
+      month_dist                 = coalesce(as.integer(month_dist), as.integer(mes)),
+      tipo_pj,
+      match_por,
+      fiscal_number              = coalesce(fiscal_number, fiscal_number_pj),
+      doc_type                   = coalesce(as.character(doc_type), doc_type_pj),
+      doc_number                 = coalesce(as.character(doc_number), doc_number_pj),
+      birth_date                 = coalesce(as.Date(birth_date), birth_date_pj),
+      age                        = coalesce(as.integer(age), age_pj),
+      card_serial_number_lxbt    = card_serial_number,
+      cardserialnumber_navegante = cardserialnumber_navegante,
+      mesmo_cartao               = !is.na(nav_row_id_card),
+      ticket_code_lxbt           = as.integer(ticket_code),
+      ticket_name_lxbt           = as.character(ticket_name),
+      numval_lxbt                = as.integer(count_val),
+      nome_imt,
+      ticket_code_navegante,
+      ticket_name_navegante,
+      numval_navegante,
+      compensacao_navegante
+    ) |>
+    arrange(fiscal_number, card_serial_number_lxbt) |>
+    as.data.table()
 }
 
 
@@ -889,6 +1019,25 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
                   nrow(nok_com), nrow(nok_sem), nrow(dt_age_nok)))
 
 
+  # ── Clientes Passe Jovem com registo simultâneo LX-BT ────────────────────
+  # Cruza os registos LX-BT removidos em 01_preparar_dados.R (guardados em
+  # contagens_01.rds) com os titulares de passe Navegante elegíveis (comNIF e
+  # semNIF), tanto por NIF (fiscal_number) como por número de cartão
+  # (card_serial_number).
+  f_cont <- file.path(paths$output, output_filename(ano, mes, "contagens_01", ext = "rds"))
+  dt_lxbt_sim <- NULL
+  if (file.exists(f_cont)) {
+    cont_01 <- readRDS(f_cont)
+    lx_raw  <- cont_01$lxbt_removidos
+    if (!is.null(lx_raw) && nrow(lx_raw) > 0) {
+      dt_lxbt_sim <- construir_lxbt_simultaneos(lx_raw, dt_comNIF, dt_semNIF, ano, mes)
+      message(sprintf("  LX-BT em simultaneo com passe Navegante: %d registos (%d titulares unicos)",
+                      nrow(dt_lxbt_sim),
+                      n_distinct(coalesce(dt_lxbt_sim$fiscal_number, dt_lxbt_sim$cardserialnumber_navegante))))
+    }
+  }
+
+
   # ── Gravar ficheiros de output ────────────────────────────────────────────
   out_com     <- file.path(paths$output, output_filename(ano, mes, "comNIF"))
   out_sem     <- file.path(paths$output, output_filename(ano, mes, "semNIF"))
@@ -896,12 +1045,18 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   out_mais200 <- file.path(paths$output, output_filename(ano, mes, "validacoes_mais200"))
   out_nok     <- file.path(paths$output, output_filename(ano, mes, "age_nok"))
   out_estranhos <- file.path(paths$output, output_filename(ano, mes, "documentos_estranhos_semNIF"))
+  out_lxbt      <- file.path(paths$output, output_filename(ano, mes, "lxbt_simultaneos"))
 
   write_csv_pj(dt_comNIF,      out_com)
   write_csv_pj(dt_semNIF,      out_sem)
   write_csv_pj(dt_verificar,   out_ver)
   write_csv_pj(dt_val_mais200, out_mais200)
   write_csv_pj(dt_age_nok,     out_nok)
+
+  if (!is.null(dt_lxbt_sim)) {
+    write_csv_pj(dt_lxbt_sim, out_lxbt)
+    message(sprintf("  Gravado: %s (%d registos)", basename(out_lxbt), nrow(dt_lxbt_sim)))
+  }
 
   if (!is.null(dt_nif_multidoc) && nrow(dt_nif_multidoc) > 0) {
     out_multidoc <- file.path(paths$output,
@@ -931,7 +1086,8 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
     validacoes_mais200          = dt_val_mais200,
     age_nok                     = dt_age_nok,
     documentos_estranhos_semNIF = dt_docs_estranhos,
-    nif_multiplos_documentos    = dt_nif_multidoc
+    nif_multiplos_documentos    = dt_nif_multidoc,
+    lxbt_simultaneos            = dt_lxbt_sim
   ))
 }
 

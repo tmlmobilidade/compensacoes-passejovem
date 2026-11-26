@@ -163,12 +163,28 @@ cont_01 <- readRDS(f_cont)
 # Registos de Viver Cascais enviados pela AT Cascais (antes de qualquer limpeza)
 n_cascais_enviados <- cont_01$n_cascais_registos
 
-# Registos LX-BT (CIM Oeste) que têm, em simultâneo, um passe Navegante (comNIF)
-# com o mesmo NIF
-nifs_navegante <- dt_comNIF$fiscal_number[grepl("^Navegante", dt_comNIF$nome_imt)]
+# Registos LX-BT (CIM Oeste) que têm, em simultâneo, um passe Navegante (comNIF ou semNIF)
+# com o mesmo NIF ou número de série de cartão
+f_lxbt <- file.path(paths$output, output_filename(ANO, MES, "lxbt_simultaneos"))
 lx <- cont_01$lxbt_removidos
 n_lxbt_removidos <- nrow(lx)
-n_lxbt <- sum(!is.na(lx$fiscal_number) & as.character(lx$fiscal_number) %in% as.character(nifs_navegante))
+if (file.exists(f_lxbt)) {
+  dt_lxbt_sim <- fread(f_lxbt, sep = ";", dec = ".")
+  n_lxbt <- nrow(dt_lxbt_sim)
+} else {
+  nifs_navegante <- as.character(dt_comNIF$fiscal_number[grepl("^Navegante", dt_comNIF$nome_imt)])
+  cards_nav_com  <- unlist(strsplit(as.character(dt_comNIF$cardserialnumber_new[grepl("^Navegante", dt_comNIF$nome_imt)]), "_", fixed = TRUE))
+  cards_nav_sem  <- if ("cardserialnumber_new" %in% names(dt_semNIF)) {
+    unlist(strsplit(as.character(dt_semNIF$cardserialnumber_new[grepl("^Navegante", dt_semNIF$nome_imt)]), "_", fixed = TRUE))
+  } else {
+    as.character(dt_semNIF$card_serial_number[grepl("^Navegante", dt_semNIF$nome_imt)])
+  }
+  cards_navegante <- unique(c(cards_nav_com, cards_nav_sem))
+  n_lxbt <- sum(
+    (!is.na(lx$fiscal_number) & as.character(lx$fiscal_number) %in% nifs_navegante) |
+    (!is.na(lx$card_serial_number) & as.character(lx$card_serial_number) %in% cards_navegante)
+  )
+}
 
 # Variações percentuais (face ao mês anterior e mês homólogo do ano anterior)
 idx_ant_m1 <- which(df_ant$ano == ANO & df_ant$mes == (MES - 1))

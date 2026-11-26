@@ -142,6 +142,10 @@ O passo `02` separa ou sinaliza automaticamente quatro conjuntos de registos par
    * Identifica titulares que acumulam **mais do que um cartão de suporte no mês** (`str_detect(cardserialnumber_new, "_")`) e um total consolidado de **200 ou mais validações** (`numval >= 200`).
    * Estes casos configuram potenciais situações de utilização abusiva ou partilha indevida de cartões, sendo exportados por ordem decrescente de `numval` (com as colunas `fiscal_number`, `numval`, `cardserialnumber_new`, `doc_type` e `doc_number`) para envio ao Departamento de Clientes (DC) e averiguação adicional.
 
+5. **Clientes Passe Jovem com Título `LX-BT` em Simultâneo (`<ano>_<mm>_lxbt_simultaneos.csv`)**:
+   * Cruza os registos `LX-BT` removidos no passo `01` (`lxbt_removidos` em `contagens_01.rds`) com os titulares de passes Navegante elegíveis (`comNIF` e `semNIF`), quer por `fiscal_number` (NIF), quer por `card_serial_number` (incluindo cartões múltiplos concatenados em `cardserialnumber_new`).
+   * Exporta a lista detalhada dos clientes que acumulam simultaneamente passe Navegante e título `LX-BT` no mesmo mês (indicando se os títulos foram validados no mesmo cartão ou em cartões distintos, bem como as validações e compensação do passe Navegante).
+
 ::: {.callout-note collapse="true"}
 ## Query SQL para Extração dos Perfis Sub23+1 ([`code/idades23-1.sql`](../code/idades23-1.sql))
 A listagem de estudantes elegíveis até aos 24 anos (perfis `127` e `130`) ativos no mês é exportada da tabela `F_AUX_PROFILE_CARDS` para `data/<ano>_<mm>_<mes>/input/idades23-1_F_AUX_PROFILE_CARDS_<timestamp>.csv` através da consulta:
@@ -173,5 +177,6 @@ A função `calcular_compensacoes(ano, mes, raiz)` grava na pasta `data/<ano>_<m
 * `<ano>_<mm>_a_verificar.csv`: listagem completa para auditoria manual;
 * `<ano>_<mm>_validacoes_mais200.csv`: titulares com múltiplos cartões e $\ge 200$ validações no mês (para averiguação pelo DC);
 * `<ano>_<mm>_age_nok.csv`: registos excluídos por idade incompatível ($3$ ou $\ge 25$ anos);
-* `<ano>_<mm>_documentos_estranhos_semNIF.csv`: documentos `semNIF` com formato inválido ou suspeito.
+* `<ano>_<mm>_documentos_estranhos_semNIF.csv`: documentos `semNIF` com formato inválido ou suspeito;
+* `<ano>_<mm>_lxbt_simultaneos.csv`: titulares de passe Navegante (`comNIF` ou `semNIF`) com registo simultâneo de título `LX-BT` no mês.
 
