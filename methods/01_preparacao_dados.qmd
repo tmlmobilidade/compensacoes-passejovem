@@ -50,7 +50,7 @@ O script [`code/01_preparar_dados.R`](../code/01_preparar_dados.R) executa seque
 ### Exclusão de Títulos Não Elegíveis (`LX-BT`)
 
 * Os bilhetes combinados inter-regionais exclusivos com designação iniciada por `"LX-BT"` (`remove_lxbt()`) não são elegíveis para compensação ao abrigo deste procedimento e são removidos de `dt_main`.
-* Os registos `LX-BT` removidos são guardados em memória (`lxbt_removidos` em `contagens_01.rds`) para contabilizar, nos relatórios oficiais, quantos utilizadores adquiriram simultaneamente passes `LX-BT` (CIM Oeste) e passes Navegante com o mesmo NIF.
+* Os registos `LX-BT` removidos são guardados em memória (`lxbt_removidos` em `contagens_01.rds`) para contabilizar, nos relatórios oficiais, e exportar no Passo 02 (`<ano>_<mm>_lxbt_simultaneos.csv`), os utilizadores que adquiriram simultaneamente passes `LX-BT` (CIM Oeste) e passes Navegante com o mesmo NIF ou número de série de cartão.
 
 ### Conversão de Validações por "Perfil de Criança"
 

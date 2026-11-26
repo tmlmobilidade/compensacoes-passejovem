@@ -197,7 +197,11 @@ preparar_dados <- function(ano, mes, raiz = here_root()) {
   # em simultâneo um passe Navegante com o mesmo NIF)
   lxbt_removidos <- dt_main |>
     filter(!is.na(ticket_name) & str_starts(ticket_name, "LX-BT")) |>
-    select(any_of(c("fiscal_number", "card_serial_number"))) |>
+    select(any_of(c("year_dist", "month_dist", "card_serial_number",
+                    "fiscal_number", "doc_type", "doc_number",
+                    "birth_date", "age", "ticket_operator_code",
+                    "ticket_code", "ticket_name", "count_val",
+                    "price", "price_ticket_base"))) |>
     as.data.frame()
   dt_main <- remove_lxbt(dt_main)
   message(sprintf("  Registos LX-BT removidos: %d", n_antes - nrow(dt_main)))
