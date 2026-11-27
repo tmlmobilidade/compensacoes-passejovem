@@ -5,17 +5,18 @@ nif_repescagem <- read_csv("data/auxiliar/nif_repescagem.csv",
                                col_types = cols(fiscal_number = col_character()))
 
 
-nif_repescagem202610 <- read_delim("data/auxiliar/nif_repescagem202610.csv", 
+
+nif_repescagem202611 <- read_delim("data/auxiliar/nif_repescagem202611.csv", 
                                    delim = ";", escape_double = FALSE, col_types = cols(fiscal_number = col_character()), 
                                    trim_ws = TRUE) |>
-  mutate(ano_mes = 202608L)
+  mutate(ano_mes = 202609L)
 
 
 nif_repescagem_update = nif_repescagem |> 
-  bind_rows(nif_repescagem202610) |> 
+  bind_rows(nif_repescagem202611) |> 
   distinct(card_serial_number, fiscal_number, .keep_all = TRUE)
 
-write.csv(nif_repescagem_update, "data/auxiliar/nif_repescagem.csv", row.names = FALSE)
+write.csv(nif_repescagem_update |> select(-birth_date), "data/auxiliar/nif_repescagem.csv", row.names = FALSE)
 
 
 
@@ -47,18 +48,20 @@ nif_compare2608_10_not2 = nif_repescagem202610 |>
 
 # casos sem NIF que surgiram em Agosto e não estavam em Julho
 
+setembro_semNIF = read_delim("data/2026_09_setembro/output/2026_09_semNIF.csv", 
+                           delim = ";", escape_double = FALSE, trim_ws = TRUE)
 agosto_semNIF = read_delim("data/2026_08_agosto/output/2026_08_semNIF.csv", 
                            delim = ";", escape_double = FALSE, trim_ws = TRUE)
-julho_semNIF <- read_delim("data/2026_07_julho/output/2026_07_semNIF.csv", 
-                           delim = ";", escape_double = FALSE, trim_ws = TRUE) 
+# julho_semNIF <- read_delim("data/2026_07_julho/output/2026_07_semNIF.csv", 
+#                            delim = ";", escape_double = FALSE, trim_ws = TRUE) 
 
-semNIF_compare0807 = agosto_semNIF |> select(card_serial_number, doc_type, doc_number, age_new) |> 
-  anti_join(julho_semNIF |>  select(card_serial_number, doc_type, doc_number, age_new)) |> 
+semNIF_compare0908 = setembro_semNIF |> select(card_serial_number, doc_type, doc_number, age_new) |> 
+  anti_join(agosto_semNIF |>  select(card_serial_number, doc_type, doc_number, age_new)) |> 
   arrange(doc_type, age_new)
-table(semNIF_compare0807$doc_type)
-table(semNIF_compare0807$age_new)
-hist(semNIF_compare0807$age_new)
-semNIF_compare0807$card_serial_number
+table(semNIF_compare0908$doc_type)
+table(semNIF_compare0908$age_new)
+hist(semNIF_compare0908$age_new)
+semNIF_compare0908$card_serial_number
 # dá uma lista de NIFs. copiar para o notepad++ e substituir espaços por vírgulas,
 # adicionar vírgula no fim das linhas,
 # edit > line operations > join lines
