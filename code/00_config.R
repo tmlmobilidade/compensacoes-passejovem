@@ -32,7 +32,7 @@ suppressPackageStartupMessages({
 # documentos informacao1, oficio1 e metodologia1)?
 # Executar a Fase 2 (repartição por operador e congelamento: scripts 04 e 05 +
 # documentos metodologia2, informacao2 e oficio2)?
-RUN_FASE1 <- FALSE
+RUN_FASE1 <- TRUE
 RUN_FASE2 <- TRUE
 
 

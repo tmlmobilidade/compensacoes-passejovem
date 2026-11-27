@@ -7,8 +7,8 @@
 # =============================================================================
 
 ANO      <- 2026
-MES      <- 8
-mes_nome <- "agosto"
+MES      <- 9
+mes_nome <- "setembro"
 
 # ---- Pagamentos ETF (Tabela 5) -----------------------------------------------
 # Meses do ano corrente que já foram pagos pela ETF à data da emissão
