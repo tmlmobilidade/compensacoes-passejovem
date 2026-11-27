@@ -37,7 +37,7 @@ book:
 
   page-footer:
     left: "TML - Transportes Metropolitanos de Lisboa"
-    right: "v0.1 (beta)"
+    right: "v0.2 (beta)"
 
 bibliography: references.bib
 link-citations: true
