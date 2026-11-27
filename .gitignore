@@ -68,3 +68,4 @@ code/*.pdf
 !code\templates\folha_1.pdf
 code/*.docx
 code/test/explore.R
+code/templates/TML_Informacao_pandoc.docx
