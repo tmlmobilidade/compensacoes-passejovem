@@ -546,8 +546,13 @@ calcular_compensacoes <- function(ano, mes, raiz = here_root()) {
   }
   n_nif_multidoc <- if (is.null(dt_nif_multidoc)) 0L else
     length(unique(dt_nif_multidoc$fiscal_number))
-  message(sprintf("  comNIF: %d NIF com mais de um documento (tipo/numero) distinto",
-                  n_nif_multidoc))
+  n_nif_diff_bd  <- if (is.null(dt_nif_multidoc)) 0L else
+    length(unique(dt_nif_multidoc$fiscal_number[dt_nif_multidoc$n_datas_nascimento_nif > 1L]))
+  n_nif_same_bd  <- n_nif_multidoc - n_nif_diff_bd
+  message(sprintf(
+    "  comNIF: %d NIF com mais de um documento (tipo/numero) distinto (%d com doc_number e data_nascimento diferentes, %d com a mesma data_nascimento mas diferente doc_number)",
+    n_nif_multidoc, n_nif_diff_bd, n_nif_same_bd
+  ))
 
   # Separar registos NOK (fora da faixa etária elegível) antes de os remover
   # age_new == 3  -> demasiado novo (< 4 anos)
