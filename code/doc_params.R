@@ -12,7 +12,7 @@ mes_nome <- "setembro"
 
 # ---- Pagamentos ETF (Tabela 5) -----------------------------------------------
 # Meses do ano corrente que já foram pagos pela ETF à data da emissão
-meses_pagos_ano_atual <- 1:5   # jan a mai pagos; jun e jul por pagar
+meses_pagos_ano_atual <- 1:6   # jan a jun pagos; jul por pagar
 
 # ---- Pagamentos por conta (Portaria n.º 287/2026/1) --------------------------
 # Total já recebido da ETF em pagamentos por conta (texto da secção Pagamento)
