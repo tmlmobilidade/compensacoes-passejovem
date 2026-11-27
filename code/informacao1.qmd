@@ -714,7 +714,33 @@ No entanto, assinala-se que em 7 de julho de 2026 foi publicada a Portaria n.º 
 >- “O montante referido no número anterior é ajustado mensalmente pelo IMT, I. P., considerando os acertos decorrentes da diferença entre pagamentos convencionais por conta efetuados anteriormente e os valores reais entretanto apurados em cada mês.”
 >- “Compete às AM e CIM proceder, no prazo máximo de 5 dias, após receção do pagamento da ETF referido no n.º 4, ao pagamento a cada uma das entidades emissoras de títulos de transporte em função dos valores apurados.”
 
-A TML já recebeu `r pagamentos_conta_n` pagamentos por conta no total de `r fmt_eur(pagamentos_conta_valor)`, e procedeu à repartição pelos operadores do montante recebido, conforme disposto na referida Portaria e tendo em conta o contrato de delegação e subdelegação de competências com a Área Metropolitana de Lisboa (“AML”).
+```{r}
+#| label: texto-pagamentos-conta
+#| results: asis
+
+tem_parcial <- exists("pagamentos_conta_parcial_valor") &&
+  !is.null(pagamentos_conta_parcial_valor) &&
+  !is.na(pagamentos_conta_parcial_valor) &&
+  round(as.numeric(pagamentos_conta_parcial_valor), 2) > 0
+
+txt_pag_conta <- if (tem_parcial) {
+  paste0(
+    "A TML já recebeu ", pagamentos_conta_n, " pagamentos por conta completos no total de ",
+    fmt_eur(pagamentos_conta_valor), " e um pagamento parcial do ", pagamentos_conta_n + 1,
+    ".º pagamento por conta no valor de ", fmt_eur(pagamentos_conta_parcial_valor)
+  )
+} else {
+  paste0(
+    "A TML já recebeu ", pagamentos_conta_n, " pagamentos por conta no total de ",
+    fmt_eur(pagamentos_conta_valor)
+  )
+}
+
+cat(paste0(
+  txt_pag_conta,
+  ", e procedeu à repartição pelos operadores do montante recebido, conforme disposto na referida Portaria e tendo em conta o contrato de delegação e subdelegação de competências com a Área Metropolitana de Lisboa (“AML”).\n"
+))
+```
 
 # Proposta
 
